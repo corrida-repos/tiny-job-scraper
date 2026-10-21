@@ -1,5 +1,6 @@
 """Diagnostics must distinguish source gaps from failed/stale executions."""
 import json
+from io import StringIO
 import tempfile
 import unittest
 from pathlib import Path
@@ -15,6 +16,12 @@ def audit(source='noesis', complete=False):
 
 
 class CoverageCheckTests(unittest.TestCase):
+    def setUp(self):
+        # Fixture diagnostics must not become live GitHub Actions annotations.
+        stdout = patch('sys.stdout', new_callable=StringIO)
+        stdout.start()
+        self.addCleanup(stdout.stop)
+
     def test_selection_rejects_other_employers_and_shell_text(self):
         self.assertEqual(selected_sources('all-gaps'), GAPS)
         self.assertEqual(selected_sources('noesis'), ('noesis',))

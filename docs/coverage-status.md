@@ -1,10 +1,11 @@
 # Coverage repairs — 21 October 2026
 
-Latest GitHub validation: **55/60 source scopes complete**, with **88 unit tests
-passing**. The secondary RSS fallback works for COCUS, Float, JTA and Namecheap,
-but those employer inventories remain incomplete. Noesis returned a new HTTP 403
-in this run, compared with 56/60 complete in the previous run.
-See [Actions run 39686659074](https://github.com/corrida-repos/tiny-job-scraper/actions/runs/39686659074).
+Latest GitHub validation: **56/60 source scopes complete**, with **96 unit tests
+passing**. Noesis's primary inventory worked in both focused and full validation;
+its earlier HTTP 403 appears intermittent. COCUS, Float, JTA and Namecheap remain
+incomplete. All five now have a verified-employer secondary RSS fallback, and a
+separate manual workflow can diagnose one or all five without production secrets.
+See [Actions run 39689294359](https://github.com/corrida-repos/tiny-job-scraper/actions/runs/39689294359).
 
 The 60-employer allowlist, 48-hour scheduled freshness window, salary and
 experience rules, daily schedule and persistent production state are unchanged.
@@ -17,7 +18,7 @@ experience rules, daily schedule and persistent production state are unchanged.
 | COCUS | Keep the full Sage ATS reader, with a fallback to vacancy cards published on COCUS's own careers page when the ATS is blocked. Fallback results are always partial; generic open applications do not count as vacancies. |
 | Float | Its Pinpoint board disallows crawling. The public We Work Remotely RSS feed now provides secondary discovery; it cannot establish a complete inventory or original posting dates. |
 | JTA | The official careers page currently provides spontaneous applications, not an enumerated vacancy feed. Keep limited coverage visible; biographies and the whistleblowing portal are not job listings. |
-| Noesis | New HTTP 403 from the GitHub runner on its existing public listing page. The same page remains readable in this workspace and exposes no alternate feed link. This is an unresolved access gap. |
+| Noesis | Its primary listing completed in the latest focused and full GitHub checks after an earlier HTTP 403. Access appears intermittent. A strict Noesis/official-domain WWR fallback is now configured for future incomplete retrieval, but remains partial and cannot establish original publication dates. |
 
 The HTTP client now uses Protego for standards-compliant robots rule precedence.
 A more specific `Allow` takes precedence over a broad `Disallow`, while specific
@@ -196,3 +197,24 @@ local successes do not establish access from GitHub-hosted runners. All 96 unit
 tests passed, including disposable-state isolation, failed/missing/stale audit
 handling, escaped diagnostics and strict Noesis identity matching. Actionlint
 accepted the new workflow. The production workflow and 48-hour rule are unchanged.
+
+[Focused GitHub validation 39689169934](https://github.com/corrida-repos/tiny-job-scraper/actions/runs/39689169934)
+at code commit `40b89be` completed in 39 seconds and uploaded its audit artifact.
+It completed one of five source scopes: Noesis's primary reader enumerated 120
+listings and 20 title candidates across 30 page/detail requests. Its earlier 403
+was not reproduced; this is intermittent access recovery, not evidence that the
+new RSS fallback repaired its primary inventory. COCUS retained four listings
+from its corporate-page subset after Sage returned 403. Namecheap still returned
+403, Float remained robots-disallowed, and JTA still lacked an enumerated feed.
+All four incomplete sources checked WWR with zero matching listings and stayed
+partial. The new Noesis fallback is regression-tested; this live run did not need
+to invoke it. GitHub Checks passed all 96 tests at the same commit.
+
+[Full GitHub validation 39689294359](https://github.com/corrida-repos/tiny-job-scraper/actions/runs/39689294359)
+at code commit `40b89be` completed in 3m12s with **56/60 source scopes complete**
+and the same four gaps. All 96 tests passed. The run used `send_email=false` and
+`freshness_days=2`; no email was sent, and the production-state branch stayed at
+`e7552fd7635e3f82ab4336fe1d09a1109ae6d7e9`. The 08:00 Europe/Lisbon daily workflow
+remains active. Test-fixture stdout was subsequently captured to prevent fake
+coverage warnings from appearing among live GitHub annotations; runtime code is
+unchanged from the validated commit.
