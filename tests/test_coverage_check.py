@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from pm_scraper.coverage_check import GAPS, annotation, check, selected_sources, summary, validate_health
+from pm_scraper.coverage_check import SOURCES, annotation, check, selected_sources, summary, validate_health
 
 
 def audit(source='noesis', complete=False):
@@ -23,9 +23,9 @@ class CoverageCheckTests(unittest.TestCase):
         self.addCleanup(stdout.stop)
 
     def test_selection_rejects_other_employers_and_shell_text(self):
-        self.assertEqual(selected_sources('all-gaps'), GAPS)
+        self.assertEqual(SOURCES, ('noesis',))
         self.assertEqual(selected_sources('noesis'), ('noesis',))
-        for selection in ('', 'infineon', 'noesis,float', '$(echo bad)'):
+        for selection in ('', 'all-gaps', 'cocus', 'float', 'jta-the-data-scientists', 'namecheap', 'infineon', 'noesis,float', '$(echo bad)'):
             with self.assertRaises(ValueError):
                 selected_sources(selection)
 

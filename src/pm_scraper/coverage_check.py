@@ -1,4 +1,4 @@
-"""Disposable, read-only coverage diagnostics for the five unresolved sources."""
+"""Disposable, read-only coverage diagnostics for monitored active sources."""
 import argparse
 import html
 import json
@@ -8,13 +8,11 @@ from pathlib import Path
 
 from . import cli
 
-GAPS = ('cocus', 'float', 'jta-the-data-scientists', 'namecheap', 'noesis')
+SOURCES = ('noesis',)
 
 
 def selected_sources(selection):
-    if selection == 'all-gaps':
-        return GAPS
-    if selection not in GAPS:
+    if selection not in SOURCES:
         raise ValueError('Unknown coverage-check employer')
     return (selection,)
 
@@ -112,7 +110,7 @@ def check(selection, artifact_dir, summary_path=None):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--source', choices=('all-gaps',) + GAPS, default='all-gaps')
+    parser.add_argument('--source', choices=SOURCES, default='noesis')
     parser.add_argument('--artifact-dir', required=True, help='New directory for audit artifacts')
     args = parser.parse_args(argv)
     return check(args.source, args.artifact_dir, os.environ.get('GITHUB_STEP_SUMMARY'))

@@ -13,8 +13,10 @@ class FakeHTTP:
  def text(self,url,**kwargs):return '<html><main><p>Public description without an original posting date.</p></main></html>'
 class AdapterTests(unittest.TestCase):
  def setUp(self):self.s=Screener(json.loads((ROOT/'config/criteria.json').read_text()))
- def test_60_individually_configured_employers(self):
-  cs=json.loads((ROOT/'config/companies.json').read_text());self.assertEqual(len(cs),60);self.assertEqual(len({c['id'] for c in cs}),60)
+ def test_56_individually_configured_employers(self):
+  cs=json.loads((ROOT/'config/companies.json').read_text());self.assertEqual(len(cs),56);self.assertEqual(len({c['id'] for c in cs}),56)
+  self.assertEqual([c['rank'] for c in cs],list(range(1,57)))
+  self.assertFalse({c['id'] for c in cs} & {'cocus','float','jta-the-data-scientists','namecheap'})
   for c in cs:self.assertTrue(hasattr(Fetcher,c['source']['adapter']),c['name'])
  def test_ashby_last_publication_not_original(self):
   h=FakeHTTP([{'jobs':[{'id':'1','title':'Product Manager','location':'Remote Portugal','jobUrl':'https://example.org/1','publishedAt':'2026-10-18','isRemote':True,'descriptionPlain':'A sufficiently long position description about project stakeholders and delivery management.'}]}])

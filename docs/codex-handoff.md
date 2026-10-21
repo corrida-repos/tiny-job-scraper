@@ -1,5 +1,7 @@
 # Codex development handoff
 
+Current watchlist: **Top 56**. COCUS, Float, JTA and Namecheap were removed at the user’s request. Retained employers preserve their relative order, now ranked 1–56; historical audit records remain unchanged.
+
 Development continues in the Codex conversation associated with this checkout.
 Repository: `corrida-repos/tiny-job-scraper`.
 Source conversation: `6ad60db6-d974-83eb-881d-99895f074a3a` (Tiny's Job Scraper).
@@ -14,7 +16,7 @@ The manifest describes that original export; subsequent development uses Git his
 
 Use `docs/current-automation-policy.md` for the intended daily workflow and
 `UNFINISHED.md` for differences from the executable baseline. Preserve the exact
-60 employers, location preference (Braga, Porto, elsewhere in Portugal, Nordic
+56 employers, location preference (Braga, Porto, elsewhere in Portugal, Nordic
 countries, rest of the EU), no minimum salary requirement, exclusion of mandatory
 experience above five years, verified original publication within 48 hours,
 and at most seven calendar days abroad per quarter. Preserve the remaining

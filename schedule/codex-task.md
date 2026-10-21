@@ -56,7 +56,7 @@ audit. If sending fails or its outcome is uncertain, report that explicitly;
 never mark delivery successful without evidence. The legacy `ack` ledger does
 not reconcile these comprehensive per-run emails.
 
-Honor robots rules and access barriers. Use only the configured 60 employers;
+Honor robots rules and access barriers. Use only the configured 56 employers;
 never fall back to broad web search. Do not apply to jobs or contact employers.
 
 ## Switch checklist

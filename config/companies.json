@@ -1,38 +1,7 @@
 [
   {
-    "id": "jta-the-data-scientists",
-    "rank": 1,
-    "name": "JTA — The Data Scientists",
-    "careers_url": "https://www.thedatascientists.com/about-us/careers/",
-    "location_note": "Home/office choice; Porto",
-    "wlb_note": "2026 Great Place to Work recognition; published workplace flexibility.",
-    "source": {
-      "adapter": "html",
-      "listing_url": "https://www.thedatascientists.com/about-us/careers/",
-      "job_pattern": "/(?:jobs|vacancies|careers)/[^/?#]+",
-      "kind": "inline_watch",
-      "inline_roles": true,
-      "empty_pattern": "spontaneous application",
-      "empty_is_unverified": true,
-      "mapped_at": "2026-10-19",
-      "discovery_url": "https://www.thedatascientists.com/about-us/careers/",
-      "wwr_fallback": {
-        "employer_names": [
-          "JTA",
-          "JTA The Data Scientists",
-          "JTA — The Data Scientists",
-          "JTA - The Data Scientists"
-        ],
-        "employer_hosts": [
-          "thedatascientists.com",
-          "www.thedatascientists.com"
-        ]
-      }
-    }
-  },
-  {
     "id": "mercedes-benz-io",
-    "rank": 2,
+    "rank": 1,
     "name": "Mercedes-Benz.io",
     "careers_url": "https://www.mercedes-benz.io/jobs",
     "location_note": "Remote within Portugal; Braga office optional",
@@ -46,7 +15,7 @@
   },
   {
     "id": "tui-technology",
-    "rank": 3,
+    "rank": 2,
     "name": "TUI Technology",
     "careers_url": "https://careers.tuigroup.com/en/portugal",
     "location_note": "Remote-first Portugal; Matosinhos hub",
@@ -64,7 +33,7 @@
   },
   {
     "id": "coverflex",
-    "rank": 4,
+    "rank": 3,
     "name": "Coverflex",
     "careers_url": "https://careers.coverflex.com/",
     "location_note": "Fully remote; company gatherings",
@@ -83,7 +52,7 @@
   },
   {
     "id": "doist-todoist",
-    "rank": 5,
+    "rank": 4,
     "name": "Doist / Todoist",
     "careers_url": "https://www.todoist.com/careers",
     "location_note": "Worldwide remote; team retreats",
@@ -99,7 +68,7 @@
   },
   {
     "id": "buffer",
-    "rank": 6,
+    "rank": 5,
     "name": "Buffer",
     "careers_url": "https://buffer.com/journey",
     "location_note": "Worldwide remote",
@@ -112,31 +81,8 @@
     }
   },
   {
-    "id": "float",
-    "rank": 7,
-    "name": "Float",
-    "careers_url": "https://www.float.com/careers",
-    "location_note": "Worldwide remote; annual meetup",
-    "wlb_note": "Async work with no core hours; annual company closure and explicit time-off benefits.",
-    "source": {
-      "adapter": "pinpoint",
-      "base": "https://float.pinpointhq.com",
-      "mapped_at": "2026-10-19",
-      "discovery_url": "https://www.float.com/careers",
-      "wwr_fallback": {
-        "employer_names": [
-          "Float"
-        ],
-        "employer_hosts": [
-          "float.com",
-          "www.float.com"
-        ]
-      }
-    }
-  },
-  {
     "id": "mindera",
-    "rank": 8,
+    "rank": 6,
     "name": "Mindera",
     "careers_url": "https://mindera.com/locations/portugal",
     "location_note": "Remote anywhere in Portugal; Porto optional",
@@ -151,7 +97,7 @@
   },
   {
     "id": "intellias",
-    "rank": 9,
+    "rank": 7,
     "name": "Intellias",
     "careers_url": "https://career.intellias.com/vacancies/location_portugal/",
     "location_note": "Portugal remote roles; Porto presence",
@@ -171,7 +117,7 @@
   },
   {
     "id": "z-hlke",
-    "rank": 10,
+    "rank": 8,
     "name": "Zühlke",
     "careers_url": "https://www.zuehlke.com/en/careers/locations/portugal",
     "location_note": "Porto hybrid; attendance agreed with People Lead",
@@ -197,7 +143,7 @@
   },
   {
     "id": "imaginary-cloud",
-    "rank": 11,
+    "rank": 9,
     "name": "Imaginary Cloud",
     "careers_url": "https://teamtailor.imaginarycloud.com/",
     "location_note": "Remote-first Portugal",
@@ -216,7 +162,7 @@
   },
   {
     "id": "wellhub",
-    "rank": 12,
+    "rank": 10,
     "name": "Wellhub",
     "careers_url": "https://wellhub.com/careers/",
     "location_note": "Portugal remote vacancies",
@@ -230,7 +176,7 @@
   },
   {
     "id": "toggl",
-    "rank": 13,
+    "rank": 11,
     "name": "Toggl",
     "careers_url": "https://toggl.com/jobs",
     "location_note": "Fully remote; at least two meetups yearly",
@@ -244,7 +190,7 @@
   },
   {
     "id": "7-1-tech-hub",
-    "rank": 14,
+    "rank": 12,
     "name": "7.1 Tech Hub",
     "careers_url": "https://karriere.prosiebensat1.com/welcome-sevenone-tech-hub",
     "location_note": "Porto; 90 office days per year",
@@ -262,7 +208,7 @@
   },
   {
     "id": "deus",
-    "rank": 15,
+    "rank": 13,
     "name": "DEUS",
     "careers_url": "https://www.deus.ai/careers/",
     "location_note": "Remote-friendly; Matosinhos office",
@@ -281,7 +227,7 @@
   },
   {
     "id": "feedzai",
-    "rank": 16,
+    "rank": 14,
     "name": "Feedzai",
     "careers_url": "https://careers.feedzai.com/office/porto/",
     "location_note": "Primarily remote option: 1–2 Porto days/month",
@@ -295,7 +241,7 @@
   },
   {
     "id": "stellaxius",
-    "rank": 17,
+    "rank": 15,
     "name": "Stellaxius",
     "careers_url": "https://stellaxius.com/careers/",
     "location_note": "Remote-first Portugal; Lisbon office optional",
@@ -314,39 +260,8 @@
     }
   },
   {
-    "id": "cocus",
-    "rank": 18,
-    "name": "COCUS",
-    "careers_url": "https://www.cocus.com/en/about-us/it-career/",
-    "location_note": "Remote/flexible office options; Porto/Gaia",
-    "wlb_note": "Published remote-office guarantee and flexible schedules.",
-    "source": {
-      "adapter": "cocus",
-      "listing_url": "https://talent.sage.hr/7dff8044-5957-4793-b718-1ad5065bbd40/vacancies",
-      "job_pattern": "/jobs/[a-f0-9-]{36}",
-      "page_pattern": "[?&]page=\\d+",
-      "kind": "sage",
-      "mapped_at": "2026-10-19",
-      "discovery_url": "https://www.cocus.com/en/about-us/it-career/",
-      "fallback_url": "https://www.cocus.com/en/about-us/it-career/",
-      "wwr_fallback": {
-        "employer_names": [
-          "COCUS",
-          "COCUS AG",
-          "COCUS Portugal"
-        ],
-        "employer_hosts": [
-          "cocus.com",
-          "www.cocus.com",
-          "cocus.pt",
-          "www.cocus.pt"
-        ]
-      }
-    }
-  },
-  {
     "id": "typeform",
-    "rank": 19,
+    "rank": 16,
     "name": "Typeform",
     "careers_url": "https://www.typeform.com/careers",
     "location_note": "Remote roles that explicitly include Portugal",
@@ -360,7 +275,7 @@
   },
   {
     "id": "bosch",
-    "rank": 20,
+    "rank": 17,
     "name": "Bosch",
     "careers_url": "https://www.bosch.pt/carreiras/ofertas-de-emprego/",
     "location_note": "Braga hybrid",
@@ -375,7 +290,7 @@
   },
   {
     "id": "kuehne-nagel-porto-it-hub",
-    "rank": 21,
+    "rank": 18,
     "name": "Kuehne+Nagel — Porto IT Hub",
     "careers_url": "https://jobs.kuehne-nagel.com/global/en/porto-it-hub",
     "location_note": "Porto hybrid",
@@ -393,7 +308,7 @@
   },
   {
     "id": "volkswagen-group-digital-solutions",
-    "rank": 22,
+    "rank": 19,
     "name": "Volkswagen Group Digital Solutions",
     "careers_url": "https://vwg-digitalsolutions.pt/careers/",
     "location_note": "Porto office; arrangement to confirm",
@@ -408,7 +323,7 @@
   },
   {
     "id": "dachser-corporate-it-hub",
-    "rank": 23,
+    "rank": 20,
     "name": "DACHSER — Corporate IT Hub",
     "careers_url": "https://careers.dachser.com/dachser_europe/go/ver_todos_os_empregos_pt/9407055/",
     "location_note": "Porto hybrid",
@@ -426,7 +341,7 @@
   },
   {
     "id": "diconium",
-    "rank": 24,
+    "rank": 21,
     "name": "diconium",
     "careers_url": "https://diconium.com/en/career",
     "location_note": "Porto hybrid",
@@ -452,7 +367,7 @@
   },
   {
     "id": "wolters-kluwer-basecone",
-    "rank": 25,
+    "rank": 22,
     "name": "Wolters Kluwer / Basecone",
     "careers_url": "https://careers.wolterskluwer.com/en/join-us",
     "location_note": "Porto; some listings specify 8 office days/month",
@@ -478,7 +393,7 @@
   },
   {
     "id": "infineon",
-    "rank": 26,
+    "rank": 23,
     "name": "Infineon",
     "careers_url": "https://www.infineon.com/careers/our-locations/portugal",
     "location_note": "Maia; hybrid/remote terms depend on role",
@@ -495,7 +410,7 @@
   },
   {
     "id": "continental",
-    "rank": 27,
+    "rank": 24,
     "name": "Continental",
     "careers_url": "https://jobs.continental.com/en/",
     "location_note": "Lousado; selected flexible/hybrid office roles",
@@ -512,7 +427,7 @@
   },
   {
     "id": "loka",
-    "rank": 28,
+    "rank": 25,
     "name": "Loka",
     "careers_url": "https://www.loka.com/mycareer",
     "location_note": "Remote-first",
@@ -525,7 +440,7 @@
   },
   {
     "id": "pixelmatters",
-    "rank": 29,
+    "rank": 26,
     "name": "Pixelmatters",
     "careers_url": "https://jobs.ashbyhq.com/pixelmatters",
     "location_note": "Remote by default; Porto office optional",
@@ -539,7 +454,7 @@
   },
   {
     "id": "oyster",
-    "rank": 30,
+    "rank": 27,
     "name": "Oyster",
     "careers_url": "https://www.oysterhr.com/careers",
     "location_note": "Worldwide remote",
@@ -553,7 +468,7 @@
   },
   {
     "id": "camunda",
-    "rank": 31,
+    "rank": 28,
     "name": "Camunda",
     "careers_url": "https://camunda.com/careers/",
     "location_note": "Remote; Portugal appears among hiring countries",
@@ -567,7 +482,7 @@
   },
   {
     "id": "duckduckgo",
-    "rank": 32,
+    "rank": 29,
     "name": "DuckDuckGo",
     "careers_url": "https://duckduckgo.com/hiring",
     "location_note": "Remote; Portugal hiring documented",
@@ -582,7 +497,7 @@
   },
   {
     "id": "storyblok",
-    "rank": 33,
+    "rank": 30,
     "name": "Storyblok",
     "careers_url": "https://www.storyblok.com/jobs.html",
     "location_note": "Remote-only; European/global eligible roles",
@@ -596,7 +511,7 @@
   },
   {
     "id": "pleo",
-    "rank": 34,
+    "rank": 31,
     "name": "Pleo",
     "careers_url": "https://www.pleo.io/en/careers",
     "location_note": "Remote-Portugal roles; other roles are Lisbon hybrid",
@@ -610,7 +525,7 @@
   },
   {
     "id": "vestas",
-    "rank": 35,
+    "rank": 32,
     "name": "Vestas",
     "careers_url": "https://careers.vestas.com/",
     "location_note": "Leça do Balio / Porto hybrid",
@@ -628,7 +543,7 @@
   },
   {
     "id": "infraspeak",
-    "rank": 36,
+    "rank": 33,
     "name": "Infraspeak",
     "careers_url": "https://careers.infraspeak.com/",
     "location_note": "Porto hybrid; arrangement varies",
@@ -647,7 +562,7 @@
   },
   {
     "id": "salsify",
-    "rank": 37,
+    "rank": 34,
     "name": "Salsify",
     "careers_url": "https://www.salsify.com/careers",
     "location_note": "Remote-within-Portugal roles",
@@ -661,7 +576,7 @@
   },
   {
     "id": "csg",
-    "rank": 38,
+    "rank": 35,
     "name": "CSG",
     "careers_url": "https://www.csgi.com/careers",
     "location_note": "Remote-first; Portugal roles have been advertised",
@@ -687,7 +602,7 @@
   },
   {
     "id": "lokalise",
-    "rank": 39,
+    "rank": 36,
     "name": "Lokalise",
     "careers_url": "https://lokalise.com/careers/",
     "location_note": "Fully remote; eligible country per vacancy",
@@ -701,7 +616,7 @@
   },
   {
     "id": "maze",
-    "rank": 40,
+    "rank": 37,
     "name": "Maze",
     "careers_url": "https://maze.co/careers/",
     "location_note": "Fully remote Europe; role eligibility to confirm",
@@ -715,7 +630,7 @@
   },
   {
     "id": "olx",
-    "rank": 41,
+    "rank": 38,
     "name": "OLX",
     "careers_url": "https://careers.olxgroup.com/jobs/",
     "location_note": "Explicit remote-Portugal openings",
@@ -730,7 +645,7 @@
   },
   {
     "id": "stratio-automotive",
-    "rank": 42,
+    "rank": 39,
     "name": "Stratio Automotive",
     "careers_url": "https://careers.stratioautomotive.com/jobs",
     "location_note": "Fully remote Portugal product roles",
@@ -749,7 +664,7 @@
   },
   {
     "id": "pandadoc",
-    "rank": 43,
+    "rank": 40,
     "name": "PandaDoc",
     "careers_url": "https://www.pandadoc.com/careers/",
     "location_note": "Remote Portugal explicitly listed",
@@ -763,7 +678,7 @@
   },
   {
     "id": "testgorilla",
-    "rank": 44,
+    "rank": 41,
     "name": "TestGorilla",
     "careers_url": "https://www.testgorilla.com/careers/",
     "location_note": "100% remote; country eligibility varies",
@@ -777,7 +692,7 @@
   },
   {
     "id": "devexperts",
-    "rank": 45,
+    "rank": 42,
     "name": "Devexperts",
     "careers_url": "https://careers.devexperts.com/vacancies/?country=pt",
     "location_note": "Porto with remote options",
@@ -791,7 +706,7 @@
   },
   {
     "id": "k-rber",
-    "rank": 46,
+    "rank": 43,
     "name": "Körber",
     "careers_url": "https://jobs.koerber.com/",
     "location_note": "Maia / Porto; internal IT or suitable remote roles",
@@ -809,7 +724,7 @@
   },
   {
     "id": "noesis",
-    "rank": 47,
+    "rank": 44,
     "name": "Noesis",
     "careers_url": "https://opportunities.noesis.pt/jobs",
     "location_note": "Porto hybrid or explicitly remote projects",
@@ -824,14 +739,19 @@
       "mapped_at": "2026-10-19",
       "discovery_url": "https://opportunities.noesis.pt/jobs",
       "wwr_fallback": {
-        "employer_names": ["Noesis"],
-        "employer_hosts": ["noesis.pt", "www.noesis.pt"]
+        "employer_names": [
+          "Noesis"
+        ],
+        "employer_hosts": [
+          "noesis.pt",
+          "www.noesis.pt"
+        ]
       }
     }
   },
   {
     "id": "cloudbeds",
-    "rank": 48,
+    "rank": 45,
     "name": "Cloudbeds",
     "careers_url": "https://www.cloudbeds.com/careers/",
     "location_note": "Remote-first; Portugal-eligible roles only",
@@ -845,7 +765,7 @@
   },
   {
     "id": "hostaway",
-    "rank": 49,
+    "rank": 46,
     "name": "Hostaway",
     "careers_url": "https://careers.hostaway.com/",
     "location_note": "100% remote Europe; Portugal explicitly listed",
@@ -859,7 +779,7 @@
   },
   {
     "id": "remote",
-    "rank": 50,
+    "rank": 47,
     "name": "Remote",
     "careers_url": "https://remote.com/careers",
     "location_note": "Globally distributed remote team",
@@ -872,7 +792,7 @@
   },
   {
     "id": "red-hat",
-    "rank": 51,
+    "rank": 48,
     "name": "Red Hat",
     "careers_url": "https://www.redhat.com/en/jobs",
     "location_note": "Portugal-eligible remote roles; employment model varies by vacancy",
@@ -897,32 +817,8 @@
     }
   },
   {
-    "id": "namecheap",
-    "rank": 52,
-    "name": "Namecheap",
-    "careers_url": "https://www.namecheap.com/careers/",
-    "location_note": "Porto presence and remote openings; arrangement depends on vacancy",
-    "wlb_note": "Published remote-working option; positive Porto work-life-balance reviews, with a small local review sample.",
-    "source": {
-      "adapter": "namecheap",
-      "base": "https://www.namecheap.com",
-      "mapped_at": "2026-10-19",
-      "discovery_url": "https://www.namecheap.com/careers/",
-      "wwr_fallback": {
-        "employer_names": [
-          "Namecheap",
-          "Namecheap Inc."
-        ],
-        "employer_hosts": [
-          "namecheap.com",
-          "www.namecheap.com"
-        ]
-      }
-    }
-  },
-  {
     "id": "elastic",
-    "rank": 53,
+    "rank": 49,
     "name": "Elastic",
     "careers_url": "https://jobs.elastic.co/",
     "location_note": "Portugal hiring documented; distributed/remote arrangement per role",
@@ -936,7 +832,7 @@
   },
   {
     "id": "sketch",
-    "rank": 54,
+    "rank": 50,
     "name": "Sketch",
     "careers_url": "https://www.sketch.com/careers/",
     "location_note": "Fully remote; European Union hiring scope appears on careers page",
@@ -953,7 +849,7 @@
   },
   {
     "id": "gitbook",
-    "rank": 55,
+    "rank": 51,
     "name": "GitBook",
     "careers_url": "https://www.gitbook.com/careers",
     "location_note": "Fully remote, mainly Europe; Portugal employment eligibility to confirm per role",
@@ -967,7 +863,7 @@
   },
   {
     "id": "docker",
-    "rank": 56,
+    "rank": 52,
     "name": "Docker",
     "careers_url": "https://www.docker.com/career-openings/",
     "location_note": "Remote-first; Portugal explicitly included in official EMEA vacancies",
@@ -981,7 +877,7 @@
   },
   {
     "id": "contentsquare",
-    "rank": 57,
+    "rank": 53,
     "name": "Contentsquare",
     "careers_url": "https://contentsquare.com/careers/",
     "location_note": "Portugal remote roles have been advertised; current role eligibility and attendance must be explicit",
@@ -996,7 +892,7 @@
   },
   {
     "id": "aiven",
-    "rank": 58,
+    "rank": 54,
     "name": "Aiven",
     "careers_url": "https://aiven.io/careers",
     "location_note": "Portugal entity in Lisbon; remote arrangement required for Santo Tirso",
@@ -1012,7 +908,7 @@
   },
   {
     "id": "fujitsu-portugal-global-delivery-center",
-    "rank": 59,
+    "rank": 55,
     "name": "Fujitsu — Portugal Global Delivery Center",
     "careers_url": "https://global.fujitsu/pt-PT/careers/gdc",
     "location_note": "Braga office and remote work from across Portugal",
@@ -1027,7 +923,7 @@
   },
   {
     "id": "ict-strypes",
-    "rank": 60,
+    "rank": 56,
     "name": "ICT Strypes",
     "careers_url": "https://strypes.recruitee.com/",
     "location_note": "Porto hybrid; exact office frequency unverified",

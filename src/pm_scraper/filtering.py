@@ -48,7 +48,7 @@ class Screener:
         check("title", "pass" if family else "fail", family or "Not an allowed title family, or excluded seniority")
         company_norm = norm(job.company)
         excluded = [x for x in self.cfg["excluded_companies"] if re.search(r"\b" + re.escape(norm(x)) + r"\b", company_norm)]
-        check("employer", "fail" if excluded else "pass", ", ".join(excluded) if excluded else "Named employer in the 60-company watchlist")
+        check("employer", "fail" if excluded else "pass", ", ".join(excluded) if excluded else "Named employer in the configured watchlist")
         if not job.detail_ok or len(job.description) < 60:
             check("description", "unknown", "Full job description was not retrieved")
         else:

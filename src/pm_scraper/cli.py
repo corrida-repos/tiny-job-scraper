@@ -118,7 +118,7 @@ def run(args, started=None):
         finally:state.close()
 
 def main(argv=None):
-    p=argparse.ArgumentParser(description='Daily 60-employer PM careers scraper; public read-only retrieval')
+    p=argparse.ArgumentParser(description='Daily 56-employer PM careers scraper; public read-only retrieval')
     sub=p.add_subparsers(dest='command',required=True)
     r=sub.add_parser('run');r.add_argument('--companies',default=str(CONFIG/'companies.json'));r.add_argument('--criteria',default=str(CONFIG/'criteria.json'));r.add_argument('--state',default='data/state.sqlite3');r.add_argument('--output',default='output/latest');r.add_argument('--overrides',default=str(CONFIG/'verified-overrides.json'))
     r.add_argument('--only',help='Comma-separated company IDs or ranks');r.add_argument('--workers',type=int,default=6);r.add_argument('--delay',type=float,default=1.0);r.add_argument('--timeout',type=int,default=25);r.add_argument('--max-pages',type=int,default=None,help='Override source page limits (normally 60; Infineon 200)');r.add_argument('--max-details',type=int,default=250)

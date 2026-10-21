@@ -1,5 +1,7 @@
 # Secondary-source workaround
 
+Current watchlist: **Top 56**. COCUS, Float, JTA and Namecheap were removed at the user’s request. Retained employers preserve their relative order, now ranked 1–56; historical audit records remain unchanged.
+
 COCUS, Float, JTA and Namecheap now check the public We Work Remotely RSS feed
 when their primary source is incomplete. Employer name and official website must
 both match. Syndicated dates never establish original freshness, and coverage

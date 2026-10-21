@@ -17,7 +17,9 @@ class Screening(unittest.TestCase):
  def test_all_45_families_and_explicit_employers(self):
   self.assertEqual(len(CFG['role_families']),45)
   for title in CFG['role_families']:self.assertIsNotNone(self.s.family('Senior '+title))
-  for c in ['Bosch','Vestas','DACHSER','JTA']:self.assertEqual(self.assess(company=c).checks['employer']['status'],'pass')
+  for c in ['Bosch','Vestas','DACHSER']:self.assertEqual(self.assess(company=c).checks['employer']['status'],'pass')
+  for c in ['COCUS','Float','JTA — The Data Scientists','Namecheap']:
+   self.assertEqual(self.assess(company=c).checks['employer']['status'],'fail')
  def test_title_order_and_seniority(self):
   for title in ['Head of Project Management','Director, Product Manager','Programme Director','Delivery Lead','Manager of Products','Projects Manager','Technical Account Manager']:
    self.assertIsNone(self.s.family(title),title)

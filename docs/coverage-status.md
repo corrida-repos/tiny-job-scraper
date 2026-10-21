@@ -1,3 +1,15 @@
+# Current coverage — Top 56
+
+The active watchlist now contains 56 employers. COCUS, Float, JTA and Namecheap
+were removed at the user’s request, and the retained employers were renumbered
+1–56 without changing their relative order. Noesis remains included; the focused
+diagnostic workflow now targets only Noesis. The daily schedule and 48-hour rule
+are unchanged. Historical state and the earlier audits below are preserved.
+
+## Historical Top 60 investigations
+
+The following observations describe the former 60-employer list.
+
 # Coverage repairs — 21 October 2026
 
 Latest GitHub validation: **56/60 source scopes complete**, with **96 unit tests

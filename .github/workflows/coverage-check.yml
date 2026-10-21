@@ -5,13 +5,8 @@ on:
       source:
         description: Employer to check with disposable state (no email)
         type: choice
-        default: all-gaps
+        default: noesis
         options:
-          - all-gaps
-          - cocus
-          - float
-          - jta-the-data-scientists
-          - namecheap
           - noesis
 permissions:
   contents: read

@@ -1,8 +1,8 @@
 > **Recovery export:** Read [UNFINISHED.md](UNFINISHED.md) and [current automation rules](docs/current-automation-policy.md) before deployment. The CLI now implements the current screening and email-draft rules; durable production storage, Gmail delivery and scheduler migration remain external prerequisites. See [Codex handoff](docs/codex-handoff.md).
 
-# PM careers scraper — 60 employers
+# PM careers scraper — 56 employers
 
-A Python scraper for the exact 60 employers in `config/companies.json`, including Bosch, Vestas, DACHSER and JTA. It replaces broad daily web searches with repeatable retrieval from employer boards. The saved employer shortlist supplies context; the current job posting supplies screening evidence.
+A Python scraper for the exact 56 employers in `config/companies.json`, including Bosch, Vestas and DACHSER. It replaces broad daily web searches with repeatable retrieval from employer boards. The saved employer shortlist supplies context; the current job posting supplies screening evidence.
 
 ## Run
 
@@ -16,7 +16,7 @@ python3 -m venv .venv
 
 On Windows, use `.venv\Scripts\python.exe` in place of `.venv/bin/python`.
 
-Use `python run.py sources` to list all 60 IDs. For a focused check, use `python run.py run --only 20,23,35,1 --state data/state.sqlite3 --output output/focused` (Bosch, DACHSER, Vestas, JTA). Focused runs produce a focused report; they do not replace a full 60-source audit.
+Use `python run.py sources` to list all 56 IDs. For a focused check, use `python run.py run --only bosch,dachser,vestas --state data/state.sqlite3 --output output/focused` (Bosch, DACHSER, Vestas). Focused runs produce a focused report; they do not replace a full 56-source audit.
 
 Exit code **0** means all configured sources completed, **2** means reports were written but at least one source needs attention, and other nonzero exits indicate a runtime/configuration failure. A partial run still returns usable results from sources that worked. Treat exit 2 as an operational warning, never as an empty successful search.
 
@@ -45,7 +45,7 @@ The numeric priority score is a transparent rule-based convenience (remote/locat
 - Verified original publication within 48 hours of run start; future dates excluded and date-only evidence handled conservatively. Last-published, refreshed, modified and first-seen timestamps are not accepted as original publication.
 - No salary threshold or ranking effect; explicit gross annual EUR45k+ salary is an optional positive in the email draft.
 - Mandatory experience minimums above five years are excluded; ambiguous requirements remain in review.
-- Only the configured 60 employers; no inferred sector exclusion. Bosch and Vestas remain included.
+- Only the configured 56 employers; no inferred sector exclusion. Bosch and Vestas remain included.
 
 The parser uses explicit evidence and conservative pattern rules. It cannot understand every phrasing. Check the retained evidence before applying. To resolve a specific ambiguity, add an entry keyed by job ID to `config/verified-overrides.json` with `verified_at`, `evidence`, and supported `checks` set to `pass` or `fail`. Evidence expires after 90 days. Do not fabricate verification. See `docs/verified-override-example.json`.
 
@@ -71,13 +71,13 @@ For independent local deployment, `schedule/` contains systemd and Windows Task 
 
 ## Source-specific readers and limitations
 
-Adapters include Greenhouse, Ashby public/embedded boards, Lever US/EU, Recruitee, Teamtailor HTML, SmartRecruiters, Workday, SAP SuccessFactors HTML and unified search, Phenom, WordPress AJAX, Astro server islands, Namecheap Vue data, Bizneo, BambooHR, Workable, Pinpoint and employer-specific HTML patterns. All 60 entries retain the original careers link and a dated source mapping.
+Adapters include Greenhouse, Ashby public/embedded boards, Lever US/EU, Recruitee, Teamtailor HTML, SmartRecruiters, Workday, SAP SuccessFactors HTML and unified search, Phenom, WordPress AJAX, Astro server islands, Namecheap Vue data, Bizneo, BambooHR, Workable, Pinpoint and employer-specific HTML patterns. All 56 entries retain the original careers link and a dated source mapping.
 
 Pagination checks totals/end markers where supplied; repeated pages, page caps, failed detail extraction, schema changes and access errors are visible. Workday searches Portugal, Porto, Braga, Remote, EMEA, Europe and Worldwide; this is a defined search scope, not proof of exhaustive worldwide coverage. Bosch, SAP and Phenom searches use Portugal. Other global feeds are screened for Portugal eligibility after retrieval.
 
 Requests use an honest User-Agent, per-host pacing, bounded retries, size/time/page/detail limits and read-only public endpoints. Web crawling follows robots rules. A missing robots resource with a 4xx status follows RFC 9309; actual job endpoint 401/403 responses still stop access. SmartRecruiters uses its explicitly documented unauthenticated public Posting API rather than its authenticated APIs. No private/internal postings, job applications, challenges or login barriers are accessed.
 
-Some sources cannot currently provide complete machine-readable coverage; the original ZIP contained a dated `audit/source-health.json` snapshot, intentionally excluded from source control. JTA's page currently accepts spontaneous applications without an enumerated vacancy feed. This remains visible as limited coverage. Public pages and ATS schemas can change; a successful check today is not a promise of permanent coverage.
+Some sources cannot currently provide complete machine-readable coverage; the original ZIP contained a dated `audit/source-health.json` snapshot, intentionally excluded from source control. COCUS, Float, JTA and Namecheap have been removed from the active watchlist at the user's request because their inventories remained incomplete. Public pages and ATS schemas can change; a successful check today is not a promise of permanent coverage.
 
 ## Checks and maintenance
 
@@ -106,7 +106,7 @@ See [the prepared scheduled-run instructions](schedule/codex-task.md). The daily
 ChatGPT task has not been transferred to Codex. Production runs must restore the
 real state first and use `--require-existing-state`; onboarding databases are
 isolated checks and must never replace it. Network validation on 2026-10-21
-completed 55 of 60 configured source scopes; five coverage gaps remain visible.
+completed 55 of 60 configured source scopes; five coverage gaps were recorded in that historical run. The active watchlist now contains 56 employers.
 
 ## GitHub Actions runner
 
@@ -119,8 +119,8 @@ is paused. The first automatic scheduled execution has not yet been observed.
 
 ## Source coverage repairs
 
-Run **Actions → Focused coverage check → Run workflow** to check one remaining
-employer or `all-gaps` (COCUS, Float, JTA, Namecheap and Noesis). This manual
+Run **Actions → Focused coverage check → Run workflow** to check
+Noesis, whose primary board has shown intermittent access failures. This manual
 workflow uses a disposable database, read-only repository permissions and no
 production secrets. It sends no email and cannot update production state.
 The job summary and `coverage-audit` artifact contain source statuses, listing
@@ -131,7 +131,7 @@ Missing, inconsistent or failed audit output fails the job.
 Locally, use a new artifact directory for each check:
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m pm_scraper.coverage_check --source all-gaps --artifact-dir output/coverage-check-1
+PYTHONPATH=src .venv/bin/python -m pm_scraper.coverage_check --source noesis --artifact-dir output/coverage-check-1
 ```
 
 The diagnostic retains only `source-health.json` and `summary.md`; its database,
@@ -139,5 +139,5 @@ candidate details and email drafts are discarded. It always uses the 48-hour
 freshness rule. The daily workflow and schedule are independent and unchanged.
 
 See [coverage status](docs/coverage-status.md) for the public HTML/sitemap readers
-for Namecheap, Fujitsu and Infineon, COCUS's partial fallback, and remaining
-source restrictions. All scheduled runs continue to use the 48-hour window.
+and historical investigations. The active Top 56 excludes COCUS, Float, JTA and
+Namecheap; historical audits and job/delivery records remain preserved. All scheduled runs continue to use the 48-hour window.

@@ -28,13 +28,16 @@
     "Nordex",
     "Natixis",
     "Critical Manufacturing",
-    "Uphold"
+    "Uphold",
+    "COCUS",
+    "Float",
+    "JTA",
+    "Namecheap"
   ],
   "explicit_inclusions": [
     "Bosch",
     "Vestas",
-    "DACHSER",
-    "JTA"
+    "DACHSER"
   ],
   "role_families": [
     "Project Manager",
