@@ -88,3 +88,23 @@ The restored database is an import snapshot, not a live synchronized production
 database. Refresh it from the active task's latest durable state before cutover
 if that task has run again. A cloud filesystem snapshot alone does not establish
 ongoing durable synchronization or successful scheduled execution.
+
+## GitHub Actions replacement prepared
+
+The gated Actions workflow and encrypted-state/Gmail runner are implemented; see
+`schedule/github-actions.md`. The `runtime-state` branch holds an encrypted copy
+of the verified imported snapshot. The key and recipient are absent from tracked
+source files. All 49 tests passed locally and in GitHub's Checks workflow.
+
+An end-to-end local runner validation restored that encrypted snapshot, checked
+all 60 sources (55 complete, five coverage gaps), generated an encrypted report,
+and left the production branch and original database unchanged. Its temporary
+copy advanced from 156 jobs/3 runs to 165 jobs/4 runs; no email was sent.
+
+GitHub API connectivity now works. Integration authorization still rejects
+Actions secrets/variables endpoints, including the secret-encryption public key.
+Required repository secrets therefore remain to be entered securely through
+repository settings, or through an integration with those specific permissions.
+Remote Daily PM jobs validation, actual Gmail submission and scheduled cutover
+remain pending. Keep `DAILY_ENABLED` unset until manual validation and observed
+delivery succeed and the original ChatGPT schedule is paused.
