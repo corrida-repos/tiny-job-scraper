@@ -7,7 +7,7 @@ name = "pm-career-scraper"
 version = "1.0.0"
 description = "Daily, source-audited monitoring of 60 named employer careers pages"
 requires-python = ">=3.11"
-dependencies = ["lxml>=5,<7"]
+dependencies = ["lxml>=5,<7", "protego>=0.7,<1"]
 
 [project.scripts]
 pm-scraper = "pm_scraper.cli:main"

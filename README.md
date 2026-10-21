@@ -116,3 +116,9 @@ A repository-based replacement is implemented in
 “Disable workflow” to pause it. The encrypted `runtime-state` branch
 preserves job and delivery history. Gmail delivery was validated and the user confirmed the original ChatGPT task
 is paused. The first automatic scheduled execution has not yet been observed.
+
+## Source coverage repairs
+
+See [coverage status](docs/coverage-status.md) for the public HTML/sitemap readers
+for Namecheap, Fujitsu and Infineon, COCUS's partial fallback, and remaining
+source restrictions. All scheduled runs continue to use the 48-hour window.

@@ -153,6 +153,20 @@ def record_audit(folder, marker, draft, receipt=None):
                     receipt, datetime.now(timezone.utc).isoformat() if receipt else None))
 
 
+def announce_coverage(folder):
+    path=Path(folder)/'results.json'
+    if not path.exists():return
+    data=json.loads(path.read_text())
+    coverage=data.get('coverage')
+    if not coverage:return
+    def escaped(text):
+        return str(text).replace('%','%25').replace('\r','%0D').replace('\n','%0A')
+    summary=f"{coverage['complete']}/{coverage['sources']} source scopes complete; {coverage['attention']} need attention"
+    print('::notice title=Source coverage::'+escaped(summary))
+    gaps=[s['company']+': '+s['status'] for s in data.get('sources',[]) if not s['complete'] or s['status']!='ok']
+    if gaps:print('::notice title=Coverage gaps::'+escaped('; '.join(gaps)))
+
+
 def execute(checkout, source, output, send=False, freshness_days=2):
     key = key_bytes(os.environ['STATE_ENCRYPTION_KEY'])
     run_id = os.environ['GITHUB_RUN_ID']
@@ -219,6 +233,7 @@ def execute(checkout, source, output, send=False, freshness_days=2):
             old_marker = draft['run_marker']
             draft['run_marker'] = marker
             draft['body_markdown'] = draft['body_markdown'].replace(old_marker, marker)
+        announce_coverage(folder)
         attempt = {'status':'prepared','scraper_exit_code':code,'message_id':message_id,
                    'freshness_days':freshness_days, 'source_commit':git(source,'rev-parse','HEAD')}
         meta['attempts'][run_id] = attempt

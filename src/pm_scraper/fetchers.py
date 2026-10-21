@@ -7,8 +7,8 @@ import html as htmllib
 import json
 import re
 import time
-from urllib.parse import urljoin, urlsplit, urlencode, parse_qsl, urlunsplit
-from lxml import html
+from urllib.parse import urljoin, urlsplit, urlencode, parse_qsl, urlunsplit, unquote
+from lxml import html, etree
 from .models import Job, FetchResult, canonical_url, parse_date
 from .htmlutil import plain, document, jsonld_nodes, from_schema, enrich_job, norm
 from .http import FetchError
@@ -374,23 +374,132 @@ class Fetcher:
         self.partial('SAP unified pagination limit reached')
 
     def namecheap(self):
-        base=self.s['base'];url=base+'/api/careers/openings';seen=set()
+        # The public HTML page includes the exact paginated data consumed by
+        # its Vue component. Never follow its internal backend pagination URLs.
+        base=self.s['base'];url=base+'/careers/openings/';seen=set();expected=None
         for page in range(1,self.max_pages+1):
-            data=self.read(with_query(url,page=page),as_json=True)
-            d=data.get('data')
-            if data.get('status')!='OK' or not isinstance(d,dict):raise FetchError('Namecheap schema changed','schema_changed')
+            body=self.read(with_query(url,page=page))
+            match=re.search(r'window\.openingsData\s*=\s*',body)
+            if not match:raise FetchError('Namecheap openings data missing','schema_changed')
+            try:data,_=json.JSONDecoder().raw_decode(body[match.end():])
+            except ValueError as e:raise FetchError('Invalid Namecheap openings data','schema_changed') from e
+            d=data.get('jobs') if isinstance(data,dict) else None
+            if not isinstance(d,dict):raise FetchError('Namecheap jobs envelope missing','schema_changed')
             jobs=require_list(d,'data')
+            total=d.get('total');last=d.get('last_page');current=d.get('current_page')
+            if not all(isinstance(x,int) and not isinstance(x,bool) for x in (total,last,current)) or total<0 or last<1 or current!=page:
+                raise FetchError('Namecheap pagination metadata inconsistent','pagination_error')
+            if expected is not None and total!=expected:self.partial('Namecheap total changed during pagination')
+            expected=total;new=0
             for x in jobs:
-                sid=x['jobid']
+                sid=str(x['jobid'])
                 if sid in seen:continue
-                seen.add(sid);self.r.discovered+=1
+                seen.add(sid);new+=1;self.r.discovered+=1
                 if not self.wanted(x['title']):continue
                 j=self.new(x['title'],base+'/careers/details/'+sid+'/',sid,location='; '.join(filter(None,[x.get('country'),x.get('location')])))
                 self.detail(j);self.r.jobs.append(j)
-            if not d.get('next_page_url'):
-                if d.get('total',len(seen))>len(seen):self.partial('Namecheap total exceeds received jobs')
+            if page>=last:
+                if len(seen)!=expected:self.partial(f'Namecheap returned {len(seen)} of {expected} postings')
                 return
+            if not new:raise FetchError('Namecheap pagination repeated or stopped early','pagination_error')
         self.partial('Namecheap pagination limit reached')
+
+    def cocus(self):
+        try:
+            self.html()
+            return
+        except FetchError as error:
+            if error.kind not in {'blocked','network_error','robots_denied','robots_unavailable'}:raise
+            reason=str(error)
+        self.partial('ATS inventory unavailable; employer-page subset only: '+reason)
+        body=self.read(self.s['fallback_url']);d=document(body);seen=set()
+        for a in d.xpath('//a[@href]'):
+            url=canonical_url(urljoin(self.s['fallback_url'],a.get('href')))
+            if urlsplit(url).hostname!='talent.sage.hr' or not re.search(r'/jobs/[a-f0-9-]{36}$',url):continue
+            title=' '.join(a.text_content().split())
+            if not title or 'open application' in norm(title) or url in seen:continue
+            seen.add(url);self.r.discovered+=1
+            if self.wanted(title):self.r.jobs.append(self.detail(self.new(title,url)))
+        if not seen:self.r.messages.append('Employer page no longer contains recognizable vacancy cards')
+
+    def sitemap(self):
+        # An explicitly declared sitemap scope, not a claim that unpublished
+        # or unlisted postings have been discovered. lastmod is never a datePosted.
+        start=self.s['sitemap_url'];host=urlsplit(start).hostname
+        queue=[start];visited=set();urls=set()
+        parser=etree.XMLParser(resolve_entities=False,no_network=True)
+        while queue:
+            url=queue.pop(0)
+            if url in visited:continue
+            if len(visited)>=self.max_pages:
+                self.partial('Sitemap page limit reached');break
+            if urlsplit(url).hostname!=host:raise FetchError('Cross-host sitemap reference refused','schema_changed')
+            visited.add(url)
+            try:root=etree.fromstring(self.read(url).encode(),parser)
+            except etree.XMLSyntaxError as e:raise FetchError('Malformed sitemap XML','schema_changed') from e
+            kind=etree.QName(root).localname
+            entries=[u.strip() for u in root.xpath('./*[local-name()="sitemap" or local-name()="url"]/*[local-name()="loc"]/text()') if u.strip()]
+            if kind=='sitemapindex':queue.extend(u for u in entries if u not in visited)
+            elif kind=='urlset':
+                for u in entries:
+                    if urlsplit(u).hostname==host and re.search(self.s['job_pattern'],urlsplit(u).path):urls.add(canonical_url(u))
+            else:raise FetchError('Unrecognized sitemap root','schema_changed')
+        if not urls:raise FetchError('Sitemap contains no recognizable job URLs; coverage unverified','schema_changed')
+        self.r.discovered=len(urls)
+        self.r.messages.append('Coverage scope: all sitemap-listed job URLs; allowed titles selected from URL slugs; sitemap lastmod is not original publication')
+        for url in sorted(urls):
+            slug=unquote(urlsplit(url).path.split('/job/',1)[-1].split('/')[0]).replace('-',' ')
+            if not self.wanted(slug):continue
+            if self.details>=self.max_details:
+                self.partial('Sitemap candidate detail limit reached');break
+            self.details+=1
+            j=self.new(slug,url)
+            try:
+                body=self.read(url);d=document(body)
+                if self.s.get('detail_kind')=='jobposting':
+                    schemas=jsonld_nodes(body)
+                    identity=re.search(r'/job/(\d+)',urlsplit(url).path)
+                    valid=[]
+                    for node in schemas:
+                        target=urljoin(url,node.get('url') or url)
+                        other=re.search(r'/job/(\d+)',urlsplit(target).path)
+                        if urlsplit(target).hostname==host and (urlsplit(target).path==urlsplit(url).path or identity and other and identity.group(1)==other.group(1)):
+                            valid.append(node)
+                    if len(valid)!=1:
+                        self.partial('Sitemap detail lacks an unambiguous matching JobPosting')
+                        j.metadata['detail_error']='Matching JobPosting missing'
+                    else:
+                        j=from_schema(self.c,valid[0],url)
+                        if identity:j.source_id=identity.group(1)
+                        j.detail_ok=len(j.description)>60
+                        if not j.detail_ok:self.partial('Some sitemap descriptions are incomplete')
+                    if self.wanted(j.title):self.r.jobs.append(j)
+                    continue
+                title_nodes=d.xpath('//*[@itemprop="title"]')
+                desc_nodes=d.xpath('//*[@itemprop="description"]')
+                if not title_nodes or not desc_nodes:
+                    self.partial('Some sitemap job pages lack expected job detail fields')
+                    j.metadata['detail_error']='Job title or description missing'
+                else:
+                    j.title=' '.join(title_nodes[0].text_content().split())
+                    j.description='\n'.join(plain(html.tostring(n,encoding='unicode')) for n in desc_nodes)
+                    j.detail_ok=len(j.description)>60
+                    if not j.detail_ok:self.partial('Some sitemap descriptions are incomplete')
+                    # Field labels vary with the site's locale. Do not infer
+                    # posting dates from publication-start labels or sitemap dates.
+                    for label in d.xpath('//*[contains(@class,"joblayouttoken-label")]'):
+                        text=norm(label.text_content()).strip(' :\xa0')
+                        if text in {'location','work location','lieu de travail','local de trabalho','localizacao'}:
+                            values=label.getparent().xpath('.//span[not(contains(@class,"joblayouttoken-label"))]')
+                            if values:j.location=' '.join(values[-1].text_content().split())
+                    canonical=d.xpath('//link[@rel="canonical"]/@href')
+                    if canonical and urlsplit(canonical[0]).hostname==host and re.search(self.s['job_pattern'],urlsplit(canonical[0]).path):
+                        j.url=canonical_url(canonical[0]);j.source_id=urlsplit(j.url).path.rstrip('/').rsplit('/',1)[-1]
+                    enrich_job(j,body,url)
+            except FetchError as error:
+                self.partial('Some sitemap job details unavailable')
+                j.metadata['detail_error']=str(error)
+            if self.wanted(j.title):self.r.jobs.append(j)
 
     def eightfold(self):
         base=self.s['base'];seen=set()

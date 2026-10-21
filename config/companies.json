@@ -300,13 +300,14 @@
     "location_note": "Remote/flexible office options; Porto/Gaia",
     "wlb_note": "Published remote-office guarantee and flexible schedules.",
     "source": {
-      "adapter": "html",
+      "adapter": "cocus",
       "listing_url": "https://talent.sage.hr/7dff8044-5957-4793-b718-1ad5065bbd40/vacancies",
       "job_pattern": "/jobs/[a-f0-9-]{36}",
       "page_pattern": "[?&]page=\\d+",
       "kind": "sage",
       "mapped_at": "2026-10-19",
-      "discovery_url": "https://www.cocus.com/en/about-us/it-career/"
+      "discovery_url": "https://www.cocus.com/en/about-us/it-career/",
+      "fallback_url": "https://www.cocus.com/en/about-us/it-career/"
     }
   },
   {
@@ -449,11 +450,11 @@
     "location_note": "Maia; hybrid/remote terms depend on role",
     "wlb_note": "Portugal benefits include flexible working and remote work.",
     "source": {
-      "adapter": "eightfold",
-      "base": "https://jobs.infineon.com",
-      "domain": "infineon.com",
-      "location": "Portugal",
-      "mapped_at": "2026-10-19",
+      "adapter": "sitemap",
+      "sitemap_url": "https://jobs.infineon.com/careers/sitemap.xml?domain=infineon.com",
+      "job_pattern": "/careers/job/",
+      "detail_kind": "jobposting",
+      "mapped_at": "2026-10-21",
       "discovery_url": "https://www.infineon.com/careers/our-locations/portugal"
     }
   },
@@ -968,15 +969,11 @@
     "location_note": "Braga office and remote work from across Portugal",
     "wlb_note": "Published flexible-working approach; local GDC includes PMO, programme and project-management services.",
     "source": {
-      "adapter": "sap_unified",
-      "listing_url": "https://www.jobs.global.fujitsu.com/search/?q=&locationsearch=Portugal",
-      "job_pattern": "/job/[^?#]+",
-      "page_pattern": "[?&]startrow=\\d+",
-      "kind": "successfactors",
-      "empty_pattern": "no jobs|no results|0 jobs",
-      "mapped_at": "2026-10-19",
-      "discovery_url": "https://global.fujitsu/pt-PT/careers/gdc",
-      "base": "https://www.jobs.global.fujitsu.com"
+      "adapter": "sitemap",
+      "sitemap_url": "https://www.jobs.global.fujitsu.com/sitemap.xml",
+      "job_pattern": "/job/",
+      "mapped_at": "2026-10-21",
+      "discovery_url": "https://global.fujitsu/pt-PT/careers/gdc"
     }
   },
   {

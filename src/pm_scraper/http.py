@@ -6,7 +6,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
-import urllib.robotparser
+from protego import Protego
 from urllib.parse import urlsplit, urljoin, urlencode
 
 USER_AGENT = "PMCareerMonitor/1.0 (personal vacancy monitor; public employer job listings)"
@@ -77,19 +77,19 @@ class HttpClient:
         root = p.scheme + "://" + p.netloc
         with self._lock(p.netloc):
             if root not in self._robots:
-                rp = urllib.robotparser.RobotFileParser(root + "/robots.txt")
+                rp = None
                 try:
                     body, _, _ = self._request(root + "/robots.txt")
                     # RFC 9309: ignore unparseable lines (some sites return their SPA for
                     # a missing robots route), but never mistake a challenge for permission.
                     if any(x in body[:30000].lower() for x in ["cf-chl-", "verify you are human", "captcha-delivery.com", "just a moment..."]):
                         raise FetchError("robots.txt returned a human-verification challenge", "robots_unavailable")
-                    rp.parse(body.splitlines())
+                    rp = Protego.parse(body)
                 except FetchError as e:
                     if e.kind == "not_found" or re.match(r"HTTP 4(?:0[0-9]|[1-2][0-8]|[3-9][0-9]):", str(e)):
                         # RFC 9309 2.3.1.3: a 4xx robots resource is unavailable.
                         # A 401/403 on the actual job endpoint still stops retrieval.
-                        rp.parse([])
+                        rp = Protego.parse("")
                     else:
                         self._robots[root] = e
                         raise
@@ -97,7 +97,7 @@ class HttpClient:
             rp = self._robots[root]
             if isinstance(rp, FetchError):
                 raise rp
-            if not rp.can_fetch(USER_AGENT, url):
+            if not rp.can_fetch(url, USER_AGENT):
                 raise FetchError("robots.txt disallows this URL: " + url, "robots_denied")
 
     def get(self, url, *, payload=None, headers=None, public_api=None, form=None):
