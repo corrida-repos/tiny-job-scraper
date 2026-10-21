@@ -1,4 +1,7 @@
 import base64
+import contextlib
+import io
+import imaplib
 import json
 import os
 from pathlib import Path
@@ -7,12 +10,13 @@ import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
-from pm_scraper.actions_runner import key_bytes, seal, unseal, persist, execute, Gmail
+from pm_scraper.actions_runner import key_bytes, seal, unseal, persist, execute, Gmail, safe_error
 from pm_scraper.state import State
 
 
 class ActionsRunnerTests(unittest.TestCase):
  def setUp(self):
+  self.enterContext(contextlib.redirect_stdout(io.StringIO()))
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
   self.root=Path(self.temp.name);self.data=self.root/'data';self.data.mkdir()
   State(self.data/'state.sqlite3').close()
@@ -83,3 +87,13 @@ raise SystemExit(2)
   with patch.dict(os.environ,environment),patch.object(Gmail,'find',return_value=['42']),patch('pm_scraper.actions_runner.persist'),patch.object(Gmail,'send') as send,patch('pm_scraper.actions_runner.subprocess.run') as retrieve:
    self.assertEqual(execute(checkout,source,self.root/'output',True),0)
    send.assert_not_called();retrieve.assert_not_called()
+
+ def test_safe_authentication_diagnostic_does_not_disclose_server_details(self):
+  diagnostic=safe_error(imaplib.IMAP4.error('[AUTHENTICATIONFAILED] Invalid credentials for private@example.org sensitive-value'))
+  self.assertIn('rejected IMAP authentication',diagnostic)
+  self.assertNotIn('private@example.org',diagnostic)
+  self.assertNotIn('sensitive-value',diagnostic)
+ def test_gmail_app_password_accepts_google_display_spacing(self):
+  gmail=Gmail(' sender@example.org\n','abcd efgh ijkl mnop\n')
+  self.assertEqual(gmail.address,'sender@example.org')
+  self.assertEqual(gmail.password,'abcdefghijklmnop')

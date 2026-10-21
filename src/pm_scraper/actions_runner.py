@@ -89,7 +89,7 @@ def persist(folder, checkout, key, label):
 
 class Gmail:
     def __init__(self, address, password):
-        self.address, self.password = address, password
+        self.address, self.password = address.strip(), ''.join(password.split())
 
     def find(self, message_id):
         with imaplib.IMAP4_SSL('imap.gmail.com', ssl_context=ssl.create_default_context()) as mail:
@@ -166,6 +166,10 @@ def execute(checkout, source, output, send=False):
         unseal((Path(checkout)/'state.enc').read_bytes(), folder, key)
         meta = json.loads((folder/'meta.json').read_text())
         attempt = meta.setdefault('attempts', {}).get(run_id, {})
+        if send:
+            missing = [name for name in ('GMAIL_ADDRESS','GMAIL_APP_PASSWORD') if not os.environ.get(name,'').strip()]
+            if missing:
+                raise ValueError('Missing Actions secret: '+', '.join(missing))
         gmail = Gmail(os.environ['GMAIL_ADDRESS'], os.environ['GMAIL_APP_PASSWORD']) if send else None
         if send and attempt.get('status') == 'sent':
             print('This GitHub run already has a confirmed receipt; no retrieval or send repeated.')
@@ -256,6 +260,25 @@ def execute(checkout, source, output, send=False):
         return 0 if code in (0,2) else 1
 
 
+def safe_error(error):
+    text = str(error).lower()
+    if isinstance(error, imaplib.IMAP4.error):
+        if any(word in text for word in ('authenticationfailed', 'invalid credentials', 'authenticate failed', 'login failed')):
+            return 'Gmail rejected IMAP authentication; verify GMAIL_ADDRESS and a Google app password for that same account.'
+        if 'application-specific password' in text:
+            return 'Gmail requires a Google app password; a normal account password cannot be used.'
+        if 'disabled' in text or 'not enabled' in text:
+            return 'Gmail IMAP access is disabled by account or organization settings.'
+        if 'empty' in text:
+            return 'Gmail received an empty username or password; check the two Actions secrets.'
+        return 'Gmail IMAP request failed; check account IMAP policy and app-password access.'
+    if isinstance(error, smtplib.SMTPAuthenticationError):
+        return 'Gmail rejected SMTP authentication; check sender and Google app password.'
+    if isinstance(error, ValueError) and str(error).startswith('Missing Actions secret:'):
+        return str(error)
+    return 'Runner failed ('+type(error).__name__+'); check encrypted state and reconcile Sent before retrying.'
+
+
 def main():
     p=argparse.ArgumentParser();p.add_argument('--state-checkout',required=True);p.add_argument('--source',default='.');p.add_argument('--output',default='output/actions');p.add_argument('--send',action='store_true')
     args=p.parse_args()
@@ -263,7 +286,7 @@ def main():
         return execute(Path(args.state_checkout).resolve(),Path(args.source).resolve(),Path(args.output).resolve(),args.send)
     except Exception as error:
         # SMTP/IMAP exceptions can contain account details; never dump them.
-        print('::error::Runner failed ('+type(error).__name__+'); check encrypted state and reconcile Sent before retrying.',file=sys.stderr)
+        print('::error::'+safe_error(error),file=sys.stderr)
         return 1
 
 
