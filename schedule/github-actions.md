@@ -1,8 +1,9 @@
 # GitHub Actions daily runner
 
-The workflow is `.github/workflows/daily-jobs.yml`. It is manually runnable, but
-scheduled delivery remains off unless the repository variable `DAILY_ENABLED`
-is exactly `true`. Keep it off while the original ChatGPT schedule is active.
+The workflow is `.github/workflows/daily-jobs.yml`. Daily delivery was enabled
+after the recipient confirmed the test email and paused the original ChatGPT
+task. No repository variable is required. To pause it, open Actions → Daily PM
+jobs → Disable workflow; re-enable it there when ready.
 GitHub schedules may start late; this is an 08:00 Lisbon target, not an exact-time
 service guarantee. Two UTC triggers are filtered against the date's Lisbon UTC
 offset so only the appropriate trigger runs, including daylight-saving changes.
@@ -54,9 +55,10 @@ commits; no force-push permission is needed.
    is a real report email, not a dummy test message. It persists state and records
    SMTP acceptance. Confirm arrival in your mailbox. Expected source gaps remain
    visible in the report.
-3. Refresh from the original task's latest durable state if needed; pause the old
-   ChatGPT schedule through its task controls. Then set repository Actions
-   variable `DAILY_ENABLED=true`. Do not enable both daily schedules.
+3. Pause the old ChatGPT schedule through its task controls, then enable this
+   workflow. This cutover is complete: the old task was paused and the workflow
+   schedule enabled. Do not restore the old imported database over the newer
+   Actions state, which already contains the validated run and receipt.
 4. Observe the first scheduled run and its email before declaring migration done.
 
 Tests and setup failures before the runner starts are visible as failed GitHub
@@ -110,8 +112,8 @@ For GitHub CLI API calls, allow `api.github.com` in this cloud environment's
 Internet settings, save/apply the change and publish as required by the product.
 A configured token being present does not establish API authorization. If an API
 request then returns an authorization error, grant the connected GitHub app
-repository-scoped Actions read/write, Actions secrets write, Actions variables
-write and Metadata read permissions. Updating workflow files may additionally
+repository-scoped Actions read/write, Actions secrets write and Metadata read permissions. Repository-variable
+management is optional; the active schedule no longer depends on a variable. Updating workflow files may additionally
 require Workflows write permission (or the `workflow` scope for an existing
 classic token). Existing Git contents access already supports ordinary pushes.
 Do not paste tokens or passwords into chat. The cloud environment's network

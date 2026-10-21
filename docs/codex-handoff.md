@@ -123,3 +123,16 @@ schedule remains gated by `DAILY_ENABLED`; this session has not changed the
 existing ChatGPT schedule. Confirm receipt and pause the original schedule
 before enabling the replacement. Do not refresh the new production database
 from the older imported snapshot, which would discard this run and receipt.
+
+## Scheduled cutover enabled — 2026-10-21
+
+The recipient confirmed inbox receipt and stated the original ChatGPT task was
+paused. Repository-variable writes remain unavailable to the integration, so the
+workflow's `DAILY_ENABLED` job condition was removed through an authorized Git
+change. The active workflow now handles its scheduled events directly, with the
+existing Lisbon daylight-saving gate and concurrency protection. No variable is
+needed. Pause future execution with GitHub Actions “Disable workflow”.
+
+The next scheduled target is 2026-10-22 at 08:00 Europe/Lisbon (07:00 UTC). The
+first automatic execution has not yet been observed. Production state remains
+the encrypted runtime-state branch, including the successful manual run receipt.

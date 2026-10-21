@@ -3,12 +3,14 @@
 The repository now includes a manually runnable Actions replacement with encrypted
 state checkpoints, Gmail SMTP/IMAP reconciliation and tests. See
 `schedule/github-actions.md`. The encrypted bootstrap branch is published.
-Scheduled delivery remains gated by `DAILY_ENABLED`. Repository secrets and the
+Scheduled delivery is now enabled after user-confirmed inbox receipt and pause
+of the original ChatGPT task. Repository secrets and the
 manual Actions delivery path were validated on 2026-10-21: Gmail accepted the
-report and the encrypted state/receipt were persisted. Recipient inbox arrival
-and the scheduled cutover are still pending confirmation.
-The original ChatGPT schedule remains unchanged. Local state is an imported
-snapshot, not a live Library synchronization.
+report and the encrypted state/receipt were persisted. Recipient inbox arrival and the scheduled cutover were confirmed; the first
+automatic scheduled run remains to be observed.
+The original ChatGPT schedule was paused by the user. Actions uses its newer
+encrypted state branch; the local imported snapshot is historical and is not a
+live Library synchronization.
 
 # Current implementation update — 21 October 2026
 
