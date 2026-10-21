@@ -44,10 +44,10 @@ def atomic(path, content):
 
 def md(value):return str(value or '').replace('|','\\|').replace('\n',' ')
 
-def export(out,results,pairs,delivery,selected,started,finished,requests):
+def export(out,results,pairs,delivery,selected,started,finished,requests,freshness_hours=48):
     health=[r.summary() for r in sorted(results,key=lambda x:x.company)]
     counts=Counter(a.status for j,a in pairs)
-    payload={'started_at':started,'finished_at':finished,'http_requests':requests,'coverage':{'sources':len(results),'complete':sum(r.complete and r.status=='ok' for r in results),'attention':sum(not r.complete or r.status!='ok' for r in results)},'counts':dict(counts),'sources':health,
+    payload={'freshness_hours':freshness_hours,'started_at':started,'finished_at':finished,'http_requests':requests,'coverage':{'sources':len(results),'complete':sum(r.complete and r.status=='ok' for r in results),'attention':sum(not r.complete or r.status!='ok' for r in results)},'counts':dict(counts),'sources':health,
              'jobs':[{'job':j.to_dict(),'assessment':asdict(a)} for j,a in pairs]}
     atomic(out/'results.json',json.dumps(payload,ensure_ascii=False,indent=2)+'\n')
     atomic(out/'source-health.json',json.dumps(health,ensure_ascii=False,indent=2)+'\n')
@@ -85,7 +85,10 @@ def run(args, started=None):
     started = started or utcnow().isoformat()
     if args.require_existing_state and not Path(args.state).is_file():
         raise FileNotFoundError('Required production state is missing; refusing to create an empty database')
-    companies=json.loads(Path(args.companies).read_text());criteria=json.loads(Path(args.criteria).read_text());screener=Screener(criteria)
+    companies=json.loads(Path(args.companies).read_text());criteria=json.loads(Path(args.criteria).read_text())
+    if args.max_post_age_days is not None:
+        criteria['max_post_age_days'] = args.max_post_age_days
+    screener=Screener(criteria)
     if args.only:
         selected=set(args.only.split(','));companies=[c for c in companies if c['id'] in selected or str(c['rank']) in selected]
         if not companies:raise ValueError('--only did not match an employer ID/rank')
@@ -108,7 +111,7 @@ def run(args, started=None):
                     pairs+=local;state.record(r,local,utcnow().isoformat())
                     print(json.dumps({'company':r.company,'status':r.status,'listed':r.discovered,'candidates':len(r.jobs),'messages':r.messages},ensure_ascii=False),flush=True)
             finished=utcnow().isoformat();delivery,selected=state.eligible_delivery(pairs,finished)
-            payload=export(out,results,pairs,delivery,selected,started,finished,http.requests)
+            payload=export(out,results,pairs,delivery,selected,started,finished,http.requests,criteria["max_post_age_days"]*24)
             state.record_run(uuid.uuid4().hex,started,finished,payload['sources'])
             print(json.dumps({'output':str(out.resolve()),'coverage':payload['coverage'],'counts':payload['counts'],'delivery_id':delivery,'new_eligible':len(selected)},ensure_ascii=False))
             return 2 if payload['coverage']['attention'] else 0
@@ -119,6 +122,7 @@ def main(argv=None):
     sub=p.add_subparsers(dest='command',required=True)
     r=sub.add_parser('run');r.add_argument('--companies',default=str(CONFIG/'companies.json'));r.add_argument('--criteria',default=str(CONFIG/'criteria.json'));r.add_argument('--state',default='data/state.sqlite3');r.add_argument('--output',default='output/latest');r.add_argument('--overrides',default=str(CONFIG/'verified-overrides.json'))
     r.add_argument('--only',help='Comma-separated company IDs or ranks');r.add_argument('--workers',type=int,default=6);r.add_argument('--delay',type=float,default=1.0);r.add_argument('--timeout',type=int,default=25);r.add_argument('--max-pages',type=int,default=60);r.add_argument('--max-details',type=int,default=250)
+    r.add_argument('--max-post-age-days',type=int,choices=[2,7],default=None,help='One-run freshness override; does not modify saved criteria')
     r.add_argument('--require-existing-state',action='store_true',help='Refuse to create a new state database; use for production migration')
     a=sub.add_parser('ack',help='Mark a digest reported only after confirmed successful delivery');a.add_argument('delivery_id');a.add_argument('--receipt',required=True);a.add_argument('--state',default='data/state.sqlite3')
     pending=sub.add_parser('pending',help='List unacknowledged digest attempts for send reconciliation');pending.add_argument('--state',default='data/state.sqlite3')
@@ -132,7 +136,7 @@ def main(argv=None):
         except Exception as error:
             # A failed attempt also needs a fresh artifact, never yesterday's
             # email or an empty-success report. Preserve the failure exit code.
-            payload = {'started_at': started, 'finished_at': utcnow().isoformat(),
+            payload = {'freshness_hours': (args.max_post_age_days or 2)*24, 'started_at': started, 'finished_at': utcnow().isoformat(),
                        'coverage': {'sources': 0, 'complete': 0, 'attention': 1},
                        'counts': {}, 'jobs': [], 'sources': [
                            {'company': 'Run failure', 'status': type(error).__name__,

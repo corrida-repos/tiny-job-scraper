@@ -51,7 +51,7 @@ class ActionsRunnerTests(unittest.TestCase):
 from pathlib import Path
 out=Path(sys.argv[sys.argv.index('--output')+1]);out.mkdir()
 (out/'email.json').write_text(json.dumps({'subject':"Tiny's Daily Job Report",'run_marker':'fixture','body_markdown':'No matches.\\n- Saving: not saved\\n- Run marker: fixture','delivery_status':'not_sent'}))
-(out/'results.json').write_text('{"fixture":true}')
+(out/'results.json').write_text(json.dumps({'fixture':True,'arguments':sys.argv}))
 (out/'report.md').write_text('Current audit')
 raise SystemExit(2)
 ''')
@@ -97,3 +97,15 @@ raise SystemExit(2)
   gmail=Gmail(' sender@example.org\n','abcd efgh ijkl mnop\n')
   self.assertEqual(gmail.address,'sender@example.org')
   self.assertEqual(gmail.password,'abcdefghijklmnop')
+
+ def test_seven_day_runner_passes_override_without_changing_default(self):
+  checkout,source,encrypted=self.run_fixture()
+  environment={'STATE_ENCRYPTION_KEY':base64.b64encode(self.key).decode(),'GITHUB_RUN_ID':'123'}
+  with patch.dict(os.environ,environment),patch('pm_scraper.actions_runner.git',return_value='abc'):
+   self.assertEqual(execute(checkout,source,self.root/'output',False,7),0)
+  restored=self.root/'validation';unseal((self.root/'output/validation.enc').read_bytes(),restored,self.key)
+  args=json.loads((restored/'results.json').read_text())['arguments']
+  self.assertEqual(args[args.index('--max-post-age-days')+1],'7')
+  self.assertEqual(json.loads((restored/'meta.json').read_text())['attempts']['123']['freshness_days'],7)
+  self.assertEqual(execute.__defaults__,(False,2))
+  self.assertEqual((checkout/'state.enc').read_bytes(),encrypted)

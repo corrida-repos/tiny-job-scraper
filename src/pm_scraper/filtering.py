@@ -180,9 +180,9 @@ class Screener:
             if age < timedelta(0):
                 check("freshness", "unknown", "Posting date is in the future: " + raw)
             elif age > window:
-                check("freshness", "fail", "Original posting is older than 48 hours")
+                check("freshness", "fail", f"Original posting is older than {self.cfg['max_post_age_days']*24} hours")
             elif date_only and posted + timedelta(days=1) > now:
-                check("freshness", "unknown", "Date-only original publication does not establish the full 48-hour interval")
+                check("freshness", "unknown", "Date-only original publication does not establish the full freshness interval")
             else:
                 check("freshness", "pass", f"Original posting date {job.posted_at}; source: {job.date_evidence}")
         else:

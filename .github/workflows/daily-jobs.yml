@@ -6,6 +6,13 @@ on:
         description: 'Send a real email and persist state (leave false for validation)'
         type: boolean
         default: false
+      freshness_days:
+        description: 'Freshness window for this manual run only; schedules always use 2 days'
+        type: choice
+        options:
+          - '2'
+          - '7'
+        default: '2'
   schedule:
     # GitHub cron uses UTC. Only the trigger at 08:00 Lisbon passes the gate.
     - cron: '0 7 * * *'
@@ -64,13 +71,14 @@ jobs:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           SEND_EMAIL: ${{ github.event_name == 'schedule' || inputs.send_email }}
+          FRESHNESS_DAYS: ${{ github.event_name == 'workflow_dispatch' && inputs.freshness_days || '2' }}
           PYTHONPATH: src
         run: |
           git -C ../encrypted-state config user.name github-actions[bot]
           git -C ../encrypted-state config user.email 41898282+github-actions[bot]@users.noreply.github.com
           args=()
           if [ "$SEND_EMAIL" = true ]; then args+=(--send); fi
-          python -m pm_scraper.actions_runner --state-checkout ../encrypted-state "${args[@]}"
+          python -m pm_scraper.actions_runner --state-checkout ../encrypted-state --freshness-days "$FRESHNESS_DAYS" "${args[@]}"
       - uses: actions/upload-artifact@v4
         if: always() && steps.gate.outputs.run == 'true'
         with:

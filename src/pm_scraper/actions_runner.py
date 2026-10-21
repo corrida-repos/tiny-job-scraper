@@ -137,9 +137,9 @@ def set_saving(draft, note):
     draft['body_markdown'] = re.sub(r'^- Saving:.*$', '- Saving: '+note, draft['body_markdown'], flags=re.M)
 
 
-def failure_draft(started, kind):
+def failure_draft(started, kind, freshness_days=2):
     from .daily import prepare_email
-    payload = {'started_at':started, 'coverage':{'sources':0,'complete':0,'attention':1},
+    payload = {'freshness_hours':freshness_days*24, 'started_at':started, 'coverage':{'sources':0,'complete':0,'attention':1},
                'sources':[{'company':'Runner','status':kind,'complete':False,'messages':[]}], 'jobs':[], 'counts':{}}
     return prepare_email([], payload)
 
@@ -153,7 +153,7 @@ def record_audit(folder, marker, draft, receipt=None):
                     receipt, datetime.now(timezone.utc).isoformat() if receipt else None))
 
 
-def execute(checkout, source, output, send=False):
+def execute(checkout, source, output, send=False, freshness_days=2):
     key = key_bytes(os.environ['STATE_ENCRYPTION_KEY'])
     run_id = os.environ['GITHUB_RUN_ID']
     if not re.fullmatch(r'\d+', run_id):
@@ -188,6 +188,7 @@ def execute(checkout, source, output, send=False):
         if send and attempt.get('status') == 'sending':
             raise RuntimeError('Previous send outcome is uncertain; Sent has no matching message yet. Manual reconciliation required; refusing automatic resend.')
         if send and attempt.get('status') == 'prepared':
+            freshness_days = attempt.get('freshness_days',freshness_days)
             draft = json.loads((folder/'email.json').read_text())
             if draft['run_marker'] != marker:
                 raise RuntimeError('Prepared draft does not belong to this run; refusing mismatched delivery')
@@ -199,7 +200,7 @@ def execute(checkout, source, output, send=False):
             # empty reports directory can become this attempt's outgoing email.
             try:
                 result = subprocess.run([sys.executable, str(Path(source)/'run.py'), 'run', '--require-existing-state',
-                    '--state',str(folder/'state.sqlite3'),'--output',str(reports)], cwd=source, timeout=2220)
+                    '--state',str(folder/'state.sqlite3'),'--output',str(reports),'--max-post-age-days',str(freshness_days)], cwd=source, timeout=2220)
                 code = result.returncode
             except subprocess.TimeoutExpired:
                 code = 1
@@ -212,14 +213,14 @@ def execute(checkout, source, output, send=False):
                 if not (reports/'report.md').exists():
                     (folder/'audit.md').write_text(draft['body_markdown'])
             else:
-                draft = failure_draft(started, 'Runtime failure or timeout')
+                draft = failure_draft(started, 'Runtime failure or timeout',freshness_days)
                 (folder/'results.json').write_text(json.dumps({'started_at':started,'failure':True})+'\n')
                 (folder/'audit.md').write_text(draft['body_markdown'])
             old_marker = draft['run_marker']
             draft['run_marker'] = marker
             draft['body_markdown'] = draft['body_markdown'].replace(old_marker, marker)
         attempt = {'status':'prepared','scraper_exit_code':code,'message_id':message_id,
-                   'source_commit':git(source,'rev-parse','HEAD')}
+                   'freshness_days':freshness_days, 'source_commit':git(source,'rev-parse','HEAD')}
         meta['attempts'][run_id] = attempt
         if not send:
             set_saving(draft, 'Validation only; production state unchanged; no email sent.')
@@ -281,9 +282,10 @@ def safe_error(error):
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('--state-checkout',required=True);p.add_argument('--source',default='.');p.add_argument('--output',default='output/actions');p.add_argument('--send',action='store_true')
+    p.add_argument('--freshness-days',type=int,choices=[2,7],default=2)
     args=p.parse_args()
     try:
-        return execute(Path(args.state_checkout).resolve(),Path(args.source).resolve(),Path(args.output).resolve(),args.send)
+        return execute(Path(args.state_checkout).resolve(),Path(args.source).resolve(),Path(args.output).resolve(),args.send,args.freshness_days)
     except Exception as error:
         # SMTP/IMAP exceptions can contain account details; never dump them.
         print('::error::'+safe_error(error),file=sys.stderr)

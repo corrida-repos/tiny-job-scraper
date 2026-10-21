@@ -118,3 +118,11 @@ require Workflows write permission (or the `workflow` scope for an existing
 classic token). Existing Git contents access already supports ordinary pushes.
 Do not paste tokens or passwords into chat. The cloud environment's network
 allowlist does not control GitHub-hosted runners' outbound network access.
+
+## One-off freshness override
+
+Manual dispatch offers `freshness_days=7` for an explicitly requested seven-day
+report. It changes only that run's in-memory criteria and is recorded in the
+encrypted run metadata and report. Every scheduled event explicitly selects two
+days (48 hours), independent of the previous manual inputs. Saved criteria remain
+at two days. Manual runs still obey all other screening and delivery rules.

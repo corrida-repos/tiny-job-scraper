@@ -81,6 +81,7 @@ def salary_positive(job):
 
 def prepare_email(pairs, payload, saving='Local report generated; durable saving and email delivery not confirmed'):
     selected, alternatives = select_roles(pairs)
+    freshness_hours = payload.get('freshness_hours', 48)
     lines = []
     for index, (job, assessment) in enumerate(selected, 1):
         if lines:
@@ -103,7 +104,7 @@ def prepare_email(pairs, payload, saving='Local report generated; durable saving
                   f'- **Pros:** {"; ".join(pros)}.', f'- **Cons:** {cons}.', '']
     coverage = payload['coverage']
     if not selected:
-        lines = [('Retrieval failed or was incomplete; no qualifying fresh roles were verified in the retrieved results.' if coverage['attention'] else 'No roles passed the verified 48-hour freshness gate and other hard filters.'), '']
+        lines = [('Retrieval failed or was incomplete; no qualifying fresh roles were verified in the retrieved results.' if coverage['attention'] else f'No roles passed the verified {freshness_hours}-hour freshness gate and other hard filters.'), '']
     timestamp = parse_date(payload['started_at'])
     marker = 'tiny-' + timestamp.strftime('%Y%m%dT%H%M%S.%fZ')
     failures = ['{}: {}{}'.format(clean(s['company']), clean(s['status']), ' — ' + clean('; '.join(s['messages'])) if s['messages'] else '') for s in payload['sources'] if not s['complete'] or s['status'] != 'ok']
@@ -111,7 +112,7 @@ def prepare_email(pairs, payload, saving='Local report generated; durable saving
               f'- Checked: {timestamp.astimezone(ZoneInfo("Europe/Lisbon")).isoformat()}; {coverage["sources"]} configured source scopes.',
               f'- Coverage: {coverage["complete"]} complete; {coverage["attention"]} need attention.',
               f'- Results: {len(selected)} included; all current-run candidates retained in results.json.',
-              '- Freshness: verified original publication within 48 hours of run start; future and unverified dates excluded.',
+              f'- Freshness: verified original publication within {freshness_hours} hours of run start; future and unverified dates excluded.',
               '- Filters: saved employer ranks, Portugal/attendance/language/noncoding/travel constraints, mandatory experience at most five years; salary informational only.',
               '- Coverage gaps: ' + ('; '.join(failures) or 'None in the selected scopes.'),
               '- Saving: ' + saving + '.', f'- Run marker: {marker}', '']
