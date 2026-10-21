@@ -27,3 +27,12 @@ class RobotsRulesTests(unittest.TestCase):
   with patch.object(client,'_request',side_effect=[('User-agent: *\nAllow: /','',{}),FetchError('HTTP 403','blocked')]):
    with self.assertRaises(FetchError) as error:client.text('https://example.org/api/jobs')
    self.assertEqual(error.exception.kind,'blocked')
+
+ def test_explicit_refresh_does_not_reuse_a_cached_empty_page(self):
+  client=HttpClient(delay=0,retries=0)
+  url='https://example.org/jobs'
+  with patch.object(client,'_request',side_effect=[('User-agent: *\nAllow: /','',{}),('empty',url,{}),('jobs',url,{})]) as read:
+   self.assertEqual(client.text(url),'empty')
+   self.assertEqual(client.text(url),'empty')
+   self.assertEqual(client.text(url,refresh=True),'jobs')
+   self.assertEqual(read.call_count,3)

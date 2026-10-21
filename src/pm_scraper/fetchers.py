@@ -57,12 +57,13 @@ class Fetcher:
         self.r.source_urls = list(dict.fromkeys(self.r.source_urls))
         return self.r
 
-    def read(self, url, *, payload=None, as_json=False, form=None):
+    def read(self, url, *, payload=None, as_json=False, form=None, refresh=False):
         if time.monotonic() > self.deadline: raise FetchError("Per-source time budget reached; remaining coverage unverified", "budget_exceeded")
         self.r.source_urls.append(url)
         self.r.pages += 1
-        if as_json: return self.http.json(url, payload=payload, form=form, public_api="smartrecruiters-postings" if url.startswith("https://api.smartrecruiters.com/v1/companies/") else None)
-        return self.http.text(url, payload=payload, form=form)
+        cache_options={'refresh':True} if refresh else {}
+        if as_json: return self.http.json(url, payload=payload, form=form, public_api="smartrecruiters-postings" if url.startswith("https://api.smartrecruiters.com/v1/companies/") else None,**cache_options)
+        return self.http.text(url, payload=payload, form=form,**cache_options)
 
     def partial(self, message):
         self.r.status, self.r.complete = 'partial', False
@@ -543,6 +544,8 @@ class Fetcher:
             for k in list(q):
                 if (k.lower() in {'page','currentpage'} or k.endswith('[currentPage]')) and q[k]=='1':q.pop(k)
                 elif k.lower()=='startrow' and q[k]=='0':q.pop(k)
+            if self.s.get('kind')=='continental':
+                q={k:v for k,v in q.items() if not (k.endswith('[controller]') and v=='Frontend\\Toc')}
             return canonical_url(urlunsplit((p.scheme,p.netloc,p.path,urlencode(q),'')))
         while queue:
             url=queue.pop(0)
@@ -552,6 +555,12 @@ class Fetcher:
             seenpages.add(pagekey(url))
             body=initial_body if url==start and initial_body is not None else self.read(url)
             d=document(body);page_jobs=0
+            if self.s.get('kind')=='continental' and not any(re.search(self.s['job_pattern'],a.get('href','')) for a in d.xpath('//a[@href]')):
+                # This public directory intermittently returns a valid page
+                # shell without its jobs. Re-read once, without memoizing the
+                # same empty response; persistent absence still fails below.
+                body=self.read(url,refresh=True);d=document(body)
+                self.r.messages.append('Empty Continental listing page re-fetched once before coverage validation')
             for node in jsonld_nodes(body):
                 # Ignore a generic company page that accidentally embeds unrelated cards.
                 j=from_schema(self.c,node,url)

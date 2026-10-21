@@ -64,3 +64,20 @@ class CoverageRepairsTests(unittest.TestCase):
   http=Pages({'https://talent.sage.hr/board/vacancies':FetchError('HTTP 403','blocked'),'https://example.org/careers':'<a href="https://talent.sage.hr/jobs/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee">Engineer</a><a href="https://talent.sage.hr/jobs/11111111-2222-3333-4444-555555555555">Submit open application</a>'})
   result=self.fetch(http,{'adapter':'cocus','listing_url':'https://talent.sage.hr/board/vacancies','job_pattern':'/jobs/','fallback_url':'https://example.org/careers'})
   self.assertFalse(result.complete);self.assertEqual(result.status,'partial');self.assertEqual(result.discovered,1)
+
+ def test_continental_empty_page_gets_one_uncached_retry(self):
+  class Directory:
+   def __init__(self):self.refresh=[]
+   def text(self,url,**kwargs):
+    self.refresh.append(kwargs.get('refresh',False))
+    return '<a href="/en/detail-page/job-detail/engineer">Engineer</a>' if kwargs.get('refresh') else '<html><main>All jobs at a glance</main></html>'
+  http=Directory()
+  result=self.fetch(http,{'adapter':'html','kind':'continental','listing_url':'https://example.org/en/a-z-liste/','job_pattern':'/en/detail-page/job-detail/'})
+  self.assertTrue(result.complete);self.assertEqual(result.discovered,1);self.assertEqual(http.refresh,[False,True])
+ def test_continental_repeated_empty_page_still_fails(self):
+  class Directory:
+   def __init__(self):self.calls=0
+   def text(self,url,**kwargs):self.calls+=1;return '<html><main>All jobs at a glance</main></html>'
+  http=Directory()
+  result=self.fetch(http,{'adapter':'html','kind':'continental','listing_url':'https://example.org/en/a-z-liste/','job_pattern':'/en/detail-page/job-detail/'})
+  self.assertFalse(result.complete);self.assertEqual(http.calls,2)

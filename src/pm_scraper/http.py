@@ -100,10 +100,10 @@ class HttpClient:
             if not rp.can_fetch(url, USER_AGENT):
                 raise FetchError("robots.txt disallows this URL: " + url, "robots_denied")
 
-    def get(self, url, *, payload=None, headers=None, public_api=None, form=None):
+    def get(self, url, *, payload=None, headers=None, public_api=None, form=None, refresh=False):
         key = (url, json.dumps({"json":payload,"form":form}, sort_keys=True))
         with self._guard:
-            if key in self._memo:
+            if key in self._memo and not refresh:
                 return self._memo[key]
         if public_api == "smartrecruiters-postings":
             p = urlsplit(url)

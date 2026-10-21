@@ -163,7 +163,7 @@ def announce_coverage(folder):
         return str(text).replace('%','%25').replace('\r','%0D').replace('\n','%0A')
     summary=f"{coverage['complete']}/{coverage['sources']} source scopes complete; {coverage['attention']} need attention"
     print('::notice title=Source coverage::'+escaped(summary))
-    gaps=[s['company']+': '+s['status'] for s in data.get('sources',[]) if not s['complete'] or s['status']!='ok']
+    gaps=[s['company']+': '+s['status']+(' — '+'; '.join(s.get('messages',[])) if s.get('messages') else '') for s in data.get('sources',[]) if not s['complete'] or s['status']!='ok']
     if gaps:print('::notice title=Coverage gaps::'+escaped('; '.join(gaps)))
 
 
