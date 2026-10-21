@@ -108,3 +108,18 @@ repository settings, or through an integration with those specific permissions.
 Remote Daily PM jobs validation, actual Gmail submission and scheduled cutover
 remain pending. Keep `DAILY_ENABLED` unset until manual validation and observed
 delivery succeed and the original ChatGPT schedule is paused.
+
+## Successful manual Actions delivery — 2026-10-21
+
+After the Gmail credential was updated, Actions run `39585902373` completed.
+Gmail SMTP accepted the real daily report; the encrypted runtime-state branch
+contains its receipt and updated database, which passed integrity checking.
+The database now has 165 jobs, 4 runs and 2 comprehensive audits. The source audit
+reported 54 complete scopes and six gaps: COCUS and Namecheap access blocks,
+Float/Fujitsu/Infineon robots restrictions, and JTA's limited vacancy feed.
+
+All 51 tests passed. Inbox arrival requires recipient confirmation. The Actions
+schedule remains gated by `DAILY_ENABLED`; this session has not changed the
+existing ChatGPT schedule. Confirm receipt and pause the original schedule
+before enabling the replacement. Do not refresh the new production database
+from the older imported snapshot, which would discard this run and receipt.
