@@ -1,7 +1,10 @@
 # Coverage work update
 
 Namecheap, Fujitsu and Infineon now use public HTML/sitemap readers; COCUS has a
-partial employer-page fallback for blocked ATS requests. Robots rule precedence
+partial employer-page fallback for blocked ATS requests. Continental has a bounded
+uncached retry for transient empty listings. The final GitHub check completed
+55/60 scopes; Namecheap remains HTTP-403 blocked on GitHub despite working locally.
+All 67 tests passed. Robots rule precedence
 is corrected using Protego. See `docs/coverage-status.md` for the exact declared
 scopes and unresolved restrictions. Float and JTA remain gaps; incomplete
 Infineon details and blocked COCUS inventories are never reported as complete.
