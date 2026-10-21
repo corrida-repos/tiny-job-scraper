@@ -53,6 +53,13 @@ class Fetcher:
         except Exception as e:
             self.r.status, self.r.complete = 'error', False
             self.r.messages.append(f'{type(e).__name__}: {e}')
+        if not self.r.complete and self.s.get('wwr_fallback'):
+            try:
+                self.wwr_fallback()
+            except FetchError as e:
+                self.r.messages.append('Secondary WWR feed unavailable: '+str(e))
+            except (KeyError, TypeError, ValueError, IndexError) as e:
+                self.r.messages.append('Secondary WWR feed schema changed: '+type(e).__name__)
         self.r.jobs = list({j.key:j for j in self.r.jobs}.values())
         self.r.elapsed_seconds = round(time.monotonic()-started,2)
         self.r.source_urls = list(dict.fromkeys(self.r.source_urls))
@@ -75,6 +82,53 @@ class Fetcher:
 
     def wanted(self, title):
         return bool(self.screener.family(title))
+
+    def wwr_fallback(self):
+        # Public syndication is a supplementary discovery source, never proof
+        # of a full employer inventory or original publication time.
+        feed='https://weworkremotely.com/remote-jobs.rss'
+        config=self.s['wwr_fallback']
+        names={norm(name) for name in config['employer_names']}
+        hosts=set(config['employer_hosts'])
+        try:
+            root=etree.fromstring(self.read(feed).encode(),etree.XMLParser(resolve_entities=False,no_network=True))
+        except etree.XMLSyntaxError as e:
+            raise FetchError('Malformed WWR RSS XML','schema_changed') from e
+        if root.tag!='rss' or len(root.findall('channel'))!=1:
+            raise FetchError('Expected WWR RSS channel','schema_changed')
+        channel=root.find('channel')
+        if channel.findtext('link')!=feed:
+            raise FetchError('WWR RSS channel identity changed','schema_changed')
+        seen=set();unverified=0
+        for item in channel.findall('item'):
+            company,separator,title=(item.findtext('title') or '').partition(':')
+            if not separator or norm(company) not in names:continue
+            description=item.findtext('description') or ''
+            # Match the feed's explicit employer URL field, not an arbitrary
+            # mention/link in the vacancy text or a same-named company.
+            d=document(description)
+            employer_links=d.xpath('//strong[normalize-space(.)="URL:"]/following-sibling::a[1]/@href')
+            if len(employer_links)!=1 or urlsplit(employer_links[0]).scheme not in {'https','http'} or urlsplit(employer_links[0]).hostname not in hosts:
+                unverified+=1;continue
+            link=item.findtext('link') or ''
+            parts=urlsplit(link)
+            if parts.scheme!='https' or parts.hostname!='weworkremotely.com' or not re.fullmatch(r'/remote-jobs/[a-z0-9-]+',parts.path):
+                unverified+=1;continue
+            link=canonical_url(link)
+            if link in seen:continue
+            seen.add(link);self.r.discovered+=1
+            if not self.wanted(title):continue
+            j=self.new(title,link,'wwr:'+parts.path.rsplit('/',1)[-1],
+                       location=item.findtext('region') or '',description=plain(description),
+                       evidence=[feed,link,employer_links[0]])
+            j.detail_ok=len(j.description)>60
+            j.metadata.update({'secondary_source':'We Work Remotely RSS',
+                               'original_date_unproven':True,
+                               'syndicated_pub_date':item.findtext('pubDate'),
+                               'source_scope':'Recent public RSS items only; full employer inventory unverified'})
+            self.r.jobs.append(j)
+        self.partial(f'Secondary WWR RSS checked: {len(seen)} employer listings; recent syndicated subset only, full inventory and original dates unverified')
+        if unverified:self.r.messages.append(f'WWR items skipped because employer or job identity could not be verified: {unverified}')
 
     def detail(self, job, url=None):
         if self.details >= self.max_details:

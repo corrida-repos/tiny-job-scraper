@@ -13,7 +13,7 @@ experience rules, daily schedule and persistent production state are unchanged.
 | Fujitsu | Enumerate the public sitemap and retrieve allowed-title job detail pages instead of the robots-disallowed search service. Parse the actual title, description, location and canonical job identity. Publication-start labels and sitemap `lastmod` are not accepted as original posting dates. |
 | Infineon | Read the current public PCSX search inventory used by its careers website, with all locations and titles. Reconcile totals and unique IDs across every page, then read matching JobPosting details. A public PCSX detail fallback recovers descriptions without treating `postedTs` as verified original publication. |
 | COCUS | Keep the full Sage ATS reader, with a fallback to vacancy cards published on COCUS's own careers page when the ATS is blocked. Fallback results are always partial; generic open applications do not count as vacancies. |
-| Float | Its Pinpoint board currently disallows all crawling. Leave this blocked, without using the obsolete commented-out widget or bypassing restrictions. |
+| Float | Its Pinpoint board disallows crawling. The public We Work Remotely RSS feed now provides secondary discovery; it cannot establish a complete inventory or original posting dates. |
 | JTA | The official careers page currently provides spontaneous applications, not an enumerated vacancy feed. Keep limited coverage visible; biographies and the whistleblowing portal are not job listings. |
 
 The HTTP client now uses Protego for standards-compliant robots rule precedence.
@@ -107,3 +107,36 @@ The run used `send_email=false` and the normal two-day freshness window. It sent
 no email and made no production-state writes. The encrypted runtime-state branch
 remained at `e7552fd7635e3f82ab4336fe1d09a1109ae6d7e9`. The daily workflow remains
 active for 08:00 Europe/Lisbon with the 48-hour rule.
+
+## Public secondary-feed fallback
+
+The four incomplete sources now check the public feed at
+`https://weworkremotely.com/remote-jobs.rss` when their primary retrieval is
+incomplete. A listing must match both an explicit configured employer name and
+the official employer website in the RSS description's `URL:` field. Same-named
+companies, lookalike domains, unrelated links and non-job URLs are skipped.
+The feed is read normally, with robots and access checks; no account, proxy
+rotation, browser impersonation or new hosting service is used.
+
+This is supplementary discovery from recent RSS items, not a replacement for
+an employer's inventory. Primary errors remain in the audit and coverage stays
+partial even when the secondary feed is readable or empty. Recovered candidates
+are retained in results/state for review. RSS `pubDate` is recorded only as
+syndication metadata. It cannot pass the verified-original-publication gate or
+place an otherwise unverified role into the daily email. Jobs on successful
+primary sources use their existing readers without requesting the fallback.
+
+Live investigation confirmed Float's public WWR company profile and the RSS feed.
+The profile listed zero jobs, and the current RSS feed had 93 items with no matches
+for the four employers. Guessed WWR company profiles for the other three employers
+redirected to its homepage and were not treated as employer feeds. They are
+monitored only through the strict RSS employer-name and official-website checks.
+Remote OK's Float page did not expose usable public job details. COCUS's Portuguese
+domain redirects to its existing corporate site. Namecheap's current public
+JavaScript exposed no separate RSS feed. JTA still has no enumerated vacancy feed.
+
+Focused local validation completed COCUS (four listings) and Namecheap (25 listings,
+two title candidates); both Namecheap candidates were rejected by the saved rules.
+Float and JTA successfully checked the secondary RSS feed and remained partial,
+with zero matching feed listings. All 88 unit tests pass. GitHub-runner validation
+will verify the fallback where COCUS and Namecheap's primary readers are blocked.

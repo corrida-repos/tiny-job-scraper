@@ -15,7 +15,19 @@
       "empty_pattern": "spontaneous application",
       "empty_is_unverified": true,
       "mapped_at": "2026-10-19",
-      "discovery_url": "https://www.thedatascientists.com/about-us/careers/"
+      "discovery_url": "https://www.thedatascientists.com/about-us/careers/",
+      "wwr_fallback": {
+        "employer_names": [
+          "JTA",
+          "JTA The Data Scientists",
+          "JTA — The Data Scientists",
+          "JTA - The Data Scientists"
+        ],
+        "employer_hosts": [
+          "thedatascientists.com",
+          "www.thedatascientists.com"
+        ]
+      }
     }
   },
   {
@@ -110,7 +122,16 @@
       "adapter": "pinpoint",
       "base": "https://float.pinpointhq.com",
       "mapped_at": "2026-10-19",
-      "discovery_url": "https://www.float.com/careers"
+      "discovery_url": "https://www.float.com/careers",
+      "wwr_fallback": {
+        "employer_names": [
+          "Float"
+        ],
+        "employer_hosts": [
+          "float.com",
+          "www.float.com"
+        ]
+      }
     }
   },
   {
@@ -307,7 +328,20 @@
       "kind": "sage",
       "mapped_at": "2026-10-19",
       "discovery_url": "https://www.cocus.com/en/about-us/it-career/",
-      "fallback_url": "https://www.cocus.com/en/about-us/it-career/"
+      "fallback_url": "https://www.cocus.com/en/about-us/it-career/",
+      "wwr_fallback": {
+        "employer_names": [
+          "COCUS",
+          "COCUS AG",
+          "COCUS Portugal"
+        ],
+        "employer_hosts": [
+          "cocus.com",
+          "www.cocus.com",
+          "cocus.pt",
+          "www.cocus.pt"
+        ]
+      }
     }
   },
   {
@@ -869,7 +903,17 @@
       "adapter": "namecheap",
       "base": "https://www.namecheap.com",
       "mapped_at": "2026-10-19",
-      "discovery_url": "https://www.namecheap.com/careers/"
+      "discovery_url": "https://www.namecheap.com/careers/",
+      "wwr_fallback": {
+        "employer_names": [
+          "Namecheap",
+          "Namecheap Inc."
+        ],
+        "employer_hosts": [
+          "namecheap.com",
+          "www.namecheap.com"
+        ]
+      }
     }
   },
   {

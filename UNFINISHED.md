@@ -1,3 +1,11 @@
+# Secondary-source workaround
+
+COCUS, Float, JTA and Namecheap now check the public We Work Remotely RSS feed
+when their primary source is incomplete. Employer name and official website must
+both match. Syndicated dates never establish original freshness, and coverage
+stays partial. The current feed contains no matching listings. All 88 tests pass;
+see `docs/coverage-status.md` for scope and live validation details.
+
 # Current coverage follow-up
 
 Infineon now uses the current public PCSX search inventory instead of its stale
