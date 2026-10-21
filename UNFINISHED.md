@@ -3,8 +3,10 @@
 COCUS, Float, JTA and Namecheap now check the public We Work Remotely RSS feed
 when their primary source is incomplete. Employer name and official website must
 both match. Syndicated dates never establish original freshness, and coverage
-stays partial. The current feed contains no matching listings. All 88 tests pass;
-see `docs/coverage-status.md` for scope and live validation details.
+stays partial. The current feed contains no matching listings. All 88 tests pass. GitHub run
+39686659074 confirmed the fallback for all four, with 55/60 complete source
+scopes and a new Noesis HTTP-403 gap. See `docs/coverage-status.md` for scope and
+live validation details.
 
 # Current coverage follow-up
 

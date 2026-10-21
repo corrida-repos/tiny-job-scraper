@@ -1,8 +1,10 @@
 # Coverage repairs — 21 October 2026
 
-Latest GitHub validation: **56/60 source scopes complete**, with **79 unit tests
-passing**. Infineon is now complete. COCUS, Float, JTA and Namecheap remain gaps.
-See [Actions run 39607294698](https://github.com/corrida-repos/tiny-job-scraper/actions/runs/39607294698).
+Latest GitHub validation: **55/60 source scopes complete**, with **88 unit tests
+passing**. The secondary RSS fallback works for COCUS, Float, JTA and Namecheap,
+but those employer inventories remain incomplete. Noesis returned a new HTTP 403
+in this run, compared with 56/60 complete in the previous run.
+See [Actions run 39686659074](https://github.com/corrida-repos/tiny-job-scraper/actions/runs/39686659074).
 
 The 60-employer allowlist, 48-hour scheduled freshness window, salary and
 experience rules, daily schedule and persistent production state are unchanged.
@@ -15,6 +17,7 @@ experience rules, daily schedule and persistent production state are unchanged.
 | COCUS | Keep the full Sage ATS reader, with a fallback to vacancy cards published on COCUS's own careers page when the ATS is blocked. Fallback results are always partial; generic open applications do not count as vacancies. |
 | Float | Its Pinpoint board disallows crawling. The public We Work Remotely RSS feed now provides secondary discovery; it cannot establish a complete inventory or original posting dates. |
 | JTA | The official careers page currently provides spontaneous applications, not an enumerated vacancy feed. Keep limited coverage visible; biographies and the whistleblowing portal are not job listings. |
+| Noesis | New HTTP 403 from the GitHub runner on its existing public listing page. The same page remains readable in this workspace and exposes no alternate feed link. This is an unresolved access gap. |
 
 The HTTP client now uses Protego for standards-compliant robots rule precedence.
 A more specific `Allow` takes precedence over a broad `Disallow`, while specific
@@ -138,5 +141,18 @@ JavaScript exposed no separate RSS feed. JTA still has no enumerated vacancy fee
 Focused local validation completed COCUS (four listings) and Namecheap (25 listings,
 two title candidates); both Namecheap candidates were rejected by the saved rules.
 Float and JTA successfully checked the secondary RSS feed and remained partial,
-with zero matching feed listings. All 88 unit tests pass. GitHub-runner validation
-will verify the fallback where COCUS and Namecheap's primary readers are blocked.
+with zero matching feed listings. All 88 unit tests passed locally and on GitHub.
+
+[GitHub validation 39686659074](https://github.com/corrida-repos/tiny-job-scraper/actions/runs/39686659074)
+confirmed successful secondary RSS retrieval for all four configured employers at
+code commit `3c554b4`. Each returned zero matching RSS listings and stayed partial.
+The run completed 55/60 source scopes. Its additional gap was a new HTTP 403 from
+Noesis on `https://opportunities.noesis.pt/jobs`; that same listing page was readable
+in a subsequent workspace check, with no alternate feed advertised. Its source
+configuration and reader were not changed by the fallback work.
+
+Validation used `send_email=false` and `freshness_days=2`. It sent no email and
+left the encrypted production-state branch unchanged at
+`e7552fd7635e3f82ab4336fe1d09a1109ae6d7e9`. The daily workflow remains active, using
+the 48-hour freshness rule. No always-on user machine or new hosting service is
+required for the public RSS fallback; full employer coverage is still unresolved.
