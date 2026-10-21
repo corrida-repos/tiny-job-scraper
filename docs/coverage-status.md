@@ -1,5 +1,9 @@
 # Coverage repairs — 21 October 2026
 
+Latest GitHub validation: **56/60 source scopes complete**, with **79 unit tests
+passing**. Infineon is now complete. COCUS, Float, JTA and Namecheap remain gaps.
+See [Actions run 39607294698](https://github.com/corrida-repos/tiny-job-scraper/actions/runs/39607294698).
+
 The 60-employer allowlist, 48-hour scheduled freshness window, salary and
 experience rules, daily schedule and persistent production state are unchanged.
 
@@ -18,7 +22,7 @@ prohibitions, blanket disallow rules, actual endpoint HTTP 403s and human
 verification barriers remain enforced. The previous Python standard-library
 parser incorrectly denied Infineon's explicitly allowed paths.
 
-Local validation retrieved 25 Namecheap listings (two title candidates), 662
+The earlier repair pass retrieved 25 Namecheap listings (two title candidates), 662
 Fujitsu sitemap-listed jobs (22 title candidates), and 1,294 Infineon sitemap-listed
 job URLs (37 retained candidates; two missing matching detail data). COCUS's
 primary ATS worked locally; a fixture verifies the blocked-ATS fallback remains
@@ -31,8 +35,8 @@ the freshness gate. Detail failures, limits and schema changes remain visible;
 complete enumeration of URLs alone cannot turn failed candidate extraction into
 successful coverage.
 
-All 67 unit tests passed locally and in the GitHub-hosted validation workflow.
-The final full check, [Actions run 39602187312](https://github.com/corrida-repos/tiny-job-scraper/actions/runs/39602187312),
+During the earlier repair pass, 67 unit tests passed locally and on GitHub.
+That earlier full check, [Actions run 39602187312](https://github.com/corrida-repos/tiny-job-scraper/actions/runs/39602187312),
 completed 55/60 declared source scopes, compared with 54/60 before this work.
 Fujitsu and Continental completed. COCUS returned its employer-page subset while
 its full ATS remained blocked. Infineon returned candidates but retained missing
@@ -80,12 +84,26 @@ The production freshness window remains 48 hours.
 Float's Pinpoint robots file was rechecked and still disallows all crawling.
 JTA's sitemap index exposes no vacancy-specific sitemap; its 17-page page sitemap
 links only to the same spontaneous-application careers page. These remain
-unresolved source limitations. COCUS and Namecheap still need validation from
-the GitHub runner because their public boards work in this workspace but have
-returned HTTP 403 from GitHub.
+unresolved source limitations. COCUS and Namecheap were rechecked on GitHub and still return HTTP 403
+from that runner, despite working in this workspace.
 
 Local validation of the new adapter enumerated all 1,298 current search records,
 reconciled the reported total, and extracted 38 title candidates with complete
-details. All 38 were rejected by the saved screening rules; complete retrieval
-does not imply an eligible match. All 79 unit tests pass. GitHub-runner validation
-is recorded below when complete.
+details, including three title candidates absent from the earlier sitemap
+reader. The two stale sitemap IDs were absent from the current search results.
+All 38 were rejected by the saved screening rules; complete retrieval
+does not imply an eligible match. All 79 unit tests passed locally and in the GitHub validation run.
+
+[GitHub validation 39607294698](https://github.com/corrida-repos/tiny-job-scraper/actions/runs/39607294698)
+completed successfully at code commit `7ba2fdf`, with 56/60 source scopes complete.
+Infineon now completes from the actual production runner. The remaining gaps are:
+
+- COCUS: its full Sage inventory returns HTTP 403; its official-page subset is retained as partial.
+- Float: the Pinpoint board explicitly disallows crawling.
+- JTA: no enumerated vacancy feed was found on its official careers page or page sitemap.
+- Namecheap: the public openings page returns HTTP 403 from GitHub.
+
+The run used `send_email=false` and the normal two-day freshness window. It sent
+no email and made no production-state writes. The encrypted runtime-state branch
+remained at `e7552fd7635e3f82ab4336fe1d09a1109ae6d7e9`. The daily workflow remains
+active for 08:00 Europe/Lisbon with the 48-hour rule.
