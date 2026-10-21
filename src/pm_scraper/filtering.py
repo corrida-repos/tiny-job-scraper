@@ -4,8 +4,8 @@ from datetime import timedelta
 from .htmlutil import norm
 from .models import Assessment, parse_date, utcnow
 
-NUMBERS = {"one":1,"two":2,"three":3,"four":4,"five":5,"six":6,"seven":7,"eight":8,"nine":9,"ten":10,"um":1,"uma":1,"dois":2,"duas":2,"tres":3,"quatro":4,"cinco":5}
-N = r"(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|um|uma|dois|duas|tres|quatro|cinco)"
+NUMBERS = {"one":1,"two":2,"three":3,"four":4,"five":5,"six":6,"seven":7,"eight":8,"nine":9,"ten":10,"um":1,"uma":1,"dois":2,"duas":2,"tres":3,"quatro":4,"cinco":5,"seis":6,"sete":7,"oito":8,"nove":9,"dez":10}
+N = r"(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez)"
 
 def number(s):
     return int(s) if s.isdigit() else NUMBERS.get(s, 999)
@@ -171,11 +171,18 @@ class Screener:
 
         posted = parse_date(job.posted_at)
         if posted and job.date_kind == "original_posted":
-            age = (now - posted).total_seconds() / 86400
-            if age < -1:
-                check("freshness", "unknown", "Posting date is in the future: " + str(job.posted_at))
-            elif age >= self.cfg["max_post_age_days"]:
-                check("freshness", "fail", f"Original posting is {age:.1f} days old")
+            window = timedelta(days=self.cfg["max_post_age_days"])
+            age = now - posted
+            # A date without a clock denotes an interval, not invented midnight
+            # precision. Include only when the entire possible day is in range.
+            raw = str(job.posted_at).strip()
+            date_only = not isinstance(job.posted_at, (int, float)) and not re.search(r"\d{1,2}:\d{2}", raw)
+            if age < timedelta(0):
+                check("freshness", "unknown", "Posting date is in the future: " + raw)
+            elif age > window:
+                check("freshness", "fail", "Original posting is older than 48 hours")
+            elif date_only and posted + timedelta(days=1) > now:
+                check("freshness", "unknown", "Date-only original publication does not establish the full 48-hour interval")
             else:
                 check("freshness", "pass", f"Original posting date {job.posted_at}; source: {job.date_evidence}")
         else:
@@ -183,15 +190,29 @@ class Screener:
         expires = parse_date(job.valid_through)
         check("active", "fail" if expires and expires < now else "pass", "Posting deadline expired" if expires and expires < now else "Present in current public board; no expired deadline found")
 
-        salary = job.salary or {}
-        value = salary.get("value", {}) if isinstance(salary, dict) else {}
-        if isinstance(value, dict) and salary.get("currency") == "EUR" and str(value.get("unitText", "")).upper() in {"YEAR", "ANNUAL"}:
-            ceiling = value.get("maxValue", value.get("value"))
-            try: below = float(ceiling) < self.cfg["salary_target_eur_annual"]
-            except (ValueError, TypeError): below = False
-            check("salary", "fail" if below else "pass", f"Published annual EUR salary: {value}")
-        else:
-            checks["salary"] = {"status":"unverified", "evidence":"Confirm target of EUR 55,000 gross annually; no comparable published maximum"}
+        # Salary is retained on Job for optional display, never for screening.
+        checks["salary"] = {"status":"informational", "evidence":"Salary has no eligibility or ranking requirement"}
+
+        experience_fail, experience_unknown, experience_optional = [], [], []
+        pattern = re.compile(rf"(?P<low>{N})(?:\s*[-–—]\s*(?:{N}))?\s*\+?\s*(?:years?|anos?)\b.{{0,65}}(?:experience|experiencia|leadership|management|professional|lideranca|gestao)|(?:experience|experiencia).{{0,35}}?(?P<after>{N})(?:\s*[-–—]\s*(?:{N}))?\s*\+?\s*(?:years?|anos?)\b")
+        # Split optional and mandatory clauses independently: a preference must
+        # never cancel a distinct mandatory minimum in the same sentence.
+        clauses = [norm(x) for x in re.split(r"[\n;]|(?<=[.!?])\s+|,\s*|\bbut\b|\band\b(?=\s+(?:(?:at least|minimum|ideally|preferably)\s+)?(?:\d|six|seven|eight|nine|ten))", job.description) if x.strip()]
+        for clause in clauses:
+            matches = list(pattern.finditer(clause))
+            high = [m for m in matches if number(m.group("low") or m.group("after")) > self.cfg.get("max_mandatory_experience_years", 5)]
+            if not high:
+                continue
+            optional = re.search(r"preferred|preferable|nice[- ]to[- ]have|optional|bonus|desirable|ideally|opcional|preferencial|valorizad", clause)
+            mandatory = re.search(r"required|mandatory|must|minimum|at least|obrigatori|minimo|\d\s*\+", clause)
+            if mandatory and not optional:
+                experience_fail.append(clause[:500])
+            elif optional:
+                experience_optional.append(clause[:500])
+            else:
+                experience_unknown.append(clause[:500])
+        check("experience", "fail" if experience_fail else "unknown" if experience_unknown else "pass" if job.detail_ok else "unknown",
+              "; ".join(experience_fail + experience_unknown + experience_optional) or "No mandatory experience minimum above five years identified")
         checks["work_life_balance"] = {"status":"unverified", "evidence":"Employer-level reputation is contextual; actual workload, overtime and leave use require team-level confirmation"}
 
         # Overrides require dated evidence and can only resolve explicitly named checks.

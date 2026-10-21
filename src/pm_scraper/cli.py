@@ -10,7 +10,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
 from dataclasses import asdict
 from pathlib import Path
-from .models import utcnow
+from .models import utcnow, parse_date
+from .daily import prepare_email
 from .filtering import Screener
 from .fetchers import Fetcher
 from .http import HttpClient
@@ -50,6 +51,9 @@ def export(out,results,pairs,delivery,selected,started,finished,requests):
              'jobs':[{'job':j.to_dict(),'assessment':asdict(a)} for j,a in pairs]}
     atomic(out/'results.json',json.dumps(payload,ensure_ascii=False,indent=2)+'\n')
     atomic(out/'source-health.json',json.dumps(health,ensure_ascii=False,indent=2)+'\n')
+    email = prepare_email(pairs, payload)
+    atomic(out/'email.json',json.dumps(email,ensure_ascii=False,indent=2)+'\n')
+    atomic(out/'email.md',email['body_markdown'])
     digest={'delivery_id':delivery,'created_at':finished,'jobs':[{'job':j.to_dict(),'assessment':asdict(a)} for j,a in selected]}
     atomic(out/'digest.json',json.dumps(digest,ensure_ascii=False,indent=2)+'\n')
     report=[f'# PM careers monitor — {finished[:10]}','',f"Checked {len(results)} sources: {payload['coverage']['complete']} complete; {payload['coverage']['attention']} need attention.",f"Allowed-title candidates: {len(pairs)}. Eligible: {counts['eligible']}; review: {counts['review']}; rejected: {counts['rejected']}. New eligible for notification: {len(selected)}.",'',
@@ -77,7 +81,10 @@ def export(out,results,pairs,delivery,selected,started,finished,requests):
     atomic(out/'roles.csv',buf.getvalue())
     return payload
 
-def run(args):
+def run(args, started=None):
+    started = started or utcnow().isoformat()
+    if args.require_existing_state and not Path(args.state).is_file():
+        raise FileNotFoundError('Required production state is missing; refusing to create an empty database')
     companies=json.loads(Path(args.companies).read_text());criteria=json.loads(Path(args.criteria).read_text());screener=Screener(criteria)
     if args.only:
         selected=set(args.only.split(','));companies=[c for c in companies if c['id'] in selected or str(c['rank']) in selected]
@@ -85,7 +92,7 @@ def run(args):
     if len({c['id'] for c in companies})!=len(companies):raise ValueError('Duplicate company IDs')
     out=Path(args.output);statepath=Path(args.state);statepath.parent.mkdir(parents=True,exist_ok=True)
     overrides=json.loads(Path(args.overrides).read_text()) if args.overrides and Path(args.overrides).exists() else {}
-    started=utcnow().isoformat();http=HttpClient(timeout=args.timeout,delay=args.delay,retries=1)
+    http=HttpClient(timeout=args.timeout,delay=args.delay,retries=1)
     with lock(statepath):
         state=State(statepath)
         try:
@@ -95,9 +102,9 @@ def run(args):
                 for future in as_completed(futures):
                     c=futures[future];r=future.result();results.append(r);local=[]
                     for j in r.jobs:
-                        j.metadata.update({'employer_rank':c['rank'],'wlb_context':c['wlb_note'],'employer_location_context':c['location_note']})
+                        j.metadata.update({'employer_rank':c['rank'],'wlb_context':c['wlb_note'],'employer_location_context':c['location_note'],'careers_url':c['careers_url']})
                         state.original(j)
-                        a=screener.assess(j,override=overrides.get(j.key));local.append((j,a))
+                        a=screener.assess(j,now=parse_date(started),override=overrides.get(j.key));local.append((j,a))
                     pairs+=local;state.record(r,local,utcnow().isoformat())
                     print(json.dumps({'company':r.company,'status':r.status,'listed':r.discovered,'candidates':len(r.jobs),'messages':r.messages},ensure_ascii=False),flush=True)
             finished=utcnow().isoformat();delivery,selected=state.eligible_delivery(pairs,finished)
@@ -112,13 +119,35 @@ def main(argv=None):
     sub=p.add_subparsers(dest='command',required=True)
     r=sub.add_parser('run');r.add_argument('--companies',default=str(CONFIG/'companies.json'));r.add_argument('--criteria',default=str(CONFIG/'criteria.json'));r.add_argument('--state',default='data/state.sqlite3');r.add_argument('--output',default='output/latest');r.add_argument('--overrides',default=str(CONFIG/'verified-overrides.json'))
     r.add_argument('--only',help='Comma-separated company IDs or ranks');r.add_argument('--workers',type=int,default=6);r.add_argument('--delay',type=float,default=1.0);r.add_argument('--timeout',type=int,default=25);r.add_argument('--max-pages',type=int,default=60);r.add_argument('--max-details',type=int,default=250)
+    r.add_argument('--require-existing-state',action='store_true',help='Refuse to create a new state database; use for production migration')
     a=sub.add_parser('ack',help='Mark a digest reported only after confirmed successful delivery');a.add_argument('delivery_id');a.add_argument('--receipt',required=True);a.add_argument('--state',default='data/state.sqlite3')
     pending=sub.add_parser('pending',help='List unacknowledged digest attempts for send reconciliation');pending.add_argument('--state',default='data/state.sqlite3')
     s=sub.add_parser('sources');s.add_argument('--companies',default=str(CONFIG/'companies.json'))
     args=p.parse_args(argv)
     if args.command=='run':
         if not 1<=args.workers<=12 or args.delay<0.5 or not 1<=args.max_pages<=200 or not 1<=args.max_details<=1000:p.error('Use workers 1..12, delay >=0.5, pages 1..200, details 1..1000')
-        return run(args)
+        started = utcnow().isoformat()
+        try:
+            return run(args, started)
+        except Exception as error:
+            # A failed attempt also needs a fresh artifact, never yesterday's
+            # email or an empty-success report. Preserve the failure exit code.
+            payload = {'started_at': started, 'finished_at': utcnow().isoformat(),
+                       'coverage': {'sources': 0, 'complete': 0, 'attention': 1},
+                       'counts': {}, 'jobs': [], 'sources': [
+                           {'company': 'Run failure', 'status': type(error).__name__,
+                            'complete': False, 'messages': [str(error)]}]}
+            out = Path(args.output)
+            try:
+                email = prepare_email([], payload, saving='Attempt failed; durable saving and delivery not confirmed')
+                atomic(out/'results.json', json.dumps(payload, ensure_ascii=False, indent=2)+'\n')
+                atomic(out/'source-health.json', json.dumps(payload['sources'], ensure_ascii=False, indent=2)+'\n')
+                atomic(out/'email.json', json.dumps(email, ensure_ascii=False, indent=2)+'\n')
+                atomic(out/'email.md', email['body_markdown'])
+            except OSError as write_error:
+                print(f'Failure report could not be saved: {type(write_error).__name__}', file=sys.stderr)
+            print(f'Run failed: {type(error).__name__}: {error}', file=sys.stderr)
+            return 1
     if args.command=='sources':
         for c in json.loads(Path(args.companies).read_text()):print(f"{c['rank']:02} {c['id']} [{c['source']['adapter']}] {c['careers_url']}")
         return 0

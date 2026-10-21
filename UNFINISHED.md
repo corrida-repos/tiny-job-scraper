@@ -1,3 +1,27 @@
+# Current implementation update — 21 October 2026
+
+Implemented in the Codex checkout; all 42 tests pass:
+- 48-hour original-publication screening at run start, future/date-only handling.
+- Salary informational only; mandatory experience minimums above five excluded.
+- Complete current-run `email.md` / `email.json` drafts without the legacy cap,
+  including fresh review roles, employer-rank ordering, conservative identical-role
+  location deduplication and the compact Pros/Cons layout.
+- Failure drafts, stable per-attempt run markers, explicit not-sent status and
+  `--require-existing-state` protection for production migration.
+
+Pending: actual Gmail delivery/reconciliation and receipts, durable production
+state/audit storage access, transfer of the existing ChatGPT schedule and first
+observed scheduled run. No schedule was changed and no email was sent.
+Location deduplication deliberately preserves uncertain duplicates: only identical
+normalized descriptions, titles, salary and check statuses are merged.
+
+The live 60-source check on 2026-10-21 returned 55 complete scopes and five needing
+attention: JTA limited feed, Float/Infineon/Fujitsu robots restrictions and OLX
+partial detail retrieval. Intellias completed its configured scope in that run.
+The historical export notes below describe the earlier baseline, not current code.
+
+---
+
 # Export status — 20 October 2026
 
 This is a source-only recovery export for corrida-repos/tiny-job-scraper. No GitHub write or production scheduler change was made while exporting.

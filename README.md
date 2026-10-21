@@ -1,4 +1,4 @@
-> **Recovery export:** Read [UNFINISHED.md](UNFINISHED.md) and [current automation rules](docs/current-automation-policy.md) before deployment. Several newer screening/email rules are external orchestration overrides, not implemented by this CLI.
+> **Recovery export:** Read [UNFINISHED.md](UNFINISHED.md) and [current automation rules](docs/current-automation-policy.md) before deployment. The CLI now implements the current screening and email-draft rules; durable production storage, Gmail delivery and scheduler migration remain external prerequisites. See [Codex handoff](docs/codex-handoff.md).
 
 # PM careers scraper — 60 employers
 
@@ -28,9 +28,10 @@ Exit code **0** means all configured sources completed, **2** means reports were
 | `results.json` | Complete candidate descriptions, evidence, reasons and source audit |
 | `roles.csv` | Flat export of candidates and decisions |
 | `source-health.json` | Coverage, counts, errors and checked URLs for each employer |
-| `digest.json` | Up to 10 newly eligible, unreported roles and a delivery ID |
+| `digest.json` | Legacy capped/new-only digest; do not use for the daily email |
+| `email.md`, `email.json` | Complete current-run daily email draft, subject, run marker and alternative URLs; not sent |
 
-Results have three states: **eligible**, **review**, or **rejected**. Unknown travel, attendance, Portugal eligibility or original publication date stays in review. A review entry is not a confirmed match. Salary missing from a posting is flagged without automatic rejection. Work-life balance cannot be guaranteed from advertising; the report preserves employer context and flags explicit shift/on-call requirements.
+Results have three states: **eligible**, **review**, or **rejected**. Unknown travel, attendance, Portugal eligibility or original publication date stays in review. A review entry is not a confirmed match. Missing salary has no effect on screening or ranking. Work-life balance cannot be guaranteed from advertising; the report preserves employer context and flags explicit shift/on-call requirements.
 
 The numeric priority score is a transparent rule-based convenience (remote/location, travel evidence and freshness). It is not an employee-review or work-life-balance rating. Ties use the saved employer shortlist order.
 
@@ -41,8 +42,9 @@ The numeric priority score is a transparent rule-based convenience (remote/locat
 - Santo Tirso base; nearby northern hybrid roles require at most two office days weekly. Distant offices require remote work and quarterly-or-less visits.
 - **No more than seven calendar days abroad in any quarter**, across all business trips, onboarding, training, retreats/offsites and transit. Annual averages and percentages alone do not establish this cap.
 - Mandatory languages limited to Portuguese, English and Spanish.
-- Original publication less than seven days ago. Last-published, refreshed, modified and first-seen timestamps are not accepted as original publication.
-- EUR 55,000 gross annual target; an explicit annual EUR salary ceiling below it is rejected.
+- Verified original publication within 48 hours of run start; future dates excluded and date-only evidence handled conservatively. Last-published, refreshed, modified and first-seen timestamps are not accepted as original publication.
+- No salary threshold or ranking effect; explicit gross annual EUR45k+ salary is an optional positive in the email draft.
+- Mandatory experience minimums above five years are excluded; ambiguous requirements remain in review.
 - Only the configured 60 employers; no inferred sector exclusion. Bosch and Vestas remain included.
 
 The parser uses explicit evidence and conservative pattern rules. It cannot understand every phrasing. Check the retained evidence before applying. To resolve a specific ambiguity, add an entry keyed by job ID to `config/verified-overrides.json` with `verified_at`, `evidence`, and supported `checks` set to `pass` or `fail`. Evidence expires after 90 days. Do not fabricate verification. See `docs/verified-override-example.json`.
@@ -57,7 +59,7 @@ The scraper **does not send email itself**. The scheduled ChatGPT task uses the 
 python run.py ack pm-DELIVERY_ID --receipt GMAIL_MESSAGE_ID --state data/state.sqlite3
 ```
 
-Only run `ack` after a confirmed successful send. A retry produces the same pending delivery ID. Before retrying an uncertain email send, search Sent for that ID to prevent duplicate mail. If `digest.json.jobs` is empty, send no job digest. Save the report regardless so source failures and review candidates remain visible.
+Only run `ack` after a confirmed successful send. A retry produces the same pending delivery ID. Before retrying an uncertain email send, search Sent for that ID to prevent duplicate mail. The legacy digest is not the daily email. Use `email.json` / `email.md` for every attempted run, including no-match and failure reports. They include all qualifying current-run roles, even previously reported ones, without the legacy ten-role cap. Draft generation never confirms sending; reconcile the run marker in Gmail Sent and record a receipt only after successful delivery. Save the report regardless so source failures and review candidates remain visible.
 
 The original downloadable ZIP included a one-off audit snapshot. This Git import intentionally excludes `audit/` and mutable databases; preserve production state separately. See `docs/import-notes.md` for differences between this source baseline and the latest requested changes.
 
@@ -97,3 +99,11 @@ Adjust a source's `budget_seconds` only for a concrete time-budget failure. Defa
 - [ChatGPT scheduled tasks](https://learn.chatgpt.com/docs/automations) — durable inputs, connected tools and unattended execution.
 
 Employer-specific endpoint mappings were obtained from the employers' public careers pages and their linked public client code on 19 October 2026. They are data retrieval routes, not credentials or application-submission routes.
+
+## Codex migration
+
+See [the prepared scheduled-run instructions](schedule/codex-task.md). The daily
+ChatGPT task has not been transferred to Codex. Production runs must restore the
+real state first and use `--require-existing-state`; onboarding databases are
+isolated checks and must never replace it. Network validation on 2026-10-21
+completed 55 of 60 configured source scopes; five coverage gaps remain visible.

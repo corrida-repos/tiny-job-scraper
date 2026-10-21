@@ -8,7 +8,7 @@ CFG=json.loads((Path(__file__).resolve().parents[1]/'config/criteria.json').read
 NOW=datetime(2026,10,19,12,tzinfo=timezone.utc)
 BASE='Fully remote within Portugal. You will coordinate delivery, manage stakeholder expectations and review technical proposals. No travel required. English is required.'
 def job(**kw):
- d=dict(company_id='bosch',company='Bosch',title='Technical Project Manager',url='https://example.org/jobs/123',source_id='123',location='Portugal',countries=['PT'],workplace='remote',description=BASE,posted_at='2026-10-17',date_kind='original_posted',date_evidence='fixture original publication',detail_ok=True)
+ d=dict(company_id='bosch',company='Bosch',title='Technical Project Manager',url='https://example.org/jobs/123',source_id='123',location='Portugal',countries=['PT'],workplace='remote',description=BASE,posted_at='2026-10-18T12:00:00Z',date_kind='original_posted',date_evidence='fixture original publication',detail_ok=True)
  d.update(kw);return Job(**d)
 class Screening(unittest.TestCase):
  def setUp(self):self.s=Screener(CFG)
@@ -51,7 +51,7 @@ class Screening(unittest.TestCase):
   self.assertEqual(self.assess(posted_at='2026-10-12').checks['freshness']['status'],'fail')
  def test_missing_detail_and_salary(self):
   self.assertEqual(self.assess(description='',detail_ok=False).status,'review')
-  self.assertEqual(self.assess().checks['salary']['status'],'unverified')
+  self.assertEqual(self.assess().checks['salary']['status'],'informational')
  def test_expired_evidence_does_not_resolve_unknown(self):
   a=self.s.assess(job(description=BASE.replace('No travel required.','')),NOW,{'verified_at':'2026-01-01','evidence':'old email','checks':{'travel':'pass'}})
   self.assertEqual(a.status,'review')
@@ -70,3 +70,45 @@ class AdditionalRegressions(unittest.TestCase):
   self.assertEqual(self.s.assess(j,NOW).checks['travel']['status'],'unknown')
  def test_successfactors_date_format(self):
   self.assertEqual(parse_date('Sat Sep 26 02:00:00 UTC 2026').isoformat(),'2026-09-26T02:00:00+00:00')
+
+
+class CurrentPolicyRegressions(unittest.TestCase):
+ def setUp(self):self.s=Screener(CFG)
+ def test_exact_freshness_boundaries(self):
+  for posted, expected in [
+   ('2026-10-17T12:00:00Z','pass'),
+   ('2026-10-17T11:59:59Z','fail'),
+   ('2026-10-19T12:00:01Z','unknown'),
+   ('2026-10-18','pass'),
+   ('2026-10-19','unknown'),
+   ('2026-10-17','fail'),
+  ]:
+   with self.subTest(posted=posted):
+    self.assertEqual(self.s.assess(job(posted_at=posted),NOW).checks['freshness']['status'],expected)
+ def test_salary_never_changes_status_or_score(self):
+  baseline=self.s.assess(job(),NOW)
+  for ceiling in [20000,45000,55000,100000]:
+   salary={'currency':'EUR','value':{'unitText':'YEAR','maxValue':ceiling}}
+   actual=self.s.assess(job(salary=salary),NOW)
+   self.assertEqual((actual.status,actual.score,actual.reasons),(baseline.status,baseline.score,baseline.reasons))
+ def test_experience_minimums_and_preferences(self):
+  for text, expected in [
+   ('At least 7 years of professional experience required.','fail'),
+   ('6+ years of leadership experience.','fail'),
+   ('6+ years of experience required and 8 years of experience preferred.','fail'),
+   ('8 years of experience preferred and minimum 6 years of experience required.','fail'),
+   ('Minimo seis anos de experiencia obrigatoria.','fail'),
+   ('Minimum 6–10 years of experience.','fail'),
+   ('5+ years of experience required.','pass'),
+   ('5–7 years of experience required.','pass'),
+   ('3–5 years of experience required.','pass'),
+   ('6+ years of experience preferred.','pass'),
+   ('Ideally 8 years of experience.','pass'),
+   ('8 years of experience.','unknown'),
+   ('At least seven years of experience required.','fail'),
+   ('Experiencia minima obrigatoria de 8 anos.','fail'),
+   ('8 years of experience preferred; minimum 6 years of domain experience required.','fail'),
+  ]:
+   with self.subTest(text=text):
+    result=self.s.assess(job(description=BASE+' '+text),NOW)
+    self.assertEqual(result.checks['experience']['status'],expected)

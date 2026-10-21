@@ -51,3 +51,12 @@ The representative live source check was blocked by the network proxy; required
 domains and reusable install/start instructions were saved in the environment
 configuration draft. Saving that draft does not apply or publish it, and does
 not validate a future scheduled run.
+
+## Implementation progress — 2026-10-21
+
+Current code now implements the 48-hour, salary and experience screening updates
+and complete per-run email draft generation. See the current update at the top
+of `UNFINISHED.md` and `schedule/codex-task.md`. A fresh focused network check
+passed; the full audit completed 55/60 configured source scopes with five recorded
+gaps. Scheduler transfer, production-state access and Gmail delivery remain
+unverified and unchanged.

@@ -1,10 +1,9 @@
 {
   "timezone": "Europe/Lisbon",
   "home": "Santo Tirso, Portugal",
-  "max_post_age_days": 7,
+  "max_post_age_days": 2,
   "max_office_days_per_week": 2,
   "max_abroad_calendar_days_per_quarter": 7,
-  "salary_target_eur_annual": 55000,
   "allowed_languages": [
     "English",
     "Portuguese",
@@ -131,8 +130,9 @@
     "Writing code and coding assessments are excluded; reading and reviewing code are allowed.",
     "A remote label does not establish Portugal eligibility or the travel cap.",
     "Unknown travel, attendance or original posting dates remain in the review queue, never silently passed.",
-    "Salary is a target: reject an explicit EUR annual maximum below target; unknown salary is flagged without automatic exclusion.",
+    "Salary is informational only and never affects eligibility, review status or ranking.",
     "No sector rule is inferred beyond the explicit employer allowlist."
   ],
-  "max_distant_office_visits_per_quarter": 1
+  "max_distant_office_visits_per_quarter": 1,
+  "max_mandatory_experience_years": 5
 }
