@@ -1,3 +1,13 @@
+# GitHub Actions implementation update
+
+The repository now includes a manually runnable Actions replacement with encrypted
+state checkpoints, Gmail SMTP/IMAP reconciliation and tests. See
+`schedule/github-actions.md`. The encrypted bootstrap branch is published.
+Scheduled delivery remains gated by `DAILY_ENABLED`; required repository secrets,
+remote Actions execution and actual Gmail delivery have not been validated.
+The original ChatGPT schedule remains unchanged. Local state is an imported
+snapshot, not a live Library synchronization.
+
 # Current implementation update — 21 October 2026
 
 Implemented in the Codex checkout; all 42 tests pass:

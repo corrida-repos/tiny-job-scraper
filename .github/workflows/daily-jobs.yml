@@ -1,0 +1,83 @@
+name: Daily PM jobs
+on:
+  workflow_dispatch:
+    inputs:
+      send_email:
+        description: 'Send a real email and persist state (leave false for validation)'
+        type: boolean
+        default: false
+  schedule:
+    # GitHub cron uses UTC. Only the trigger at 08:00 Lisbon passes the gate.
+    - cron: '0 7 * * *'
+    - cron: '0 8 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: tiny-production-runner
+  cancel-in-progress: false
+jobs:
+  daily:
+    if: github.event_name == 'workflow_dispatch' || vars.DAILY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Select Lisbon morning
+        id: gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          python - <<'PYGATE'
+          import os
+          from datetime import datetime, timezone
+          from zoneinfo import ZoneInfo
+          local = datetime.now(ZoneInfo('Europe/Lisbon')).replace(hour=8, minute=0, second=0, microsecond=0)
+          expected = f"0 {local.astimezone(timezone.utc).hour} * * *"
+          if os.environ['EVENT_NAME'] == 'workflow_dispatch' or os.environ['EVENT_SCHEDULE'] == expected:
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+                  output.write('run=true\n')
+          PYGATE
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.run == 'true'
+        with:
+          path: source
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.run == 'true'
+        with:
+          ref: runtime-state
+          path: encrypted-state
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        if: steps.gate.outputs.run == 'true'
+        with:
+          python-version: '3.12'
+      - name: Install and test
+        if: steps.gate.outputs.run == 'true'
+        working-directory: source
+        run: |
+          python -m pip install -r requirements-actions.txt
+          PYTHONPATH=src python -m unittest discover -s tests -v
+      - name: Retrieve, checkpoint and optionally deliver
+        if: steps.gate.outputs.run == 'true'
+        working-directory: source
+        env:
+          STATE_ENCRYPTION_KEY: ${{ secrets.STATE_ENCRYPTION_KEY }}
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          SEND_EMAIL: ${{ github.event_name == 'schedule' || inputs.send_email }}
+          PYTHONPATH: src
+        run: |
+          git -C ../encrypted-state config user.name github-actions[bot]
+          git -C ../encrypted-state config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          args=()
+          if [ "$SEND_EMAIL" = true ]; then args+=(--send); fi
+          python -m pm_scraper.actions_runner --state-checkout ../encrypted-state "${args[@]}"
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.gate.outputs.run == 'true'
+        with:
+          name: encrypted-run-validation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            source/output/actions/*.enc
+            source/output/actions/summary.json
+          if-no-files-found: ignore
+          retention-days: 30

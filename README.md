@@ -107,3 +107,12 @@ ChatGPT task has not been transferred to Codex. Production runs must restore the
 real state first and use `--require-existing-state`; onboarding databases are
 isolated checks and must never replace it. Network validation on 2026-10-21
 completed 55 of 60 configured source scopes; five coverage gaps remain visible.
+
+## GitHub Actions runner
+
+A repository-based replacement is implemented in
+[the Actions workflow](.github/workflows/daily-jobs.yml); follow
+[setup and cutover instructions](schedule/github-actions.md). Scheduled delivery
+is disabled until `DAILY_ENABLED=true`. The encrypted `runtime-state` branch
+preserves job and delivery history. Gmail secrets and an observed manual delivery
+are still required before switching off the original ChatGPT task.
