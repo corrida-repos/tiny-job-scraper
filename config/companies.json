@@ -1,0 +1,996 @@
+[
+  {
+    "id": "jta-the-data-scientists",
+    "rank": 1,
+    "name": "JTA — The Data Scientists",
+    "careers_url": "https://www.thedatascientists.com/about-us/careers/",
+    "location_note": "Home/office choice; Porto",
+    "wlb_note": "2026 Great Place to Work recognition; published workplace flexibility.",
+    "source": {
+      "adapter": "html",
+      "listing_url": "https://www.thedatascientists.com/about-us/careers/",
+      "job_pattern": "/(?:jobs|vacancies|careers)/[^/?#]+",
+      "kind": "inline_watch",
+      "inline_roles": true,
+      "empty_pattern": "spontaneous application",
+      "empty_is_unverified": true,
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://www.thedatascientists.com/about-us/careers/"
+    }
+  },
+  {
+    "id": "mercedes-benz-io",
+    "rank": 2,
+    "name": "Mercedes-Benz.io",
+    "careers_url": "https://www.mercedes-benz.io/jobs",
+    "location_note": "Remote within Portugal; Braga office optional",
+    "wlb_note": "Flexible location policy plus positive local employee feedback on work-life balance.",
+    "source": {
+      "adapter": "recruitee",
+      "base": "https://mbio.recruitee.com",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://www.mercedes-benz.io/jobs"
+    }
+  },
+  {
+    "id": "tui-technology",
+    "rank": 3,
+    "name": "TUI Technology",
+    "careers_url": "https://careers.tuigroup.com/en/portugal",
+    "location_note": "Remote-first Portugal; Matosinhos hub",
+    "wlb_note": "Flexible schedules, employee assistance and wellbeing support.",
+    "source": {
+      "adapter": "html",
+      "listing_url": "https://careers.tuigroup.com/en/jobs-portugal",
+      "job_pattern": "/en/job/[^?#]+",
+      "page_pattern": "/en/search-jobs/results\\?|/en/jobs-portugal/[^#]*\\?",
+      "kind": "radancy",
+      "empty_pattern": "we found 0 results",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://careers.tuigroup.com/en/portugal"
+    }
+  },
+  {
+    "id": "coverflex",
+    "rank": 4,
+    "name": "Coverflex",
+    "careers_url": "https://careers.coverflex.com/",
+    "location_note": "Fully remote; company gatherings",
+    "wlb_note": "25 vacation days and published remote flexibility; workplace recognition.",
+    "source": {
+      "adapter": "html",
+      "listing_url": "https://careers.coverflex.com/jobs",
+      "job_pattern": "/jobs/\\d+-",
+      "page_pattern": "/jobs\\?[^#]*(?:page=|page%5B)",
+      "kind": "teamtailor",
+      "title_xpath": ".//h2|.//h3",
+      "empty_pattern": "no matching jobs|no jobs found|no open positions|no jobs available|there are no jobs",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://careers.coverflex.com/"
+    }
+  },
+  {
+    "id": "doist-todoist",
+    "rank": 5,
+    "name": "Doist / Todoist",
+    "careers_url": "https://www.todoist.com/careers",
+    "location_note": "Worldwide remote; team retreats",
+    "wlb_note": "Self-set schedule, encouraged maximum 40-hour week and 40 days PTO including public holidays.",
+    "source": {
+      "adapter": "astro",
+      "listing_url": "https://www.todoist.com/careers",
+      "job_pattern": "/careers/[0-9a-f-]{36}-",
+      "empty_pattern": "no open roles|no open positions",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://www.todoist.com/careers"
+    }
+  },
+  {
+    "id": "buffer",
+    "rank": 6,
+    "name": "Buffer",
+    "careers_url": "https://buffer.com/journey",
+    "location_note": "Worldwide remote",
+    "wlb_note": "Four scheduled workdays plus a flexible, meeting-free fifth day; flexible time off.",
+    "source": {
+      "adapter": "ashby",
+      "board": "buffer",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://buffer.com/journey"
+    }
+  },
+  {
+    "id": "float",
+    "rank": 7,
+    "name": "Float",
+    "careers_url": "https://www.float.com/careers",
+    "location_note": "Worldwide remote; annual meetup",
+    "wlb_note": "Async work with no core hours; annual company closure and explicit time-off benefits.",
+    "source": {
+      "adapter": "pinpoint",
+      "base": "https://float.pinpointhq.com",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://www.float.com/careers"
+    }
+  },
+  {
+    "id": "mindera",
+    "rank": 8,
+    "name": "Mindera",
+    "careers_url": "https://mindera.com/locations/portugal",
+    "location_note": "Remote anywhere in Portugal; Porto optional",
+    "wlb_note": "Flexible hours, open holiday policy and explicit choice of working location.",
+    "source": {
+      "adapter": "workable",
+      "board": "minderacraft",
+      "listing_url": "https://mindera.com/locations/portugal",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://mindera.com/locations/portugal"
+    }
+  },
+  {
+    "id": "intellias",
+    "rank": 9,
+    "name": "Intellias",
+    "careers_url": "https://career.intellias.com/vacancies/location_portugal/",
+    "location_note": "Portugal remote roles; Porto presence",
+    "wlb_note": "Strong 2026 Teamlyzer employee-feedback recognition.",
+    "source": {
+      "adapter": "intellias",
+      "listing_url": "https://career.intellias.com/vacancies/",
+      "job_pattern": "/vacancy/[^/]+",
+      "page_pattern": "/vacancies/(?:page/\\d+|\\?[^#]*paged=)",
+      "title_xpath": ".//*[contains(@class,\"title\")]|.//h2|.//h3",
+      "kind": "intellias",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://career.intellias.com/vacancies/location_portugal/",
+      "body_xpath": "//section[contains(@class,\"vacancy_content\")]",
+      "detail_title_xpath": "//h1[contains(@class,\"single-vacancy-title\")]"
+    }
+  },
+  {
+    "id": "z-hlke",
+    "rank": 10,
+    "name": "Zühlke",
+    "careers_url": "https://www.zuehlke.com/en/careers/locations/portugal",
+    "location_note": "Porto hybrid; attendance agreed with People Lead",
+    "wlb_note": "Flexitime plus reduced/condensed-hours options and mental-health support.",
+    "source": {
+      "adapter": "workday",
+      "base": "https://zuehlke.wd3.myworkdayjobs.com",
+      "tenant": "zuehlke",
+      "site": "Zuhlke-Careers",
+      "search_terms": [
+        "Portugal",
+        "Porto",
+        "Remote",
+        "EMEA",
+        "Europe",
+        "Worldwide",
+        "Braga"
+      ],
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://www.zuehlke.com/en/careers/locations/portugal",
+      "scope": "Portugal, Porto, Braga and remote/EMEA/Europe/worldwide keyword searches"
+    }
+  },
+  {
+    "id": "imaginary-cloud",
+    "rank": 11,
+    "name": "Imaginary Cloud",
+    "careers_url": "https://teamtailor.imaginarycloud.com/",
+    "location_note": "Remote-first Portugal",
+    "wlb_note": "Explicit flexible schedules and opposition to overtime; 2026 workplace recognition.",
+    "source": {
+      "adapter": "html",
+      "listing_url": "https://teamtailor.imaginarycloud.com/jobs",
+      "job_pattern": "/jobs/\\d+-",
+      "page_pattern": "/jobs\\?[^#]*(?:page=|page%5B)",
+      "kind": "teamtailor",
+      "title_xpath": ".//h2|.//h3",
+      "empty_pattern": "no matching jobs|no jobs found|no open positions|no jobs available|there are no jobs",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://teamtailor.imaginarycloud.com/"
+    }
+  },
+  {
+    "id": "wellhub",
+    "rank": 12,
+    "name": "Wellhub",
+    "careers_url": "https://wellhub.com/careers/",
+    "location_note": "Portugal remote vacancies",
+    "wlb_note": "25+ annual paid days off, birthday leave and substantial wellbeing support.",
+    "source": {
+      "adapter": "greenhouse",
+      "board": "gympass",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://wellhub.com/careers/"
+    }
+  },
+  {
+    "id": "toggl",
+    "rank": 13,
+    "name": "Toggl",
+    "careers_url": "https://toggl.com/jobs",
+    "location_note": "Fully remote; at least two meetups yearly",
+    "wlb_note": "Flexible paid time off and wellbeing support.",
+    "source": {
+      "adapter": "ashby_embedded",
+      "board": "toggl",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://toggl.com/jobs"
+    }
+  },
+  {
+    "id": "7-1-tech-hub",
+    "rank": 14,
+    "name": "7.1 Tech Hub",
+    "careers_url": "https://karriere.prosiebensat1.com/welcome-sevenone-tech-hub",
+    "location_note": "Porto; 90 office days per year",
+    "wlb_note": "25 vacation days, wellbeing initiatives and strong local employee-feedback recognition.",
+    "source": {
+      "adapter": "html",
+      "listing_url": "https://jobs.prosiebensat1.com/search/?q=&locationsearch=Porto",
+      "job_pattern": "/job-invite/\\d+|/job/[^?#]+",
+      "page_pattern": "[?&]startrow=\\d+",
+      "kind": "pro7",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://karriere.prosiebensat1.com/welcome-sevenone-tech-hub",
+      "empty_pattern": "no jobs|no results|0 jobs"
+    }
+  },
+  {
+    "id": "deus",
+    "rank": 15,
+    "name": "DEUS",
+    "careers_url": "https://www.deus.ai/careers/",
+    "location_note": "Remote-friendly; Matosinhos office",
+    "wlb_note": "Trust-based working, no timesheets, wellbeing initiatives and autonomy.",
+    "source": {
+      "adapter": "html",
+      "listing_url": "https://talent.deus.ai/jobs",
+      "job_pattern": "/jobs/\\d+-",
+      "page_pattern": "/jobs\\?[^#]*(?:page=|page%5B)",
+      "kind": "teamtailor",
+      "title_xpath": ".//h2|.//h3",
+      "empty_pattern": "no matching jobs|no jobs found|no open positions|no jobs available|there are no jobs",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://www.deus.ai/careers/"
+    }
+  },
+  {
+    "id": "feedzai",
+    "rank": 16,
+    "name": "Feedzai",
+    "careers_url": "https://careers.feedzai.com/office/porto/",
+    "location_note": "Primarily remote option: 1–2 Porto days/month",
+    "wlb_note": "Published choice of working arrangements reduces commuting.",
+    "source": {
+      "adapter": "greenhouse",
+      "board": "feedzai",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://careers.feedzai.com/office/porto/"
+    }
+  },
+  {
+    "id": "stellaxius",
+    "rank": 17,
+    "name": "Stellaxius",
+    "careers_url": "https://stellaxius.com/careers/",
+    "location_note": "Remote-first Portugal; Lisbon office optional",
+    "wlb_note": "Explicitly no required office presence; wellbeing coverage and workplace recognition.",
+    "source": {
+      "adapter": "html",
+      "listing_url": "https://stellaxius.com/careers/",
+      "job_pattern": "/[a-z0-9-]+-m-f-d/",
+      "fetch_all_details": false,
+      "kind": "static",
+      "detail_title_xpath": "//h1",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://stellaxius.com/careers/",
+      "body_xpath": "//*[@data-elementor-type=\"single-post\"]",
+      "title_xpath": "ancestor::article[1]//h2|ancestor::article[1]//h3"
+    }
+  },
+  {
+    "id": "cocus",
+    "rank": 18,
+    "name": "COCUS",
+    "careers_url": "https://www.cocus.com/en/about-us/it-career/",
+    "location_note": "Remote/flexible office options; Porto/Gaia",
+    "wlb_note": "Published remote-office guarantee and flexible schedules.",
+    "source": {
+      "adapter": "html",
+      "listing_url": "https://talent.sage.hr/7dff8044-5957-4793-b718-1ad5065bbd40/vacancies",
+      "job_pattern": "/jobs/[a-f0-9-]{36}",
+      "page_pattern": "[?&]page=\\d+",
+      "kind": "sage",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://www.cocus.com/en/about-us/it-career/"
+    }
+  },
+  {
+    "id": "typeform",
+    "rank": 19,
+    "name": "Typeform",
+    "careers_url": "https://www.typeform.com/careers",
+    "location_note": "Remote roles that explicitly include Portugal",
+    "wlb_note": "Fully remote organisation with no routine office commute for eligible roles.",
+    "source": {
+      "adapter": "greenhouse",
+      "board": "typeform",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://www.typeform.com/careers"
+    }
+  },
+  {
+    "id": "bosch",
+    "rank": 20,
+    "name": "Bosch",
+    "careers_url": "https://www.bosch.pt/carreiras/ofertas-de-emprego/",
+    "location_note": "Braga hybrid",
+    "wlb_note": "Local PM listings advertise flexible work and hybrid arrangements.",
+    "source": {
+      "adapter": "smartrecruiters",
+      "board": "BoschGroup",
+      "country": "pt",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://www.bosch.pt/carreiras/ofertas-de-emprego/"
+    }
+  },
+  {
+    "id": "kuehne-nagel-porto-it-hub",
+    "rank": 21,
+    "name": "Kuehne+Nagel — Porto IT Hub",
+    "careers_url": "https://jobs.kuehne-nagel.com/global/en/porto-it-hub",
+    "location_note": "Porto hybrid",
+    "wlb_note": "25 vacation days and a published flexible hybrid model.",
+    "source": {
+      "adapter": "phenom",
+      "listing_url": "https://jobs.kuehne-nagel.com/global/en/search-results",
+      "job_pattern": "/global/en/job/[^?#]+",
+      "page_pattern": "[?&](?:from|page)=\\d+",
+      "kind": "phenom",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://jobs.kuehne-nagel.com/global/en/porto-it-hub",
+      "keyword": "Portugal"
+    }
+  },
+  {
+    "id": "volkswagen-group-digital-solutions",
+    "rank": 22,
+    "name": "Volkswagen Group Digital Solutions",
+    "careers_url": "https://vwg-digitalsolutions.pt/careers/",
+    "location_note": "Porto office; arrangement to confirm",
+    "wlb_note": "Positive local workplace-reputation signal; automotive/software role fit.",
+    "source": {
+      "adapter": "lever",
+      "board": "vwgds",
+      "region": "eu",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://vwg-digitalsolutions.pt/careers/"
+    }
+  },
+  {
+    "id": "dachser-corporate-it-hub",
+    "rank": 23,
+    "name": "DACHSER — Corporate IT Hub",
+    "careers_url": "https://careers.dachser.com/dachser_europe/go/ver_todos_os_empregos_pt/9407055/",
+    "location_note": "Porto hybrid",
+    "wlb_note": "IT hub postings advertise flexible attendance/hours and 24 vacation days.",
+    "source": {
+      "adapter": "html",
+      "listing_url": "https://careers.dachser.com/dachser_europe/search/?q=&locationsearch=Portugal",
+      "job_pattern": "/job/[^?#]+",
+      "page_pattern": "[?&]startrow=\\d+",
+      "kind": "successfactors",
+      "empty_pattern": "no jobs|no results|0 jobs|nenhum",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://careers.dachser.com/dachser_europe/go/ver_todos_os_empregos_pt/9407055/"
+    }
+  },
+  {
+    "id": "diconium",
+    "rank": 24,
+    "name": "diconium",
+    "careers_url": "https://diconium.com/en/career",
+    "location_note": "Porto hybrid",
+    "wlb_note": "Published flexible workplace model; employee preference averages two office days weekly.",
+    "source": {
+      "adapter": "workday",
+      "base": "https://diconium.wd3.myworkdayjobs.com",
+      "tenant": "diconium",
+      "site": "diconium",
+      "search_terms": [
+        "Portugal",
+        "Porto",
+        "Remote",
+        "EMEA",
+        "Europe",
+        "Worldwide",
+        "Braga"
+      ],
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://diconium.com/en/career",
+      "scope": "Portugal, Porto, Braga and remote/EMEA/Europe/worldwide keyword searches"
+    }
+  },
+  {
+    "id": "wolters-kluwer-basecone",
+    "rank": 25,
+    "name": "Wolters Kluwer / Basecone",
+    "careers_url": "https://careers.wolterskluwer.com/en/join-us",
+    "location_note": "Porto; some listings specify 8 office days/month",
+    "wlb_note": "Flexible-working and wellbeing benefits; a concrete local hybrid example.",
+    "source": {
+      "adapter": "workday",
+      "base": "https://wk.wd3.myworkdayjobs.com",
+      "tenant": "wk",
+      "site": "External",
+      "search_terms": [
+        "Portugal",
+        "Porto",
+        "Remote",
+        "EMEA",
+        "Europe",
+        "Worldwide",
+        "Braga"
+      ],
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://careers.wolterskluwer.com/en/join-us",
+      "scope": "Portugal, Porto, Braga and remote/EMEA/Europe/worldwide keyword searches"
+    }
+  },
+  {
+    "id": "infineon",
+    "rank": 26,
+    "name": "Infineon",
+    "careers_url": "https://www.infineon.com/careers/our-locations/portugal",
+    "location_note": "Maia; hybrid/remote terms depend on role",
+    "wlb_note": "Portugal benefits include flexible working and remote work.",
+    "source": {
+      "adapter": "eightfold",
+      "base": "https://jobs.infineon.com",
+      "domain": "infineon.com",
+      "location": "Portugal",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://www.infineon.com/careers/our-locations/portugal"
+    }
+  },
+  {
+    "id": "continental",
+    "rank": 27,
+    "name": "Continental",
+    "careers_url": "https://jobs.continental.com/en/",
+    "location_note": "Lousado; selected flexible/hybrid office roles",
+    "wlb_note": "Especially convenient location; published flexibility in local office roles.",
+    "source": {
+      "adapter": "html",
+      "listing_url": "https://jobs.continental.com/en/a-z-liste/",
+      "job_pattern": "/en/detail-page/job-detail/[^?#]+",
+      "page_pattern": "currentPage(?:%5D|\\])=\\d+",
+      "kind": "continental",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://jobs.continental.com/en/"
+    }
+  },
+  {
+    "id": "loka",
+    "rank": 28,
+    "name": "Loka",
+    "careers_url": "https://www.loka.com/mycareer",
+    "location_note": "Remote-first",
+    "wlb_note": "Every other Friday off and flexible hours.",
+    "source": {
+      "adapter": "greenhouse",
+      "board": "lokainc",
+      "discovery_url": "https://www.loka.com/careers"
+    }
+  },
+  {
+    "id": "pixelmatters",
+    "rank": 29,
+    "name": "Pixelmatters",
+    "careers_url": "https://jobs.ashbyhq.com/pixelmatters",
+    "location_note": "Remote by default; Porto office optional",
+    "wlb_note": "Explicit remote-default policy and product-delivery fit.",
+    "source": {
+      "adapter": "ashby",
+      "board": "pixelmatters",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://jobs.ashbyhq.com/pixelmatters"
+    }
+  },
+  {
+    "id": "oyster",
+    "rank": 30,
+    "name": "Oyster",
+    "careers_url": "https://www.oysterhr.com/careers",
+    "location_note": "Worldwide remote",
+    "wlb_note": "40 days PTO including regional holidays, wellbeing allowance and flexible benefits.",
+    "source": {
+      "adapter": "ashby",
+      "board": "oyster",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://www.oysterhr.com/careers"
+    }
+  },
+  {
+    "id": "camunda",
+    "rank": 31,
+    "name": "Camunda",
+    "careers_url": "https://camunda.com/careers/",
+    "location_note": "Remote; Portugal appears among hiring countries",
+    "wlb_note": "Flexible time off and wellbeing benefits in a remote company.",
+    "source": {
+      "adapter": "ashby",
+      "board": "camunda",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://camunda.com/careers/"
+    }
+  },
+  {
+    "id": "duckduckgo",
+    "rank": 32,
+    "name": "DuckDuckGo",
+    "careers_url": "https://duckduckgo.com/hiring",
+    "location_note": "Remote; Portugal hiring documented",
+    "wlb_note": "No core hours and flexible working; in-person gatherings expected.",
+    "source": {
+      "adapter": "duckduckgo",
+      "listing_url": "https://duckduckgo.com/hiring",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://duckduckgo.com/hiring",
+      "jobs_url": "https://duckduckgo.com/jobs.js"
+    }
+  },
+  {
+    "id": "storyblok",
+    "rank": 33,
+    "name": "Storyblok",
+    "careers_url": "https://www.storyblok.com/jobs.html",
+    "location_note": "Remote-only; European/global eligible roles",
+    "wlb_note": "Flexible start/finish times and 25 vacation days plus local holidays.",
+    "source": {
+      "adapter": "greenhouse",
+      "board": "storyblok",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://www.storyblok.com/jobs.html"
+    }
+  },
+  {
+    "id": "pleo",
+    "rank": 34,
+    "name": "Pleo",
+    "careers_url": "https://www.pleo.io/en/careers",
+    "location_note": "Remote-Portugal roles; other roles are Lisbon hybrid",
+    "wlb_note": "Explicit respect for personal time, flexible hours and wellbeing support.",
+    "source": {
+      "adapter": "ashby",
+      "board": "pleo",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://www.pleo.io/en/careers"
+    }
+  },
+  {
+    "id": "vestas",
+    "rank": 35,
+    "name": "Vestas",
+    "careers_url": "https://careers.vestas.com/",
+    "location_note": "Leça do Balio / Porto hybrid",
+    "wlb_note": "Strong profile/location fit; a Delivery Manager listing specifies only up to 5 travel days/year.",
+    "source": {
+      "adapter": "html",
+      "listing_url": "https://careers.vestas.com/search/?q=&locationsearch=Portugal",
+      "job_pattern": "/job/[^?#]+",
+      "page_pattern": "[?&]startrow=\\d+",
+      "kind": "successfactors",
+      "empty_pattern": "no jobs|no results|0 jobs",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://careers.vestas.com/"
+    }
+  },
+  {
+    "id": "infraspeak",
+    "rank": 36,
+    "name": "Infraspeak",
+    "careers_url": "https://careers.infraspeak.com/",
+    "location_note": "Porto hybrid; arrangement varies",
+    "wlb_note": "Flexible working hours and published benefits.",
+    "source": {
+      "adapter": "html",
+      "listing_url": "https://careers.infraspeak.com/jobs",
+      "job_pattern": "/jobs/\\d+-",
+      "page_pattern": "/jobs\\?[^#]*(?:page=|page%5B)",
+      "kind": "teamtailor",
+      "title_xpath": ".//h2|.//h3",
+      "empty_pattern": "no matching jobs|no jobs found|no open positions|no jobs available|there are no jobs",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://careers.infraspeak.com/"
+    }
+  },
+  {
+    "id": "salsify",
+    "rank": 37,
+    "name": "Salsify",
+    "careers_url": "https://www.salsify.com/careers",
+    "location_note": "Remote-within-Portugal roles",
+    "wlb_note": "Published flexible vacation and distributed-team policy.",
+    "source": {
+      "adapter": "greenhouse",
+      "board": "salsify",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://www.salsify.com/careers"
+    }
+  },
+  {
+    "id": "csg",
+    "rank": 38,
+    "name": "CSG",
+    "careers_url": "https://www.csgi.com/careers",
+    "location_note": "Remote-first; Portugal roles have been advertised",
+    "wlb_note": "Published flexible-first approach focused on output.",
+    "source": {
+      "adapter": "workday",
+      "base": "https://csgi.wd5.myworkdayjobs.com",
+      "tenant": "csgi",
+      "site": "CSGCareers",
+      "search_terms": [
+        "Portugal",
+        "Porto",
+        "Remote",
+        "EMEA",
+        "Europe",
+        "Worldwide",
+        "Braga"
+      ],
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://www.csgi.com/careers",
+      "scope": "Portugal, Porto, Braga and remote/EMEA/Europe/worldwide keyword searches"
+    }
+  },
+  {
+    "id": "lokalise",
+    "rank": 39,
+    "name": "Lokalise",
+    "careers_url": "https://lokalise.com/careers/",
+    "location_note": "Fully remote; eligible country per vacancy",
+    "wlb_note": "Remote culture and yearly team/company offsites.",
+    "source": {
+      "adapter": "greenhouse",
+      "board": "lokalise",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://lokalise.com/careers/"
+    }
+  },
+  {
+    "id": "maze",
+    "rank": 40,
+    "name": "Maze",
+    "careers_url": "https://maze.co/careers/",
+    "location_note": "Fully remote Europe; role eligibility to confirm",
+    "wlb_note": "Async collaboration, flexible vacation and lifestyle stipend.",
+    "source": {
+      "adapter": "ashby",
+      "board": "mazedesign",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://maze.co/careers/"
+    }
+  },
+  {
+    "id": "olx",
+    "rank": 41,
+    "name": "OLX",
+    "careers_url": "https://careers.olxgroup.com/jobs/",
+    "location_note": "Explicit remote-Portugal openings",
+    "wlb_note": "Strong commute fit; product vacancies are labelled remote Portugal.",
+    "source": {
+      "adapter": "lever",
+      "board": "olx",
+      "region": "eu",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://careers.olxgroup.com/jobs/"
+    }
+  },
+  {
+    "id": "stratio-automotive",
+    "rank": 42,
+    "name": "Stratio Automotive",
+    "careers_url": "https://careers.stratioautomotive.com/jobs",
+    "location_note": "Fully remote Portugal product roles",
+    "wlb_note": "Flexible work setup and relevant automotive product work.",
+    "source": {
+      "adapter": "html",
+      "listing_url": "https://careers.stratioautomotive.com/jobs",
+      "job_pattern": "/jobs/\\d+-",
+      "page_pattern": "/jobs\\?[^#]*(?:page=|page%5B)",
+      "kind": "teamtailor",
+      "title_xpath": ".//h2|.//h3",
+      "empty_pattern": "no matching jobs|no jobs found|no open positions|no jobs available|there are no jobs",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://careers.stratioautomotive.com/jobs"
+    }
+  },
+  {
+    "id": "pandadoc",
+    "rank": 43,
+    "name": "PandaDoc",
+    "careers_url": "https://www.pandadoc.com/careers/",
+    "location_note": "Remote Portugal explicitly listed",
+    "wlb_note": "Flexible schedule and remote availability.",
+    "source": {
+      "adapter": "greenhouse",
+      "board": "pandadoc",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://www.pandadoc.com/careers/"
+    }
+  },
+  {
+    "id": "testgorilla",
+    "rank": 44,
+    "name": "TestGorilla",
+    "careers_url": "https://www.testgorilla.com/careers/",
+    "location_note": "100% remote; country eligibility varies",
+    "wlb_note": "Published autonomy and flexible-work approach.",
+    "source": {
+      "adapter": "ashby",
+      "board": "testgorilla",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://www.testgorilla.com/careers/"
+    }
+  },
+  {
+    "id": "devexperts",
+    "rank": 45,
+    "name": "Devexperts",
+    "careers_url": "https://careers.devexperts.com/vacancies/?country=pt",
+    "location_note": "Porto with remote options",
+    "wlb_note": "Portugal careers material advertises flexible schedules and remote work.",
+    "source": {
+      "adapter": "smartrecruiters",
+      "board": "devexperts",
+      "country": "pt",
+      "discovery_url": "https://careers.smartrecruiters.com/devexperts"
+    }
+  },
+  {
+    "id": "k-rber",
+    "rank": 46,
+    "name": "Körber",
+    "careers_url": "https://jobs.koerber.com/",
+    "location_note": "Maia / Porto; internal IT or suitable remote roles",
+    "wlb_note": "Flexible hours and extra days off appear in local postings.",
+    "source": {
+      "adapter": "html",
+      "listing_url": "https://jobs.koerber.com/search/?q=&locationsearch=Portugal",
+      "job_pattern": "/job/[^?#]+",
+      "page_pattern": "[?&]startrow=\\d+",
+      "kind": "successfactors",
+      "empty_pattern": "no jobs|no results|0 jobs",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://jobs.koerber.com/"
+    }
+  },
+  {
+    "id": "noesis",
+    "rank": 47,
+    "name": "Noesis",
+    "careers_url": "https://opportunities.noesis.pt/jobs",
+    "location_note": "Porto hybrid or explicitly remote projects",
+    "wlb_note": "2026 workplace recognition and published flexible-work culture.",
+    "source": {
+      "adapter": "html",
+      "listing_url": "https://opportunities.noesis.pt/jobs",
+      "job_pattern": "/jobs/[^/?#]+",
+      "page_pattern": "/jobs\\?page=\\d+",
+      "title_xpath": ".//h2|.//h3",
+      "kind": "bizneo",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://opportunities.noesis.pt/jobs"
+    }
+  },
+  {
+    "id": "cloudbeds",
+    "rank": 48,
+    "name": "Cloudbeds",
+    "careers_url": "https://www.cloudbeds.com/careers/",
+    "location_note": "Remote-first; Portugal-eligible roles only",
+    "wlb_note": "Flexible schedules and open/local PTO policy.",
+    "source": {
+      "adapter": "greenhouse",
+      "board": "cloudbeds",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://www.cloudbeds.com/careers/"
+    }
+  },
+  {
+    "id": "hostaway",
+    "rank": 49,
+    "name": "Hostaway",
+    "careers_url": "https://careers.hostaway.com/",
+    "location_note": "100% remote Europe; Portugal explicitly listed",
+    "wlb_note": "Strong commute fit; broader workload evidence is limited.",
+    "source": {
+      "adapter": "recruitee",
+      "base": "https://careers.hostaway.com",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://careers.hostaway.com/"
+    }
+  },
+  {
+    "id": "remote",
+    "rank": 50,
+    "name": "Remote",
+    "careers_url": "https://remote.com/careers",
+    "location_note": "Globally distributed remote team",
+    "wlb_note": "Flexible hours, PTO and mental-health support.",
+    "source": {
+      "adapter": "remote_public",
+      "base": "https://apply.remote.com",
+      "discovery_url": "https://remote.com/openings"
+    }
+  },
+  {
+    "id": "red-hat",
+    "rank": 51,
+    "name": "Red Hat",
+    "careers_url": "https://www.redhat.com/en/jobs",
+    "location_note": "Portugal-eligible remote roles; employment model varies by vacancy",
+    "wlb_note": "Published flexible scheduling, remote options and health/wellbeing support.",
+    "source": {
+      "adapter": "workday",
+      "base": "https://redhat.wd5.myworkdayjobs.com",
+      "tenant": "redhat",
+      "site": "Jobs",
+      "search_terms": [
+        "Portugal",
+        "Porto",
+        "Remote",
+        "EMEA",
+        "Europe",
+        "Worldwide",
+        "Braga"
+      ],
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://www.redhat.com/en/jobs",
+      "scope": "Portugal, Porto, Braga and remote/EMEA/Europe/worldwide keyword searches"
+    }
+  },
+  {
+    "id": "namecheap",
+    "rank": 52,
+    "name": "Namecheap",
+    "careers_url": "https://www.namecheap.com/careers/",
+    "location_note": "Porto presence and remote openings; arrangement depends on vacancy",
+    "wlb_note": "Published remote-working option; positive Porto work-life-balance reviews, with a small local review sample.",
+    "source": {
+      "adapter": "namecheap",
+      "base": "https://www.namecheap.com",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://www.namecheap.com/careers/"
+    }
+  },
+  {
+    "id": "elastic",
+    "rank": 53,
+    "name": "Elastic",
+    "careers_url": "https://jobs.elastic.co/",
+    "location_note": "Portugal hiring documented; distributed/remote arrangement per role",
+    "wlb_note": "Flexible locations and schedules for many roles, encouraged time off and family/wellbeing benefits.",
+    "source": {
+      "adapter": "greenhouse",
+      "board": "elastic",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://jobs.elastic.co/"
+    }
+  },
+  {
+    "id": "sketch",
+    "rank": 54,
+    "name": "Sketch",
+    "careers_url": "https://www.sketch.com/careers/",
+    "location_note": "Fully remote; European Union hiring scope appears on careers page",
+    "wlb_note": "Self-managed working hours, unlimited vacation and health/fitness support; annual company meetup.",
+    "source": {
+      "adapter": "html",
+      "listing_url": "https://www.sketch.com/careers/",
+      "job_pattern": "(?:/careers/[^/?#]+|notion\\.site/[^#]+)",
+      "kind": "static",
+      "empty_pattern": "open application|no open positions",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://www.sketch.com/careers/"
+    }
+  },
+  {
+    "id": "gitbook",
+    "rank": 55,
+    "name": "GitBook",
+    "careers_url": "https://www.gitbook.com/careers",
+    "location_note": "Fully remote, mainly Europe; Portugal employment eligibility to confirm per role",
+    "wlb_note": "No set hours or vacation limit; home-office/coworking support and country-dependent family benefits.",
+    "source": {
+      "adapter": "ashby",
+      "board": "GitBook",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://www.gitbook.com/careers"
+    }
+  },
+  {
+    "id": "docker",
+    "rank": 56,
+    "name": "Docker",
+    "careers_url": "https://www.docker.com/career-openings/",
+    "location_note": "Remote-first; Portugal explicitly included in official EMEA vacancies",
+    "wlb_note": "Time-zone flexibility, home-office support and published health/wellbeing benefits.",
+    "source": {
+      "adapter": "ashby",
+      "board": "docker",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://www.docker.com/career-openings/"
+    }
+  },
+  {
+    "id": "contentsquare",
+    "rank": 57,
+    "name": "Contentsquare",
+    "careers_url": "https://contentsquare.com/careers/",
+    "location_note": "Portugal remote roles have been advertised; current role eligibility and attendance must be explicit",
+    "wlb_note": "Published paid time off, wellness support and family-care leave; fully remote options for some roles.",
+    "source": {
+      "adapter": "lever",
+      "board": "contentsquare",
+      "region": "us",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://contentsquare.com/careers/"
+    }
+  },
+  {
+    "id": "aiven",
+    "rank": 58,
+    "name": "Aiven",
+    "careers_url": "https://aiven.io/careers",
+    "location_note": "Portugal entity in Lisbon; remote arrangement required for Santo Tirso",
+    "wlb_note": "Published flexible, regular hours and remote-work possibilities.",
+    "source": {
+      "adapter": "html",
+      "listing_url": "https://aiven.io/careers/job",
+      "job_pattern": "/careers/job/\\d+",
+      "kind": "aiven",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://aiven.io/careers"
+    }
+  },
+  {
+    "id": "fujitsu-portugal-global-delivery-center",
+    "rank": 59,
+    "name": "Fujitsu — Portugal Global Delivery Center",
+    "careers_url": "https://global.fujitsu/pt-PT/careers/gdc",
+    "location_note": "Braga office and remote work from across Portugal",
+    "wlb_note": "Published flexible-working approach; local GDC includes PMO, programme and project-management services.",
+    "source": {
+      "adapter": "sap_unified",
+      "listing_url": "https://www.jobs.global.fujitsu.com/search/?q=&locationsearch=Portugal",
+      "job_pattern": "/job/[^?#]+",
+      "page_pattern": "[?&]startrow=\\d+",
+      "kind": "successfactors",
+      "empty_pattern": "no jobs|no results|0 jobs",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://global.fujitsu/pt-PT/careers/gdc",
+      "base": "https://www.jobs.global.fujitsu.com"
+    }
+  },
+  {
+    "id": "ict-strypes",
+    "rank": 60,
+    "name": "ICT Strypes",
+    "careers_url": "https://strypes.recruitee.com/",
+    "location_note": "Porto hybrid; exact office frequency unverified",
+    "wlb_note": "2026 Great Place to Work Portugal recognition; published informal, autonomy-based working culture.",
+    "source": {
+      "adapter": "recruitee",
+      "base": "https://strypes.recruitee.com",
+      "mapped_at": "2026-10-19",
+      "discovery_url": "https://strypes.recruitee.com/"
+    }
+  }
+]

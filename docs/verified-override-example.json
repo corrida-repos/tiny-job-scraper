@@ -1,0 +1,7 @@
+{
+  "company-id:copy-the-exact-job-key-from-results-json": {
+    "verified_at": "2026-10-19T12:00:00+00:00",
+    "evidence": "EXAMPLE ONLY — replace with a real dated recruiter statement and source reference; never copy this example as verification.",
+    "checks": {"travel": "pass", "attendance": "pass"}
+  }
+}

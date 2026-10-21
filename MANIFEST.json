@@ -1,0 +1,143 @@
+{
+  "project": "tiny-job-scraper",
+  "export_date": "2026-10-20",
+  "tests": "31 passed",
+  "note": "Manifest hashes all payload files; manifest excludes itself. Source recovery, not a new live scrape. See UNFINISHED.md.",
+  "files": [
+    {
+      "path": ".gitignore",
+      "bytes": 474,
+      "sha256": "d46bba83bbccb526d82b5a339800e7e76c2f659efd89cc21f6c510214e5b3c9b"
+    },
+    {
+      "path": "README.md",
+      "bytes": 9770,
+      "sha256": "831ce8d15c5271572d8bc275282bfbb83bf7e00c0db46fc449cab1d302714a60"
+    },
+    {
+      "path": "UNFINISHED.md",
+      "bytes": 3677,
+      "sha256": "fd29d649bc5fe78210b9ff866e763b5b99048ac4aaeebe8216df6f04efa1ac9e"
+    },
+    {
+      "path": "config/companies.json",
+      "bytes": 34710,
+      "sha256": "75dc2b5140956dc27faddae79419e1675ce414bf84795d85c3e34fb9228246c4"
+    },
+    {
+      "path": "config/criteria.json",
+      "bytes": 4635,
+      "sha256": "5da0ab83c86c0826695c987914e2a841193e25f5f8475453a2451717ae9d19e7"
+    },
+    {
+      "path": "config/verified-overrides.json",
+      "bytes": 3,
+      "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+    },
+    {
+      "path": "docs/current-automation-policy.md",
+      "bytes": 14662,
+      "sha256": "c7b7917955794a3a7063f00bbcfef11c6896aba779910d86d588718fbea6e5c9"
+    },
+    {
+      "path": "docs/employer-shortlist.md",
+      "bytes": 51265,
+      "sha256": "f4557e75d68b1e31757f9d3e5f774d0cfc04e5bbfb1137de3cd2c9698a1a6042"
+    },
+    {
+      "path": "docs/import-notes.md",
+      "bytes": 273,
+      "sha256": "a470cc91226324edbda50a4a350981eedefed65bdd49c2d4d7db26385df03296"
+    },
+    {
+      "path": "docs/verified-override-example.json",
+      "bytes": 315,
+      "sha256": "7dea9569319a6994fcd1053e7220a4ae951c1935e53b4813b0fb923d29ce97e1"
+    },
+    {
+      "path": "pyproject.toml",
+      "bytes": 468,
+      "sha256": "d6005d3ebe965b27acae8a346c67981bf89945a841a0e12c2bd50d5a2d42709c"
+    },
+    {
+      "path": "requirements.txt",
+      "bytes": 11,
+      "sha256": "0e06a2cd5104817742c13c9599d8c4637f92124e1e4bd8b2bbef66293f9a6c18"
+    },
+    {
+      "path": "run.py",
+      "bytes": 212,
+      "sha256": "1928609308d7812b47511a823c66792eafa0fa8a000578521c5ef74115a27c60"
+    },
+    {
+      "path": "schedule/README.md",
+      "bytes": 1131,
+      "sha256": "dcfaf711fa9c41e13ffe6342b40694d548a438bb0dae124011dee596fc145035"
+    },
+    {
+      "path": "schedule/pm-careers.service",
+      "bytes": 315,
+      "sha256": "1ad90a1cfa063bf689b46308cd51570221531d6bcfc59042399a2ec3f33b83f7"
+    },
+    {
+      "path": "schedule/pm-careers.timer",
+      "bytes": 180,
+      "sha256": "4e8869bdc56ff9590fbbda01cd8867fcb09afc0de4e60a86cadd89cf0a49ec6f"
+    },
+    {
+      "path": "src/pm_scraper/__init__.py",
+      "bytes": 22,
+      "sha256": "27e8febb48ada44153ea2add9969a2c50a9831a74d9755fdd53c549a888b1cc2"
+    },
+    {
+      "path": "src/pm_scraper/cli.py",
+      "bytes": 9941,
+      "sha256": "53cfac4800f3c38479791596464486b18deeeef33d1d93c04bd9805ecbd7bafe"
+    },
+    {
+      "path": "src/pm_scraper/fetchers.py",
+      "bytes": 33872,
+      "sha256": "f041622b47a051d6c8fc6b47cdb1ae3491028d078e7159318e7557df2d6b09a2"
+    },
+    {
+      "path": "src/pm_scraper/filtering.py",
+      "bytes": 16098,
+      "sha256": "71dcbca58984aac3f5c16592ec75f523bdd31be9a901e4c593b29ef0b61f3b96"
+    },
+    {
+      "path": "src/pm_scraper/htmlutil.py",
+      "bytes": 7202,
+      "sha256": "bdd7d413b37f2330b0bed45170ae7a562aeb41b2d02f48e96db81e3666163943"
+    },
+    {
+      "path": "src/pm_scraper/http.py",
+      "bytes": 7113,
+      "sha256": "355e0d0783afdcdc03a71e62bb347ebcb4a7dfe54b486025d49cb576d3fe543b"
+    },
+    {
+      "path": "src/pm_scraper/models.py",
+      "bytes": 3022,
+      "sha256": "a87a0f7193a0ef6ae47ceb8545eb7eac164132f4afbbb4c9c3cb30c13ff08055"
+    },
+    {
+      "path": "src/pm_scraper/state.py",
+      "bytes": 6199,
+      "sha256": "1c0f7881e86b60fe17a6a78f2d9eb0f910a11dd4c1fcdd34e60e8e4b548c0826"
+    },
+    {
+      "path": "tests/test_fetchers.py",
+      "bytes": 7950,
+      "sha256": "aa162256c86f2c10c6b392e1fd84a0133b8a0d83b94cc138fda41bd678e6c4ee"
+    },
+    {
+      "path": "tests/test_screening.py",
+      "bytes": 5934,
+      "sha256": "cf2e2a663ef7745d95e2144c6898758d24f2ed55632e138492e3d363f380642f"
+    },
+    {
+      "path": "tests/test_state.py",
+      "bytes": 2067,
+      "sha256": "1effdc6e910aa1104724e255603868434270e296bca1d801373e6a2d0c943598"
+    }
+  ]
+}

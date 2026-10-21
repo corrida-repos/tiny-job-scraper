@@ -1,0 +1,10 @@
+[Unit]
+Description=Retrieve PM vacancies at 08:00 Lisbon
+
+[Timer]
+OnCalendar=*-*-* 08:00:00 Europe/Lisbon
+Persistent=true
+Unit=pm-careers.service
+
+[Install]
+WantedBy=timers.target

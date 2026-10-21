@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily PM careers retrieval
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/pm-career-scraper
+ExecStart=%h/pm-career-scraper/.venv/bin/python run.py run --state data/state.sqlite3 --output output/latest
+SuccessExitStatus=2
+TimeoutStartSec=35min

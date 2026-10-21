@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pm-career-scraper"
+version = "1.0.0"
+description = "Daily, source-audited monitoring of 60 named employer careers pages"
+requires-python = ">=3.11"
+dependencies = ["lxml>=5,<7"]
+
+[project.scripts]
+pm-scraper = "pm_scraper.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.data-files]
+"share/pm-career-scraper/config" = ["config/*.json"]
