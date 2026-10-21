@@ -156,3 +156,43 @@ left the encrypted production-state branch unchanged at
 `e7552fd7635e3f82ab4336fe1d09a1109ae6d7e9`. The daily workflow remains active, using
 the 48-hour freshness rule. No always-on user machine or new hosting service is
 required for the public RSS fallback; full employer coverage is still unresolved.
+
+## Focused diagnostics and remaining-source investigation
+
+The manual `coverage-check.yml` workflow checks one of the five unresolved
+employers or all five. It runs existing adapters against a fresh temporary SQLite
+database, with read-only repository permissions and no production secrets. Only
+`source-health.json` and a readable summary survive. Listing/candidate counts,
+pages/requests and primary/fallback failure reasons are included. Source gaps
+produce warnings; invalid/missing audits and execution failures fail the job.
+An existing artifact directory is rejected to prevent reuse of stale evidence.
+
+Noesis now has the same secondary RSS fallback, requiring the exact employer
+name `Noesis` and an explicit official website of `noesis.pt` or `www.noesis.pt`.
+Other same-named companies and lookalike domains are rejected. The fallback
+never establishes complete employer coverage or original publication dates.
+
+The latest public-interface inspection found:
+
+- Noesis: its public form submits to `/jobs`; HTMX updates the same job-board
+  fragment. No alternate feed is advertised. The linked Bizneo JavaScript asset
+  could not be retrieved in this workspace, so its contents remain unverified.
+- COCUS: the Sage board and its public recruitment JavaScript advertise no
+  separate vacancy feed. The corporate-page subset remains partial when Sage
+  is unavailable; it cannot establish a complete vacancy inventory.
+- Namecheap: the advertised sitemap index leads to a main sitemap containing
+  the careers landing page, but no vacancy inventory. No sitemap adapter was
+  added. Its current public JavaScript did not expose a separate vacancy feed.
+- Float: the corporate widget points to the same robots-disallowed Pinpoint
+  host. The permitted WWR feed remains supplementary discovery only.
+- JTA: the advertised page sitemap contains its existing careers page, with
+  spontaneous applications rather than an enumerated vacancy feed. This does
+  not establish that the employer has zero vacancies.
+
+Local focused validation completed three of five source scopes: COCUS had four
+listings, Namecheap 25 (two title candidates), and Noesis 120 (20 candidates).
+Float and JTA stayed partial with zero matching secondary-feed listings. These
+local successes do not establish access from GitHub-hosted runners. All 96 unit
+tests passed, including disposable-state isolation, failed/missing/stale audit
+handling, escaped diagnostics and strict Noesis identity matching. Actionlint
+accepted the new workflow. The production workflow and 48-hour rule are unchanged.

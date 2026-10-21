@@ -119,6 +119,25 @@ is paused. The first automatic scheduled execution has not yet been observed.
 
 ## Source coverage repairs
 
+Run **Actions → Focused coverage check → Run workflow** to check one remaining
+employer or `all-gaps` (COCUS, Float, JTA, Namecheap and Noesis). This manual
+workflow uses a disposable database, read-only repository permissions and no
+production secrets. It sends no email and cannot update production state.
+The job summary and `coverage-audit` artifact contain source statuses, listing
+and candidate counts, pages/requests and failure reasons. A green diagnostic job
+means the check ran successfully; inspect the summary for incomplete coverage.
+Missing, inconsistent or failed audit output fails the job.
+
+Locally, use a new artifact directory for each check:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m pm_scraper.coverage_check --source all-gaps --artifact-dir output/coverage-check-1
+```
+
+The diagnostic retains only `source-health.json` and `summary.md`; its database,
+candidate details and email drafts are discarded. It always uses the 48-hour
+freshness rule. The daily workflow and schedule are independent and unchanged.
+
 See [coverage status](docs/coverage-status.md) for the public HTML/sitemap readers
 for Namecheap, Fujitsu and Infineon, COCUS's partial fallback, and remaining
 source restrictions. All scheduled runs continue to use the 48-hour window.

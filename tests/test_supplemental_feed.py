@@ -117,3 +117,22 @@ class SupplementalFeedTests(unittest.TestCase):
         self.assertEqual(result.discovered, 1)
         self.assertEqual(result.jobs, [])
         self.assertFalse(result.complete)
+
+    def test_noesis_configuration_requires_its_official_domain(self):
+        companies = json.loads((Path(__file__).resolve().parents[1] / 'config/companies.json').read_text())
+        company = next(c for c in companies if c['id'] == 'noesis')
+        class NoesisPages(Pages):
+            def text(self, url, **kwargs):
+                if url == company['source']['listing_url']:
+                    raise FetchError('HTTP 403: Noesis inventory unavailable', 'blocked')
+                return super().text(url, **kwargs)
+        for host, count in [('noesis.pt', 1), ('www.noesis.pt', 1), ('noesis.com', 0),
+                            ('noesis.pt.other.example', 0)]:
+            with self.subTest(host=host):
+                body = feed(item(title='Noesis: Project Manager',
+                                 description=DESCRIPTION.replace('float.com', host),
+                                 url='https://weworkremotely.com/remote-jobs/noesis-project-manager'))
+                result = Fetcher(NoesisPages(body), Screener(CFG)).fetch(company)
+                self.assertEqual(len(result.jobs), count)
+                self.assertFalse(result.complete)
+                self.assertIn('403', result.messages[0])

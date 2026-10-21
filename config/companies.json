@@ -822,7 +822,11 @@
       "title_xpath": ".//h2|.//h3",
       "kind": "bizneo",
       "mapped_at": "2026-10-19",
-      "discovery_url": "https://opportunities.noesis.pt/jobs"
+      "discovery_url": "https://opportunities.noesis.pt/jobs",
+      "wwr_fallback": {
+        "employer_names": ["Noesis"],
+        "employer_hosts": ["noesis.pt", "www.noesis.pt"]
+      }
     }
   },
   {

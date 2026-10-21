@@ -1,0 +1,43 @@
+name: Focused coverage check
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: Employer to check with disposable state (no email)
+        type: choice
+        default: all-gaps
+        options:
+          - all-gaps
+          - cocus
+          - float
+          - jta-the-data-scientists
+          - namecheap
+          - noesis
+permissions:
+  contents: read
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements.txt
+      - name: Check selected sources
+        env:
+          COVERAGE_SOURCE: ${{ inputs.source }}
+          PYTHONPATH: src
+        run: python -m pm_scraper.coverage_check --source "$COVERAGE_SOURCE" --artifact-dir "$RUNNER_TEMP/coverage-audit"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-audit-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/coverage-audit/source-health.json
+            ${{ runner.temp }}/coverage-audit/summary.md
+          if-no-files-found: warn
+          retention-days: 14
