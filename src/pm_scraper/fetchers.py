@@ -28,13 +28,14 @@ def require_list(data, key):
 
 
 class Fetcher:
-    def __init__(self, http, screener, max_pages=60, max_details=250):
+    def __init__(self, http, screener, max_pages=None, max_details=250):
         self.http, self.screener = http, screener
-        self.max_pages, self.max_details = max_pages, max_details
+        self.page_limit_override, self.max_details = max_pages, max_details
         self.r = None
 
     def fetch(self, company):
         self.c, self.s = company, company['source']
+        self.max_pages = self.page_limit_override if self.page_limit_override is not None else self.s.get('max_pages', 60)
         self.r = FetchResult(company['id'], company['name'], self.s['adapter'])
         self.details = 0
         self.deadline = time.monotonic() + self.s.get("budget_seconds", 180)
@@ -501,6 +502,86 @@ class Fetcher:
                 self.partial('Some sitemap job details unavailable')
                 j.metadata['detail_error']=str(error)
             if self.wanted(j.title):self.r.jobs.append(j)
+
+    def eightfold_pcsx(self):
+        # Current public careers UI contract. Enumerate its inventory rather than
+        # sitemap slugs, which can omit new jobs and retain withdrawn IDs.
+        base=self.s['base'];domain=self.s['domain'];seen=set();start=0;expected=None
+        for page in range(self.max_pages):
+            url=base+'/api/pcsx/search?'+urlencode({'domain':domain,'query':'','location':'','start':start})
+            data=self.pcsx_data(url)
+            rows=require_list(data,'positions');total=data.get('count')
+            if not isinstance(total,int) or isinstance(total,bool) or total<0:
+                raise FetchError('PCSX search total missing or invalid','schema_changed')
+            if expected is not None and total!=expected:self.partial('PCSX inventory changed during pagination')
+            expected=total;new=0
+            for row in rows:
+                sid=str(row.get('id',''));title=row.get('name')
+                if not re.fullmatch(r'[1-9]\d*',sid) or not isinstance(title,str) or not title.strip():
+                    raise FetchError('PCSX listing identity or title missing','schema_changed')
+                if sid in seen:
+                    self.partial('PCSX pagination contained duplicate IDs');continue
+                seen.add(sid);new+=1;self.r.discovered+=1
+                if self.wanted(title):
+                    target=base+'/careers/job/'+sid+'?'+urlencode({'domain':domain})
+                    self.r.jobs.append(self.new(title,target,sid))
+            start+=len(rows)
+            if start>=total:
+                if len(seen)!=total:self.partial(f'PCSX returned {len(seen)} unique jobs of {total}')
+                break
+            if not new:raise FetchError('PCSX pagination repeated or stopped before total','pagination_error')
+        else:self.partial('PCSX pagination limit reached')
+        self.r.messages.append('Coverage scope: public PCSX search inventory, all locations and titles')
+        for j in self.r.jobs:
+            if self.details>=self.max_details:
+                self.partial('PCSX candidate detail limit reached');break
+            self.details+=1
+            try:
+                body=self.read(j.url);schemas=jsonld_nodes(body)
+                matching=[]
+                for node in schemas:
+                    target=urlsplit(urljoin(j.url,node.get('url') or j.url))
+                    identity=re.search(r'/careers/job/(\d+)(?:[-/]|$)',target.path)
+                    if target.hostname==urlsplit(base).hostname and identity and identity.group(1)==j.source_id:
+                        matching.append(node)
+                if len(matching)==1:
+                    parsed=from_schema(self.c,matching[0],j.url)
+                    # Retain the stable inventory ID, even if the schema uses an ATS ID.
+                    for field in ('title','description','location','countries','workplace','posted_at','date_kind','date_evidence','valid_through','salary'):
+                        setattr(j,field,getattr(parsed,field))
+                    j.evidence.append(j.url)
+                elif schemas:
+                    raise FetchError('PCSX detail has ambiguous or unrelated JobPosting data','schema_changed')
+                else:
+                    detail_url=base+'/api/pcsx/position_details?'+urlencode({'position_id':j.source_id,'domain':domain,'hl':'en'})
+                    data=self.pcsx_data(detail_url)
+                    if str(data.get('id'))!=j.source_id or not isinstance(data.get('name'),str) or not data['name'].strip():
+                        raise FetchError('PCSX detail identity does not match listing','schema_changed')
+                    j.title=data['name'];j.description=plain(data.get('jobDescription') or '')
+                    locations=data.get('standardizedLocations') or data.get('locations') or []
+                    if not isinstance(locations,list) or not all(isinstance(x,str) for x in locations):
+                        raise FetchError('PCSX detail locations invalid','schema_changed')
+                    j.location='; '.join(locations)
+                    j.workplace={'remote':'remote','hybrid':'hybrid','onsite':'onsite'}.get(data.get('workLocationOption'),'unknown')
+                    # postedTs is not evidence of *original* publication. Only
+                    # matched JobPosting.datePosted above can supply freshness.
+                    j.metadata['pcsx_posted_ts']=data.get('postedTs')
+                    j.evidence.extend([j.url,detail_url])
+                j.detail_ok=bool(j.title.strip()) and len(j.description)>60
+                if not j.detail_ok:raise FetchError('PCSX full job description missing','schema_changed')
+            except FetchError as error:
+                j.detail_ok=False;j.metadata['detail_error']=str(error)
+                self.partial('Some PCSX candidate details unavailable; see per-job detail_error')
+        self.r.jobs=[j for j in self.r.jobs if self.wanted(j.title)]
+
+    def pcsx_data(self,url):
+        envelope=self.read(url,as_json=True)
+        if not isinstance(envelope,dict) or envelope.get('status')!=200 or envelope.get('error') not in (None, {}, {'message':'','body':''}) or not isinstance(envelope.get('data'),dict):
+            raise FetchError('PCSX response envelope missing or unsuccessful','schema_changed')
+        metadata=envelope.get('metadata')
+        if metadata is not None and (not isinstance(metadata,dict) or metadata.get('isFallback')):
+            raise FetchError('PCSX fallback response cannot verify current inventory','schema_changed')
+        return envelope['data']
 
     def eightfold(self):
         base=self.s['base'];seen=set()

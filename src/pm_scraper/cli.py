@@ -121,7 +121,7 @@ def main(argv=None):
     p=argparse.ArgumentParser(description='Daily 60-employer PM careers scraper; public read-only retrieval')
     sub=p.add_subparsers(dest='command',required=True)
     r=sub.add_parser('run');r.add_argument('--companies',default=str(CONFIG/'companies.json'));r.add_argument('--criteria',default=str(CONFIG/'criteria.json'));r.add_argument('--state',default='data/state.sqlite3');r.add_argument('--output',default='output/latest');r.add_argument('--overrides',default=str(CONFIG/'verified-overrides.json'))
-    r.add_argument('--only',help='Comma-separated company IDs or ranks');r.add_argument('--workers',type=int,default=6);r.add_argument('--delay',type=float,default=1.0);r.add_argument('--timeout',type=int,default=25);r.add_argument('--max-pages',type=int,default=60);r.add_argument('--max-details',type=int,default=250)
+    r.add_argument('--only',help='Comma-separated company IDs or ranks');r.add_argument('--workers',type=int,default=6);r.add_argument('--delay',type=float,default=1.0);r.add_argument('--timeout',type=int,default=25);r.add_argument('--max-pages',type=int,default=None,help='Override source page limits (normally 60; Infineon 200)');r.add_argument('--max-details',type=int,default=250)
     r.add_argument('--max-post-age-days',type=int,choices=[2,7],default=None,help='One-run freshness override; does not modify saved criteria')
     r.add_argument('--require-existing-state',action='store_true',help='Refuse to create a new state database; use for production migration')
     a=sub.add_parser('ack',help='Mark a digest reported only after confirmed successful delivery');a.add_argument('delivery_id');a.add_argument('--receipt',required=True);a.add_argument('--state',default='data/state.sqlite3')
@@ -129,7 +129,7 @@ def main(argv=None):
     s=sub.add_parser('sources');s.add_argument('--companies',default=str(CONFIG/'companies.json'))
     args=p.parse_args(argv)
     if args.command=='run':
-        if not 1<=args.workers<=12 or args.delay<0.5 or not 1<=args.max_pages<=200 or not 1<=args.max_details<=1000:p.error('Use workers 1..12, delay >=0.5, pages 1..200, details 1..1000')
+        if not 1<=args.workers<=12 or args.delay<0.5 or (args.max_pages is not None and not 1<=args.max_pages<=200) or not 1<=args.max_details<=1000:p.error('Use workers 1..12, delay >=0.5, pages 1..200, details 1..1000')
         started = utcnow().isoformat()
         try:
             return run(args, started)

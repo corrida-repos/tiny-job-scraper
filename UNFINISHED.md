@@ -1,3 +1,11 @@
+# Current coverage follow-up
+
+Infineon now uses the current public PCSX search inventory instead of its stale
+sitemap. Local validation reconciled 1,298 listings and 38 title candidates,
+with complete details. All 79 unit tests pass. The four other existing gaps
+(COCUS, Float, JTA and Namecheap) still need external access or vacancy data;
+see `docs/coverage-status.md` for evidence and GitHub validation.
+
 # Coverage work update
 
 Namecheap, Fujitsu and Infineon now use public HTML/sitemap readers; COCUS has a

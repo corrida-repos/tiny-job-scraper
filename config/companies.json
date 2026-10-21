@@ -450,10 +450,11 @@
     "location_note": "Maia; hybrid/remote terms depend on role",
     "wlb_note": "Portugal benefits include flexible working and remote work.",
     "source": {
-      "adapter": "sitemap",
-      "sitemap_url": "https://jobs.infineon.com/careers/sitemap.xml?domain=infineon.com",
-      "job_pattern": "/careers/job/",
-      "detail_kind": "jobposting",
+      "adapter": "eightfold_pcsx",
+      "base": "https://jobs.infineon.com",
+      "domain": "infineon.com",
+      "max_pages": 200,
+      "budget_seconds": 600,
       "mapped_at": "2026-10-21",
       "discovery_url": "https://www.infineon.com/careers/our-locations/portugal"
     }
