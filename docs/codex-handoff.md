@@ -60,3 +60,31 @@ of `UNFINISHED.md` and `schedule/codex-task.md`. A fresh focused network check
 passed; the full audit completed 55/60 configured source scopes with five recorded
 gaps. Scheduler transfer, production-state access and Gmail delivery remain
 unverified and unchanged.
+
+## Migration bundle received and verified
+
+The supplied active-task export, SQLite state and audit report match their
+manifest SHA-256 hashes and their copies in the migration ZIP. The manifest has
+a literal escaped newline after the JSON object; the original is preserved and
+that known trailing export defect was explicitly accounted for during parsing.
+
+The imported database passed integrity checking: 3 runs, 156 jobs, 0 legacy
+deliveries and 1 comprehensive run audit. The current application's state
+initialization was tested on a disposable copy and preserved every table and
+row, including the comprehensive audit. All 42 unit tests passed.
+
+The verified state is restored locally at `data/state.sqlite3`; the original
+bundle, task export, audit, validation summary and a disabled replacement task
+specification are retained under ignored `data/migration-import/`. Private
+bindings, recipient information and runtime history are intentionally excluded
+from Git. The replacement specification is a preparation artifact, not a task
+created or imported through a scheduler API.
+
+The exported task records an enabled daily 08:00 Europe/Lisbon schedule. Its
+current policy sections agree with the repository documentation. No task was
+changed or email sent by this session. Scheduler control, Gmail access and
+guarded synchronization to the existing durable Library files remain unavailable.
+The restored database is an import snapshot, not a live synchronized production
+database. Refresh it from the active task's latest durable state before cutover
+if that task has run again. A cloud filesystem snapshot alone does not establish
+ongoing durable synchronization or successful scheduled execution.
