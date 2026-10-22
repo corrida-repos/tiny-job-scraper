@@ -160,13 +160,13 @@ class PostingDateTests(unittest.TestCase):
         self.assertEqual(j.metadata['posting_date_evidence'][0]['value'],'19 of October')
         self.assertIsNone(j.posted_at)
 
-    def test_sitemap_slug_alias_requires_same_requisition_and_canonical(self):
+    def test_sitemap_platform_id_maps_to_canonical_requisition_and_locale(self):
         j=job(url='https://example.org/job/Product-Manager/8307-en_US',posted_at=None,date_kind='unknown')
         body=f'<link rel="canonical" href="{j.url}"><span itemprop="title">{j.title}</span><div><span class="joblayouttoken-label">Posting Start Date:</span>10/12/26</div>'
-        enrich_dates(j,body,'https://example.org/job/Other-Old-Slug/8307-en_US')
+        enrich_dates(j,body,'https://example.org/job/Other-Old-Slug/4093550')
         self.assertEqual(j.metadata['posting_date_evidence'][0]['value'],'2026-10-12')
         other=job(url=j.url,posted_at=None,date_kind='unknown')
-        enrich_dates(other,body,'https://example.org/job/Other-Old-Slug/9999-en_US')
+        enrich_dates(other,body,'https://other.example/job/Other-Old-Slug/4093550')
         self.assertFalse(other.metadata.get('posting_date_evidence'))
 
     def test_employer_date_does_not_override_residence_or_onsite(self):

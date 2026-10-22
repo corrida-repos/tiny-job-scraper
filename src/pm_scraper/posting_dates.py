@@ -80,11 +80,12 @@ def enrich_dates(job, body, url):
     title = norm(job.title)
     same_page = canonical_url(url) == canonical_url(job.url)
     canonical = d.xpath('//link[@rel="canonical"]/@href')
-    # SuccessFactors changes the title slug between sitemap and canonical URL,
-    # while retaining the requisition/locale suffix. Require both identities.
+    # SuccessFactors maps a sitemap platform ID to a different requisition ID.
+    # Accept its explicit canonical mapping on the same host, with the unique
+    # job heading checked below; never infer an alias from a similar title alone.
     if len(canonical) == 1 and canonical_url(urljoin(url,canonical[0])) == canonical_url(job.url):
         supplied, target = urlsplit(url), urlsplit(job.url)
-        same_page = same_page or (supplied.hostname == target.hostname and supplied.path.rstrip('/').rsplit('/',1)[-1] == target.path.rstrip('/').rsplit('/',1)[-1])
+        same_page = same_page or supplied.hostname == target.hostname
     page_matches = same_page and len(heading.split()) >= 2 and (title == heading or title.startswith(heading+' '))
     if page_matches:
         # These employer labels are useful to readers but may be refreshed/reposted.
@@ -94,7 +95,7 @@ def enrich_dates(job, body, url):
                 value = re.sub(r'^posting start date\s*:\s*', '', text, flags=re.I)
                 # The URL explicitly declares this site's US locale; do not guess
                 # the ordering of ambiguous numeric dates on other pages.
-                parsed = parse_date(value) if re.search(r'en_US(?:$|[/?#])', url) else None
+                parsed = parse_date(value) if re.search(r'en_US(?:$|[/?#])', job.url) else None
                 add_evidence(job, parsed.date().isoformat() if parsed else value, 'posting_start' if parsed else 'posting_start_unparsed', 'Employer Posting Start Date', url)
         for label in d.xpath('//span[i and contains(normalize-space(text()),"Published")]'):
             values = label.xpath('./i/text()')
