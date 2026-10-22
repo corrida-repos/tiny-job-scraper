@@ -44,6 +44,7 @@ class Fetcher:
             method = getattr(self, self.s['adapter'], None)
             if not method: raise FetchError('Unsupported adapter: ' + self.s['adapter'], 'configuration_error')
             method()
+            self.date_fallbacks()
         except FetchError as e:
             self.r.status, self.r.complete = e.kind, False
             self.r.messages.append(str(e))
@@ -76,6 +77,28 @@ class Fetcher:
     def partial(self, message):
         self.r.status, self.r.complete = 'partial', False
         if message not in self.r.messages: self.r.messages.append(message)
+
+    def date_fallbacks(self):
+        """Optional, bounded detail evidence; date failures do not change inventory health."""
+        from .posting_dates import add_evidence, enrich_dates
+        attempts = 0
+        for job in self.r.jobs:
+            add_evidence(job, job.posted_at, job.date_kind, job.date_evidence, job.url)
+            if job.date_kind == 'original_posted' or job.metadata.get('date_page_checked'):
+                continue
+            assessment = self.screener.assess(job)
+            if any(v['status'] == 'fail' for k,v in assessment.checks.items() if k != 'freshness'):
+                continue
+            if attempts >= 12 or self.details >= self.max_details or time.monotonic() > self.deadline:
+                job.metadata['date_lookup_status'] = 'budget_exhausted'
+                continue
+            attempts += 1
+            self.details += 1
+            try:
+                enrich_dates(job, self.read(job.url), job.url)
+                job.metadata['date_lookup_status'] = 'checked'
+            except FetchError as error:
+                job.metadata['date_lookup_status'] = error.kind
 
     def new(self, title, url, sid='', **kw):
         return Job(self.c['id'],self.c['name'],htmllib.unescape(str(title)).strip(),canonical_url(url),str(sid or ''),**kw)

@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 from .htmlutil import norm
 from .models import parse_date
 from .branding import company_heading
+from .posting_dates import report_date
 
 SUBJECT = "Tiny's Daily Job Report"
 
@@ -63,7 +64,8 @@ def select_roles(pairs, include_potential_matches=True, include_unknown_freshnes
         job, assessment = pair
         unknown = sum(v['status'] == 'unknown' for v in assessment.checks.values())
         important = sum(assessment.checks.get(k, {}).get('status') != 'pass' for k in ('work_schedule', 'portugal_eligibility', 'attendance', 'travel', 'experience'))
-        posted = parse_date(job.posted_at) if assessment.checks.get('freshness', {}).get('status') == 'pass' else None
+        freshness = assessment.checks.get('freshness', {})
+        posted = parse_date(freshness.get('date', job.posted_at)) if freshness.get('status') == 'pass' else None
         return (job.metadata.get('employer_rank', 999), assessment.status != 'eligible', important, unknown,
                 -(posted.timestamp() if posted else 0), norm(job.title), job.url)
     return sorted(chosen, key=order), alternatives
@@ -154,6 +156,9 @@ def prepare_email(pairs, payload, saving='Local report generated; durable saving
         lines += [f'### **{display_title(job.title)}**',
                   f'[View job]({link(job.url)})',
                   f'- **Pros:** {fragments(pros)}.', f'- **Cons:** {clean(cons).rstrip(".")}.', '']
+        date_line = report_date(job, assessment.checks.get('freshness'))
+        if date_line:
+            lines[-1:-1] = ['- **Date evidence:** ' + clean(date_line)]
     coverage = payload['coverage']
     if not selected:
         if allow_unknown or allow_future:
@@ -168,7 +173,9 @@ def prepare_email(pairs, payload, saving='Local report generated; durable saving
             messages = fragments(source['messages'])
             failures.append(clean(source['company'])+': '+clean(source['status'])+(' — '+messages if messages else ''))
     freshness_note = f'Verified original publication within {freshness_hours} hours of run start; known older original dates excluded'
-    freshness_note += '; unverified original dates included as Unknown freshness' if allow_unknown else '; unverified original dates excluded'
+    if criteria.get('accept_employer_dates', False):
+        freshness_note = f'Employer-declared posting/repost date within {freshness_hours} hours; known older publication dates excluded; modification dates do not qualify'
+    freshness_note += '; unresolved publication dates included as Unknown freshness' if allow_unknown else '; unresolved publication dates excluded'
     freshness_note += '; future dates also included as Unknown freshness' if allow_future else '; future dates excluded'
     lines += ['# Run notes', '',
               f'- Checked: {timestamp.astimezone(ZoneInfo("Europe/Lisbon")).isoformat()}; {coverage["sources"]} configured source scopes.',

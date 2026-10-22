@@ -85,15 +85,13 @@ def enrich_job(job, body, url, body_xpath=None):
             if parsed.location: job.location = parsed.location
             if parsed.countries: job.countries = parsed.countries
             if parsed.workplace != "unknown": job.workplace = parsed.workplace
-            if parsed.posted_at and not job.metadata.get("original_date_unproven"):
-                job.posted_at, job.date_kind, job.date_evidence = parsed.posted_at, parsed.date_kind, parsed.date_evidence
             if parsed.valid_through: job.valid_through = parsed.valid_through
             if parsed.salary: job.salary = parsed.salary
             if not job.source_id and parsed.source_id: job.source_id = parsed.source_id
             job.detail_ok = bool(job.description)
     d = document(body)
     scopes=d.xpath('//*[@itemscope and contains(@itemtype,"JobPosting")]')
-    micro_root=scopes[0] if scopes else None
+    micro_root=scopes[0] if len(scopes) == 1 else None
     def micro(prop):
         nodes = micro_root.xpath('.//*[@itemprop="'+prop+'"]') if micro_root is not None else []
         return (nodes[0].get('content') or nodes[0].get('datetime') or nodes[0].text_content()).strip() if nodes else ''
@@ -112,8 +110,6 @@ def enrich_job(job, body, url, body_xpath=None):
     if desc_nodes:
         job.description=plain(html.tostring(desc_nodes[0],encoding="unicode"));job.detail_ok=len(job.description)>60
         if micro('title'):job.title=micro('title')
-        if micro('datePosted') and not job.metadata.get('original_date_unproven'):
-            job.posted_at=micro('datePosted');job.date_kind='original_posted';job.date_evidence='JobPosting microdata datePosted'
         if micro('validThrough'):job.valid_through=micro('validThrough')
         loc=', '.join(filter(None,[micro('addressLocality'),micro('addressRegion'),micro('addressCountry')])) or micro('streetAddress')
         if loc:job.location=loc
@@ -125,4 +121,6 @@ def enrich_job(job, body, url, body_xpath=None):
             job.description = plain(html.tostring(nodes[0], encoding="unicode"))
             job.detail_ok = len(job.description) > 100
     if url not in job.evidence: job.evidence.append(url)
+    from .posting_dates import enrich_dates
+    enrich_dates(job, body, url)
     return job

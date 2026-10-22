@@ -5,6 +5,7 @@ from hashlib import sha256
 from dataclasses import asdict
 from .models import parse_date
 from .htmlutil import norm
+from .posting_dates import add_evidence
 
 class State:
     def __init__(self, path):
@@ -31,12 +32,18 @@ class State:
 
     def original(self, job):
         """Publication dates cannot become newer on refresh/repost of the same ID."""
-        row=self.db.execute('SELECT original_posted FROM jobs WHERE key=?',(job.key,)).fetchone()
+        add_evidence(job, job.posted_at, job.date_kind, job.date_evidence, job.url)
+        row=self.db.execute('SELECT original_posted,first_seen,job_json FROM jobs WHERE key=?',(job.key,)).fetchone()
+        if row:
+            job.metadata['first_seen'] = row['first_seen']
         previous=parse_date(row['original_posted']) if row else None
         current=parse_date(job.posted_at) if job.date_kind=='original_posted' else None
         if previous and (not current or previous<current):
             job.metadata['current_source_date']=job.posted_at
-            job.posted_at=previous.isoformat();job.date_kind='original_posted'
+            saved = json.loads(row['job_json'])
+            # Preserve date-only precision rather than inventing a midnight clock.
+            original = saved.get('posted_at')
+            job.posted_at=original if parse_date(original) == previous else row['original_posted'];job.date_kind='original_posted'
             job.date_evidence='Earliest original publication retained in durable state'
         return job
 

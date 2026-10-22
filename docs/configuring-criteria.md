@@ -27,9 +27,10 @@ These are the current defaults; the committed JSON file is authoritative.
 | `max_abroad_calendar_days_per_quarter` | `7` | Maximum required days abroad per quarter, including transit and all trips. Valid range: 0–90. Annual averages and ambiguous travel percentages do not establish compliance. |
 | `exclude_mandatory_coding` | `true` | Reject mandatory code-writing or coding assessments. Set `false` to stop using this as an exclusion. |
 | `exclude_shift_on_call` | `true` | Reject recognized required shift/on-call/weekend patterns. Set `false` to stop using this as an exclusion. |
-| `max_post_age_days` | `2` | Verified original posting must fall within this many days before the run. `2` = 48 hours; `7` = one week. Valid range: 1–30. Scheduled runs use this value. |
+| `max_post_age_days` | `2` | Accepted posting/repost date must fall within this many days before the run. `2` = 48 hours; `7` = one week. Valid range: 1–30. Scheduled runs use this value. |
+| `accept_employer_dates` | `true` | Accept employer-declared publication and repost dates, while preserving earliest original dates. Set `false` to require original-publication evidence. Modification/creation dates do not qualify. |
 | `include_potential_matches` | `true` | Include review-status roles alongside verified eligible roles, subject to the freshness switches below. Set `false` to report only verified eligible roles. Hard failures remain excluded. |
-| `include_unknown_freshness` | `true` | Include roles lacking a verified original date or sufficient date-only precision, labelled **Unknown freshness**. They remain unverified potential matches. Requires `include_potential_matches=true`. Known old original dates are excluded. |
+| `include_unknown_freshness` | `true` | Include roles lacking an accepted publication date or sufficient date precision, labelled **Unknown freshness**. Requires `include_potential_matches=true`. Known old postings are excluded unless there is a fresh employer-declared repost. |
 | `include_future_dated` | `true` | Include roles whose available posting date is in the future, labelled **Unknown freshness**, the same category as missing original-date evidence. They remain unverified potential matches, rather than verified recent postings. Requires `include_potential_matches=true`. |
 
 Supported language names (use these exact names): English, Portuguese, Spanish,
@@ -59,8 +60,8 @@ languages, wrong types and out-of-range values fail validation before retrieval.
   active only when its target family is enabled in `role_families`.
 - `home`, `timezone` and `notes` are context. Editing them does not relocate the
   Portugal eligibility logic or change the 08:00 Lisbon schedule.
-- Portugal hiring eligibility, senior-leadership exclusions, original-date
-  provenance, salary neutrality and employer-first ordering remain fixed. Unknown
+- Portugal hiring eligibility, senior-leadership exclusions, publication-date
+  evidence, salary neutrality and freshness/company/position grouping remain fixed. Unknown
   and future dates never become verified dates merely because they are included
   in a report. Salary has no minimum requirement or ranking effect.
 - Unknown evidence stays unknown. Relaxing one configurable exclusion never
@@ -89,3 +90,10 @@ Validation reads settings only; it does not contact job sites, change state or
 send email. Automated regression tests use a fixed fixture so supported changes
 to your preferences do not require rewriting tests. GitHub separately validates
 the actual committed settings on every code/configuration push and daily run.
+## Posting and repost dates
+
+`accept_employer_dates` is currently `true`: employer-declared posting/repost dates
+can establish freshness within `max_post_age_days`. Set it to `false` to require
+original-publication evidence. Neither mode treats modification, internal creation
+or first-seen timestamps as fresh publication. Missing years and future dates
+remain Unknown Freshness; date evidence is shown beneath each position.

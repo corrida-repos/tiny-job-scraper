@@ -83,7 +83,7 @@ class CurrentPolicyRegressions(unittest.TestCase):
    ('2026-10-19T12:00:01Z','unknown'),
    ('2026-10-18','pass'),
    ('2026-10-19','unknown'),
-   ('2026-10-17','fail'),
+   ('2026-10-17','unknown'),
   ]:
    with self.subTest(posted=posted):
     self.assertEqual(self.s.assess(job(posted_at=posted),NOW).checks['freshness']['status'],expected)

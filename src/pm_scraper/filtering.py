@@ -5,6 +5,7 @@ from .htmlutil import norm
 from .models import Assessment, parse_date, utcnow
 from .criteria import LANGUAGES, validate
 from .residence import incompatible_residence
+from .posting_dates import publication_candidate
 
 NUMBERS = {"one":1,"two":2,"three":3,"four":4,"five":5,"six":6,"seven":7,"eight":8,"nine":9,"ten":10,"um":1,"uma":1,"dois":2,"duas":2,"tres":3,"quatro":4,"cinco":5,"seis":6,"sete":7,"oito":8,"nove":9,"dez":10}
 N = r"(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez)"
@@ -193,30 +194,41 @@ class Screener:
         else:
             check("travel", "unknown", f"At most {self.cfg['max_abroad_calendar_days_per_quarter']} calendar days abroad per quarter, including all trips and transit, is not explicitly established" + (": " + "; ".join(travel_sentences)[:550] if travel_sentences else ""))
 
-        posted = parse_date(job.posted_at)
+        accept_employer_dates = self.cfg.get('accept_employer_dates', False)
+        publication = publication_candidate(job, accept_employer_dates)
+        date_value = publication['value'] if publication else job.posted_at
+        posted = parse_date(date_value)
         freshness_category = 'original_date_unverified'
-        if posted and posted > now:
+        first_seen = parse_date(job.metadata.get('first_seen'))
+        if not (accept_employer_dates and publication) and first_seen and now - first_seen > timedelta(days=self.cfg['max_post_age_days']):
+            freshness_category = 'older_than_window'
+            check('freshness', 'fail', 'This same posting was already observed before the freshness window; original publication date remains unverified')
+        elif posted and posted > now:
             freshness_category = 'future_date'
-            check("freshness", "unknown", "Posting date is in the future: " + str(job.posted_at))
-        elif posted and job.date_kind == "original_posted":
+            check("freshness", "unknown", "Posting date is in the future: " + str(date_value))
+        elif posted and publication:
             window = timedelta(days=self.cfg["max_post_age_days"])
             age = now - posted
             # A date without a clock denotes an interval, not invented midnight
-            # precision. Include only when the entire possible day is in range.
-            raw = str(job.posted_at).strip()
-            date_only = not isinstance(job.posted_at, (int, float)) and not re.search(r"\d{1,2}:\d{2}", raw)
-            if age > window:
+            # precision. Under employer-declared policy an active posting bounds
+            # today's date by the current observation; old-edge overlaps stay unknown.
+            raw = str(date_value).strip()
+            date_only = not isinstance(date_value, (int, float)) and not re.search(r"\d{1,2}:\d{2}", raw)
+            if age > window and (not date_only or posted + timedelta(days=1) <= now - window):
                 freshness_category = 'older_than_window'
-                check("freshness", "fail", f"Original posting is older than {self.cfg['max_post_age_days']*24} hours")
-            elif date_only and posted + timedelta(days=1) > now:
+                check("freshness", "fail", f"Posting date is older than {self.cfg['max_post_age_days']*24} hours; source: {publication['source']}")
+            elif date_only and ((posted + timedelta(days=1) > now and not accept_employer_dates) or age > window):
                 freshness_category = 'date_only_uncertain'
                 check("freshness", "unknown", "Date-only original publication does not establish the full freshness interval")
             else:
                 freshness_category = 'verified_recent'
-                check("freshness", "pass", f"Original posting date {job.posted_at}; source: {job.date_evidence}")
+                basis = 'Employer-declared posting/repost' if accept_employer_dates else 'Original posting'
+                check("freshness", "pass", f"{basis} date {date_value}; source: {publication['source']}")
         else:
-            check("freshness", "unknown", "Original posting date unverified; updated/last-published/first-seen dates are not treated as new")
+            check("freshness", "unknown", 'Usable employer publication date unavailable; modification and first-seen dates do not prove freshness' if accept_employer_dates else "Original posting date unverified; updated/last-published/first-seen dates are not treated as new")
         checks['freshness']['category'] = freshness_category
+        if publication:
+            checks['freshness'].update(date=date_value, source=publication['source'], basis='employer_declared' if accept_employer_dates else 'original')
         expires = parse_date(job.valid_through)
         check("active", "fail" if expires and expires < now else "pass", "Posting deadline expired" if expires and expires < now else "Present in current public board; no expired deadline found")
 

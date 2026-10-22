@@ -2,6 +2,7 @@
   "timezone": "Europe/Lisbon",
   "home": "Santo Tirso, Portugal",
   "max_post_age_days": 2,
+  "accept_employer_dates": true,
   "max_office_days_per_week": 3,
   "max_abroad_calendar_days_per_quarter": 7,
   "allowed_languages": [

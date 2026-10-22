@@ -1,5 +1,23 @@
 # Current automation rules
 
+Current publication-date policy: accept employer-declared posting and repost
+dates within the configured 48-hour window (`accept_employer_dates: true`).
+This supersedes original-publication-only requirements below. Preserve original
+publication separately; a fresh repost of an older vacancy can qualify. Employer
+publication, release, opening and locale-qualified posting-start dates are usable;
+modification, internal creation and first-observed timestamps never prove freshness.
+Date-only employer postings today can qualify without inventing a clock time;
+dates overlapping the old edge of the window remain uncertain. Future dates remain
+Unknown Freshness. Yearless labels are retained without guessing a year.
+The report shows the date evidence used. Historical observations can establish
+age when no usable current publication/repost date exists, but cannot defeat a
+fresh employer-declared repost. All other hard filters remain enforced.
+
+Date recovery matches public JobPosting data to job identifiers/canonical URLs,
+including Intellias' job-specific schema with a malformed corporate title. Extra
+date-only lookups are optional, cached, limited to 12 per source, and share source
+time/detail budgets. Their failure never becomes a claim of complete date evidence.
+
 Report hierarchy: freshness category, then company, then position. Show
 **Verified Freshness** first and **Unknown Freshness** second as level-one
 headings, omitting empty categories. The latter includes future-dated postings.
