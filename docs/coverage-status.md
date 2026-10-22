@@ -1,6 +1,24 @@
 # Current coverage — Top 56
 
-Latest [configured-criteria validation 39749330923](https://github.com/corrida-repos/tiny-job-scraper/actions/runs/39749330923)
+Latest [residence-rule validation 39751220625](https://github.com/corrida-repos/tiny-job-scraper/actions/runs/39751220625)
+at commit `5043fb7` passed **115 tests** and completed **56/56 source scopes**.
+Greenhouse candidates now include their public application questions in
+residence screening. Failed/missing question retrieval withholds the affected
+candidate from email and leaves a visible coverage gap. The full run completed
+these checks without source gaps, using `send_email=false` and configured
+48-hour freshness. It sent no email and preserved production state.
+
+A focused live check found Salsify job `8516548002`, "Senior GTM Strategy & Ops
+Program Manager", labelled "Remote - Portugal" while its application question
+states: "Do you live local to Lisbon? This candidate must reside in Lisbon."
+The new residence check rejected that exact candidate and excluded it from
+report selection. Mandatory residence or relocation outside the configured
+Porto/Braga area overrides a remote label. The residence locations are editable
+in `allowed_residence_locations`; broad Portugal/EU requirements remain compatible
+with the candidate's Santo Tirso home. Generic optional location questions are
+not automatically treated as mandatory residence restrictions.
+
+Earlier [configured-criteria validation 39749330923](https://github.com/corrida-repos/tiny-job-scraper/actions/runs/39749330923)
 at commit `a41030e` passed **107 tests** and completed **55/56 source scopes**.
 Infineon's public inventory changed during pagination: 1,295 unique jobs were
 retrieved against a reported total of 1,297, with duplicate IDs across pages.
