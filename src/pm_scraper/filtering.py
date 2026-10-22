@@ -4,6 +4,7 @@ from datetime import timedelta
 from .htmlutil import norm
 from .models import Assessment, parse_date, utcnow
 from .criteria import LANGUAGES, validate
+from .residence import incompatible_residence
 
 NUMBERS = {"one":1,"two":2,"three":3,"four":4,"five":5,"six":6,"seven":7,"eight":8,"nine":9,"ten":10,"um":1,"uma":1,"dois":2,"duas":2,"tres":3,"quatro":4,"cinco":5,"seis":6,"sete":7,"oito":8,"nove":9,"dez":10}
 N = r"(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez)"
@@ -50,6 +51,13 @@ class Screener:
         company_norm = norm(job.company)
         excluded = [x for x in self.cfg["excluded_companies"] if re.search(r"\b" + re.escape(norm(x)) + r"\b", company_norm)]
         check("employer", "fail" if excluded else "pass", ", ".join(excluded) if excluded else "Named employer in the configured watchlist")
+        questions = job.metadata.get('application_questions', [])
+        residence_text = job.description + '\n' + '\n'.join(q['label'] + '\n' + q.get('description', '') for q in questions)
+        residence_failures = incompatible_residence(residence_text, self.cfg['allowed_residence_locations'])
+        check('residence', 'fail' if residence_failures else 'pass',
+              '; '.join(residence_failures) or 'No explicit residence requirement outside the permitted Porto/Braga area found')
+        if job.metadata.get('application_requirements_checked') is False:
+            check('application_requirements', 'unknown', 'Application requirements could not be checked; withheld from reporting')
         if not job.detail_ok or len(job.description) < 60:
             check("description", "unknown", "Full job description was not retrieved")
         else:

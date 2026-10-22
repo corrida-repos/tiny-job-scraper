@@ -21,6 +21,7 @@ These are the current defaults; the committed JSON file is authoritative.
 | `allowed_languages` | English, Portuguese, Spanish | Recognized mandatory languages outside this list exclude a job. Optional languages do not. |
 | `max_mandatory_experience_years` | `5` | Exclude mandatory minimums above this many years. Preferred experience does not exclude a job. Valid range: 0–50. |
 | `nearby_locations` | Porto, Braga and listed nearby towns | Locations eligible for the nearby-office rule. This is a text-match list, not a distance calculator. |
+| `allowed_residence_locations` | Santo Tirso, Porto, Braga and listed nearby towns | Reject explicit requirements to live, be based or relocate elsewhere. Country-wide Portugal/EU residence requirements remain compatible with Santo Tirso. This is independent of the office attendance allowance. |
 | `max_office_days_per_week` | `2` | Maximum explicitly stated nearby-office attendance. Valid range: 0–5. |
 | `max_distant_office_visits_per_quarter` | `1` | Maximum explicitly stated quarterly visits for distant offices in a remote arrangement. Set `0` to reject quarterly office visits. Valid range: 0–12. Routine weekly/monthly distant-office patterns remain excluded; the parser does not convert these into a quarterly allowance. |
 | `max_abroad_calendar_days_per_quarter` | `7` | Maximum required days abroad per quarter, including transit and all trips. Valid range: 0–90. Annual averages and ambiguous travel percentages do not establish compliance. |
@@ -62,6 +63,12 @@ languages, wrong types and out-of-range values fail validation before retrieval.
 - Unknown evidence stays unknown. Relaxing one configurable exclusion never
   removes an unrelated failure. Work-life balance cannot be guaranteed by a
   posting, and numerical travel caps still require explicit supporting evidence.
+- Mandatory residence outside the permitted Porto/Braga area is a hard exclusion
+  even if a vacancy says "Remote – Portugal". Greenhouse application questions
+  and descriptions are included in residence screening. If those questions
+  cannot be checked, the candidate is retained in the audit and withheld from
+  email, including potential-match emails. Other adapters currently screen the
+  public job evidence they retrieve; application-form coverage is not universal.
 
 Each run records its effective criteria in `results.json`, alongside its job
 assessments, so a report can be traced to the settings actually used. Historical

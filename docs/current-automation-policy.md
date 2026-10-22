@@ -1,5 +1,11 @@
 # Current automation rules
 
+Residence rule: the candidate lives in Santo Tirso, Porto. Exclude mandatory
+residence/relocation outside the configured Porto/Braga area, even when a role
+is labelled remote. Inspect retrieved application requirements as well as the
+job description. Greenhouse candidates with unavailable application questions
+are withheld from reporting until those requirements can be checked.
+
 The active GitHub runner reads [config/criteria.json](../config/criteria.json).
 Its supported settings supersede the corresponding default values in the
 historical task instructions below. See [configuring criteria](configuring-criteria.md).

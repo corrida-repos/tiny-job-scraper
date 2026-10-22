@@ -26,6 +26,8 @@ def location_tier(job):
 def select_roles(pairs, include_potential_matches=True):
     groups = {}
     for job, assessment in pairs:
+        if job.metadata.get('application_requirements_checked') is False:
+            continue
         allowed = {'eligible', 'review'} if include_potential_matches else {'eligible'}
         if assessment.status not in allowed or assessment.checks.get('freshness', {}).get('status') != 'pass':
             continue

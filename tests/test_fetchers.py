@@ -25,7 +25,7 @@ class AdapterTests(unittest.TestCase):
   enrich_job(j,'<script type="application/ld+json">{"@type":"JobPosting","title":"Product Manager","datePosted":"2026-10-19"}</script>',j.url)
   self.assertEqual(j.date_kind,'last_published')
  def test_greenhouse_first_publication_wins(self):
-  h=FakeHTTP([{'jobs':[{'id':1,'title':'Project Manager','absolute_url':'https://example.org/1','location':{'name':'Portugal'},'first_published':'2026-01-01','updated_at':'2026-10-19','content':'&lt;p&gt;Job description in escaped HTML for responsible project delivery.&lt;/p&gt;'}],'meta':{'total':1}}])
+  h=FakeHTTP([{'jobs':[{'id':1,'title':'Project Manager','absolute_url':'https://example.org/1','location':{'name':'Portugal'},'first_published':'2026-01-01','updated_at':'2026-10-19','content':'&lt;p&gt;Job description in escaped HTML for responsible project delivery.&lt;/p&gt;'}],'meta':{'total':1}}, {'id':1,'questions':[]}])
   r=Fetcher(h,self.s).fetch({'id':'x','name':'X','source':{'adapter':'greenhouse','board':'x'}})
   self.assertEqual(r.jobs[0].posted_at,'2026-01-01');self.assertNotIn('&lt;',r.jobs[0].description)
  def test_repeated_pagination_page_is_failure(self):

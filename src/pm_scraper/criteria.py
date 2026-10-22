@@ -20,7 +20,7 @@ LIMITS = {'max_post_age_days': (1, 30), 'max_office_days_per_week': (0, 5),
 FLAGS = {'exclude_mandatory_coding': True, 'exclude_shift_on_call': True,
          'include_potential_matches': True}
 LISTS = {'allowed_languages', 'nearby_locations', 'excluded_companies',
-         'explicit_inclusions', 'role_families', 'notes'}
+         'explicit_inclusions', 'role_families', 'notes', 'allowed_residence_locations'}
 
 
 def validate(cfg):
@@ -42,8 +42,8 @@ def validate(cfg):
             raise ValueError(f'{key} must be a list of nonempty strings')
         if len({x.casefold().strip() for x in values}) != len(values):
             raise ValueError(f'{key} contains duplicate values')
-    if not cfg['role_families'] or not cfg['allowed_languages']:
-        raise ValueError('role_families and allowed_languages cannot be empty')
+    if not cfg['role_families'] or not cfg['allowed_languages'] or not cfg['allowed_residence_locations']:
+        raise ValueError('role_families, allowed_languages and allowed_residence_locations cannot be empty')
     unsupported = set(cfg['allowed_languages']) - set(LANGUAGES)
     if unsupported:
         raise ValueError('Unsupported language name(s): ' + ', '.join(sorted(unsupported)))

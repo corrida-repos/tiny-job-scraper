@@ -140,5 +140,17 @@
   "max_mandatory_experience_years": 5,
   "exclude_mandatory_coding": true,
   "exclude_shift_on_call": true,
-  "include_potential_matches": true
+  "include_potential_matches": true,
+  "allowed_residence_locations": [
+    "Porto",
+    "Oporto",
+    "Matosinhos",
+    "Maia",
+    "Vila Nova de Gaia",
+    "Braga",
+    "Lousado",
+    "Leça do Balio",
+    "Leca do Balio",
+    "Santo Tirso"
+  ]
 }

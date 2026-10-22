@@ -163,12 +163,32 @@ class Fetcher:
             j = self.new(x['title'],x['absolute_url'],x['id'],location=(x.get('location') or {}).get('name',''),description=desc,
                 posted_at=date,date_kind='original_posted' if date else 'unknown',date_evidence='Greenhouse.first_published' if date else '',
                 updated_at=x.get('updated_at'),valid_through=x.get('application_deadline'),detail_ok=bool(desc),evidence=[base+'/jobs/'+str(x['id'])])
-            if not date or not desc:
+            # Public custom questions can contain hard eligibility requirements
+            # absent from the description (e.g. Salsify's Lisbon-only residence).
+            j.metadata['application_requirements_checked'] = False
+            if self.details >= self.max_details:
+                self.partial('Detail cap reached; application requirements remain unverified')
+            else:
+                self.details += 1
+                endpoint = base+'/jobs/'+str(x['id'])+'?questions=true'
                 try:
-                    detail=self.read(base+'/jobs/'+str(x['id']),as_json=True)
+                    detail=self.read(endpoint,as_json=True)
+                    if not isinstance(detail,dict) or str(detail.get('id')) != str(x['id']):
+                        raise FetchError('Greenhouse detail identity mismatch','schema_changed')
+                    questions = require_list(detail,'questions')
+                    if not all(isinstance(q,dict) and isinstance(q.get('label'),str) and isinstance(q.get('required'),bool)
+                               and (q.get('description') is None or isinstance(q['description'],str)) for q in questions):
+                        raise FetchError('Greenhouse question schema changed','schema_changed')
+                    j.metadata['application_questions'] = [
+                        {'label':plain(htmllib.unescape(q['label'])), 'description':plain(htmllib.unescape(q.get('description') or '')), 'required':q['required']}
+                        for q in questions]
+                    j.metadata['application_requirements_checked'] = True
+                    j.evidence.append(endpoint)
                     if detail.get('content'): j.description=plain(htmllib.unescape(detail['content']));j.detail_ok=True
                     if detail.get('first_published'): j.posted_at=detail['first_published'];j.date_kind='original_posted';j.date_evidence='Greenhouse.first_published'
-                except FetchError as e: self.partial(str(e))
+                except FetchError as e:
+                    self.partial(str(e))
+                    j.metadata['application_requirements_error'] = str(e)
             self.r.jobs.append(j)
 
     def ashby(self):
