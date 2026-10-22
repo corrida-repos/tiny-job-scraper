@@ -1,11 +1,15 @@
 # Current automation rules
 
-Report readability update: group all positions from the same employer beneath
-one numbered level-two company heading, preserving employer priority. Show its
-careers link once. Render each position as a numbered level-three subheading
-(1.1, 1.2, then 2.1 under the next company) with its title explicitly bold.
-Keep the Unknown freshness label on the position heading when applicable,
-followed by its direct job link and Pros/Cons. Separate company groups clearly.
+Report hierarchy: freshness category, then company, then position. Show
+**Verified Freshness** first and **Unknown Freshness** second as level-one
+headings, omitting empty categories. The latter includes future-dated postings.
+Within each category, preserve employer priority and group positions beneath
+numbered level-two company headings, with each company's careers link once.
+Use numbered level-three position subheadings (1.1, 1.2, then 2.1 under the next
+company), with the title explicitly bold, followed by its job link and Pros/Cons.
+Do not repeat the freshness category as a badge on each position. Keep Run notes
+as a separate final top-level section. This hierarchy supersedes the historical
+global company-first layout described below.
 
 Current freshness display update (supersedes the historical strict gate below):
 include otherwise non-rejected roles with insufficient original-date evidence,

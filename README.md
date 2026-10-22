@@ -22,6 +22,11 @@ Exit code **0** means all configured sources completed, **2** means reports were
 
 ## Daily output
 
+The report and email group positions by **Verified Freshness / Unknown Freshness
+→ Company → Position**. Company priority is preserved within each freshness
+category; future-dated roles share Unknown Freshness. Category labels appear
+once per section, while job titles remain bold subheadings.
+
 | File | Purpose |
 |---|---|
 | `report.md` | New eligible roles, roles needing confirmation, and source health |

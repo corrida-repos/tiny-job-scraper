@@ -100,18 +100,28 @@ def prepare_email(pairs, payload, saving='Local report generated; durable saving
     allow_unknown = criteria.get('include_unknown_freshness', False)
     allow_future = criteria.get('include_future_dated', False)
     selected, alternatives = select_roles(pairs, criteria.get('include_potential_matches', True), allow_unknown, allow_future)
-    companies = {}
+    freshness_groups = {'Verified Freshness': {}, 'Unknown Freshness': {}}
     for pair in selected:
-        companies.setdefault(pair[0].company_id, []).append(pair)
-    selected = [pair for jobs in companies.values() for pair in jobs]
+        category = 'Verified Freshness' if pair[1].checks['freshness']['status'] == 'pass' else 'Unknown Freshness'
+        freshness_groups[category].setdefault(pair[0].company_id, []).append(pair)
+    selected = [pair for companies in freshness_groups.values() for jobs in companies.values() for pair in jobs]
     freshness_hours = payload.get('freshness_hours', 48)
     lines = []
+    current_freshness = None
     current_company = None
     company_index = 0
     position_index = 0
     for job, assessment in selected:
-        if job.company_id != current_company:
+        category = 'Verified Freshness' if assessment.checks['freshness']['status'] == 'pass' else 'Unknown Freshness'
+        if category != current_freshness:
             if lines:
+                lines += ['---', '']
+            current_freshness = category
+            current_company = None
+            company_index = 0
+            lines += [f'# {category}', '']
+        if job.company_id != current_company:
+            if current_company is not None:
                 lines += ['---', '']
             current_company = job.company_id
             company_index += 1
@@ -132,8 +142,7 @@ def prepare_email(pairs, payload, saving='Local report generated; durable saving
         if re.search(r'prefer|ideally|optional|nice.to.have', experience):
             concerns.append(clean(experience).rstrip('.'))
         cons = ('Potential match; requirements unconfirmed: ' if assessment.status == 'review' else '') + ('; '.join(concerns) or 'No material concerns identified in retrieved evidence; suitability still requires confirmation')
-        freshness_label = ' · **Unknown freshness**' if unknown_freshness(assessment) or future_dated(assessment) else ''
-        lines += [f'### {company_index}.{position_index} **{clean(job.title)}**{freshness_label}',
+        lines += [f'### {company_index}.{position_index} **{clean(job.title)}**',
                   f'[View job]({link(job.url)})',
                   f'- **Pros:** {"; ".join(pros)}.', f'- **Cons:** {cons}.', '']
     coverage = payload['coverage']
@@ -148,7 +157,7 @@ def prepare_email(pairs, payload, saving='Local report generated; durable saving
     freshness_note = f'Verified original publication within {freshness_hours} hours of run start; known older original dates excluded'
     freshness_note += '; unverified original dates included as Unknown freshness' if allow_unknown else '; unverified original dates excluded'
     freshness_note += '; future dates also included as Unknown freshness' if allow_future else '; future dates excluded'
-    lines += ['## Run notes', '',
+    lines += ['# Run notes', '',
               f'- Checked: {timestamp.astimezone(ZoneInfo("Europe/Lisbon")).isoformat()}; {coverage["sources"]} configured source scopes.',
               f'- Coverage: {coverage["complete"]} complete; {coverage["attention"]} need attention.',
               f'- Results: {len(selected)} included; all current-run candidates retained in results.json.',

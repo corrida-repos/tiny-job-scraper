@@ -14,19 +14,21 @@ class DailyReportTests(unittest.TestCase):
   pairs=[self.pair(source_id=str(i),url=f'https://example.org/jobs/{i}',title=f'Project Manager {i}',workplace='unknown') for i in range(13)]
   email=prepare_email(pairs,self.payload)
   self.assertEqual(len(email['job_keys']),13)
-  self.assertTrue(email['body_markdown'].startswith('## 1. Bosch\n'))
+  self.assertTrue(email['body_markdown'].startswith('# Verified Freshness\n\n## 1. Bosch\n'))
   from markdown_it import MarkdownIt
   rendered=MarkdownIt('commonmark',{'html':False}).render(email['body_markdown'])
-  self.assertTrue(rendered.startswith('<h2>1. Bosch</h2>'))
+  self.assertTrue(rendered.startswith('<h1>Verified Freshness</h1>'))
+  self.assertIn('<h2>1. Bosch</h2>',rendered)
   self.assertIn('<h3>1.1 <strong>Project Manager',rendered)
-  self.assertEqual(rendered.count('<h2>'),2)  # Company plus Run notes.
+  self.assertEqual(rendered.count('<h2>'),1)  # Company.
+  self.assertEqual(rendered.count('<h1>'),2)  # Freshness plus Run notes.
   self.assertEqual(rendered.count('<h3>'),13)
   self.assertEqual(email['body_markdown'].count('[Company careers]'),1)
   self.assertEqual(email['body_markdown'].count('- **Pros:**'),13)
   self.assertEqual(email['body_markdown'].count('- **Cons:**'),13)
   self.assertEqual(email['subject'],"Tiny's Daily Job Report")
   self.assertEqual(email['delivery_status'],'not_sent')
-  self.assertIn('## Run notes',email['body_markdown'])
+  self.assertIn('# Run notes',email['body_markdown'])
   self.assertEqual(prepare_email(pairs,self.payload),email)
 
  def test_company_groups_keep_rank_and_all_positions_in_nested_numbering(self):

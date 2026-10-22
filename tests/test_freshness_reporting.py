@@ -27,7 +27,8 @@ class FreshnessReportingTests(unittest.TestCase):
         draft = prepare_email([pair], self.payload)
         self.assertEqual(draft['job_keys'], [pair[0].key])
         self.assertEqual(draft['unknown_freshness_job_keys'], [pair[0].key])
-        self.assertIn('**Unknown freshness**', self.position_heading(draft))
+        self.assertTrue(draft['body_markdown'].startswith('# Unknown Freshness\n'))
+        self.assertNotIn('freshness', self.position_heading(draft).lower())
         self.assertNotIn('future and unverified dates excluded', draft['body_markdown'])
 
     def test_last_published_and_recent_date_only_remain_unknown(self):
@@ -46,7 +47,8 @@ class FreshnessReportingTests(unittest.TestCase):
                 draft = prepare_email([pair], self.payload)
                 self.assertEqual(draft['future_dated_job_keys'], [pair[0].key])
                 self.assertEqual(draft['unknown_freshness_job_keys'], [pair[0].key])
-                self.assertIn('**Unknown freshness**', self.position_heading(draft))
+                self.assertTrue(draft['body_markdown'].startswith('# Unknown Freshness\n'))
+                self.assertNotIn('freshness', self.position_heading(draft).lower())
                 self.assertNotIn('**Future-dated**', draft['body_markdown'])
                 self.assertEqual(pair[1].status, 'review')
                 self.assertEqual(pair[1].checks['freshness']['category'], 'future_date')
@@ -56,7 +58,8 @@ class FreshnessReportingTests(unittest.TestCase):
         future = self.pair(source_id='future', title='Beta Project Manager', posted_at='2026-10-20')
         draft = prepare_email([missing, future], self.payload)
         self.assertEqual(set(draft['unknown_freshness_job_keys']), {missing[0].key, future[0].key})
-        self.assertEqual(draft['body_markdown'].count('**Unknown freshness**'), 2)
+        self.assertEqual(draft['body_markdown'].count('# Unknown Freshness\n'), 1)
+        self.assertNotIn('**Unknown freshness**', draft['body_markdown'])
         self.assertNotIn('Future-dated', draft['body_markdown'])
 
     def test_unknown_and_future_switches_are_independent(self):
@@ -99,3 +102,23 @@ class FreshnessReportingTests(unittest.TestCase):
         future = self.pair(source_id='future', title='Beta Project Manager', posted_at='2026-10-20')
         selected, _ = select_roles([future, unknown], True, True, True)
         self.assertEqual([j.key for j, a in selected], [unknown[0].key, future[0].key])
+
+    def test_hierarchy_is_freshness_then_company_then_position(self):
+        verified_bosch = self.pair(source_id='verified-bosch', title='Verified Project Manager', description=BASE.replace('No travel required.', ''))
+        verified_vestas = self.pair(source_id='verified-vestas', company_id='vestas', company='Vestas')
+        unknown_mindera = self.pair(source_id='unknown-mindera', company_id='mindera', company='Mindera', posted_at=None)
+        unknown_bosch = self.pair(source_id='unknown-bosch', title='Unknown Project Manager', posted_at=None)
+        future_bosch = self.pair(source_id='future-bosch', title='Future Project Manager', posted_at='2026-10-20')
+        for pair, rank in [(verified_bosch,20), (verified_vestas,30), (unknown_mindera,1), (unknown_bosch,20), (future_bosch,20)]:
+            pair[0].metadata['employer_rank'] = rank
+        draft = prepare_email([unknown_bosch, unknown_mindera, verified_vestas, future_bosch, verified_bosch], self.payload)
+        body = draft['body_markdown']
+        verified, unknown = body.split('# Unknown Freshness\n')
+        self.assertTrue(verified.startswith('# Verified Freshness\n'))
+        self.assertLess(verified.index('## 1. Bosch'),verified.index('## 2. Vestas'))
+        self.assertLess(unknown.index('## 1. Mindera'),unknown.index('## 2. Bosch'))
+        self.assertEqual(unknown.count('## 2. Bosch\n'),1)
+        self.assertIn('### 2.1 **Future Project Manager**',unknown)
+        self.assertIn('### 2.2 **Unknown Project Manager**',unknown)
+        self.assertNotIn('**Unknown freshness**',body)
+        self.assertEqual(draft['job_keys'],[p[0].key for p in [verified_bosch,verified_vestas,unknown_mindera,future_bosch,unknown_bosch]])
