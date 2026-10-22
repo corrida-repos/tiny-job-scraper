@@ -60,6 +60,8 @@ commits; no force-push permission is needed.
    schedule enabled. Do not restore the old imported database over the newer
    Actions state, which already contains the validated run and receipt.
 4. Observe the first scheduled run and its email before declaring migration done.
+   The scheduled run on 2026-10-22 completed and saved its delivery receipt:
+   [Actions 39742353371](https://github.com/corrida-repos/tiny-job-scraper/actions/runs/39742353371).
 
 Tests and setup failures before the runner starts are visible as failed GitHub
 Actions runs; they cannot promise an email. A missing key, corrupt snapshot or

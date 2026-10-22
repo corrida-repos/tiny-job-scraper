@@ -135,6 +135,15 @@ change. The active workflow now handles its scheduled events directly, with the
 existing Lisbon daylight-saving gate and concurrency protection. No variable is
 needed. Pause future execution with GitHub Actions “Disable workflow”.
 
-The next scheduled target is 2026-10-22 at 08:00 Europe/Lisbon (07:00 UTC). The
-first automatic execution has not yet been observed. Production state remains
-the encrypted runtime-state branch, including the successful manual run receipt.
+The first scheduled run on 2026-10-22 completed independently of ChatGPT:
+[Actions 39742353371](https://github.com/corrida-repos/tiny-job-scraper/actions/runs/39742353371).
+GitHub started it at 07:42 UTC (08:42 Lisbon), later than the 08:00 target, and it
+completed at 07:45 UTC. The runtime-state branch recorded its delivery receipt in
+commit `de26ab3e259092f834b802ef9a11bc2346cd0a97`. The other UTC trigger was gated
+off, as intended. This is a recorded delivery receipt; no additional inbox
+confirmation from the user has been obtained for this scheduled email.
+
+The active watchlist has 56 employers. Screening and reporting settings can now
+be edited through [the criteria guide](configuring-criteria.md), without changing
+Python code. The schedule remains 08:00 Lisbon, and freshness defaults to the saved
+two-day setting. Historical state must not be overwritten with the older import.

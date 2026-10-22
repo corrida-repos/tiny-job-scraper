@@ -1,6 +1,16 @@
 # Current coverage — Top 56
 
-[Top 56 validation 39690885796](https://github.com/corrida-repos/tiny-job-scraper/actions/runs/39690885796)
+Latest [configured-criteria validation 39749330923](https://github.com/corrida-repos/tiny-job-scraper/actions/runs/39749330923)
+at commit `a41030e` passed **107 tests** and completed **55/56 source scopes**.
+Infineon's public inventory changed during pagination: 1,295 unique jobs were
+retrieved against a reported total of 1,297, with duplicate IDs across pages.
+The existing reconciliation checks correctly kept this source partial. Noesis
+and the other retained sources completed. The run used `send_email=false` and
+`freshness_days=configured`, resolving to the saved 48-hour window. It left the
+production-state branch at `de26ab3e259092f834b802ef9a11bc2346cd0a97` and sent no
+email. Criteria are now configurable through [the settings guide](configuring-criteria.md).
+
+The earlier [Top 56 validation 39690885796](https://github.com/corrida-repos/tiny-job-scraper/actions/runs/39690885796)
 at commit `50a16cd` completed **56/56 source scopes**, with no coverage gaps and
 96 tests passing. It used `send_email=false` and the two-day freshness window.
 

@@ -127,7 +127,8 @@ A repository-based replacement is implemented in
 [setup and cutover instructions](schedule/github-actions.md). Daily delivery is enabled for 08:00 Europe/Lisbon; use GitHub Actions
 “Disable workflow” to pause it. The encrypted `runtime-state` branch
 preserves job and delivery history. Gmail delivery was validated and the user confirmed the original ChatGPT task
-is paused. The first automatic scheduled execution has not yet been observed.
+is paused. The [scheduled run on 22 October 2026](https://github.com/corrida-repos/tiny-job-scraper/actions/runs/39742353371)
+completed successfully and persisted its delivery receipt.
 
 ## Source coverage repairs
 
