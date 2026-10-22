@@ -12,7 +12,7 @@ def incompatible_residence(text, allowed_locations):
     patterns = [
         rf'\b(?:must|need to|needs to|required to|have to|has to|are expected to)\s+(?:(?:currently|already)\s+)?{verb}\s+(?:in|to|near|within|local to)\s+(.+)',
         rf'\brequires?\s+(?:you|the candidate|candidates?|applicants?)\s+to\s+{verb}\s+(?:in|to|near|within|local to)\s+(.+)',
-        r'\b(?:candidates?|applicants?|you)\s+(?:who\s+)?(?:are|is)\s+(?:required to be\s+)?(?:based|located|resident)\s+in\s+(.+)',
+        r'\bonly\s+(?:candidates?|applicants?)\s+(?:(?:who\s+)?are\s+)?(?:based|located|resident)\s+in\s+(.+)',
         r'\b(?:residence|residency|relocation)\s+(?:in|to)\s+(.+?)\s+(?:is\s+)?(?:required|mandatory)\b',
         r'\b(?:deve|devem|tem de|necessario|obrigatorio)\s+(?:atualmente\s+)?(?:residir|morar|viver|estar localizado)\s+(?:em|no|na)\s+(.+)',
         r'\b(?:residencia|relocalizacao|mudanca)\s+obrigatoria\s+(?:em|para|no|na)\s+(.+)',
@@ -32,6 +32,11 @@ def incompatible_residence(text, allowed_locations):
                 if re.search(r'\b(?:preferred|optional|not required|not mandatory|opcional|preferencial|nao obrigatoria)\b', requirement):
                     continue
                 place = match.group(1).strip(' ,:')
+                place = re.sub(r'\s+(?:will|can)\s+be\s+considered\b.*$', '', place)
+                # A numeric UTC/GMT range is a work-hours constraint, not a
+                # requirement to reside in a particular city or country.
+                if re.match(r'^(?:[+-]?\d+(?::\d+)?\s*[/–—-]\s*[+-]?\d+(?::\d+)?\s*(?:utc|gmt)\b|(?:utc|gmt)\b)', place):
+                    continue
                 # Alternatives explicitly admitting Porto/Braga are compatible.
                 alternatives = re.split(r'\s+(?:or|ou)\s+|/', place)
                 compatible = False

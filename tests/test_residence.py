@@ -49,6 +49,7 @@ class ResidenceTests(unittest.TestCase):
                      'This position requires you to live in Lisbon.',
                      'You must already be living in Lisbon.',
                      'You must reside in Lisbon, but relocation is not required.',
+                     'Only applicants based in Lisbon will be considered.',
                      'O candidato deve residir em Lisboa.', 'Residência obrigatória em Setúbal.',
                      'Residência em Lisboa é obrigatória.', 'You must live within commuting distance of Lisbon.']:
             with self.subTest(text=text):
@@ -64,6 +65,18 @@ class ResidenceTests(unittest.TestCase):
                      'Residence in Lisbon is preferred.', 'You are not required to live in Lisbon.',
                      'Relocation to Lisbon is not required.', 'Our head office is in Lisbon.',
                      'Do you live in Lisbon?', 'Remote from anywhere in Portugal.']:
+            with self.subTest(text=text):
+                self.assertEqual(self.assess_text(text).checks['residence']['status'], 'pass')
+
+        self.assertEqual(self.assess_text('Only applicants based in Porto will be considered.').checks['residence']['status'], 'pass')
+
+    def test_conditional_salary_export_and_time_zone_text_are_not_residence_rules(self):
+        for text in [
+            'If you are based in Poland, the salary range is 31,000-40,000 PLN per month.',
+            'If you are located in or are a national of one of the listed countries or regions, an export license may be required as a condition of your employment in this role.',
+            'To create the best experience for our new hire, this role requires you to be based within +3 / -5 UTC.',
+            'You must be based within UTC-5 and UTC+3.',
+        ]:
             with self.subTest(text=text):
                 self.assertEqual(self.assess_text(text).checks['residence']['status'], 'pass')
 
