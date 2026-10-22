@@ -17,6 +17,9 @@ class FreshnessReportingTests(unittest.TestCase):
         candidate = job(**values)
         return candidate, self.screener.assess(candidate, NOW)
 
+    def position_heading(self, draft):
+        return next(line for line in draft['body_markdown'].splitlines() if line.startswith('### '))
+
     def test_missing_date_is_included_and_explicitly_labelled(self):
         pair = self.pair(posted_at=None, date_kind='unknown')
         self.assertEqual(pair[1].status, 'review')
@@ -24,7 +27,7 @@ class FreshnessReportingTests(unittest.TestCase):
         draft = prepare_email([pair], self.payload)
         self.assertEqual(draft['job_keys'], [pair[0].key])
         self.assertEqual(draft['unknown_freshness_job_keys'], [pair[0].key])
-        self.assertIn('**Unknown freshness**', draft['body_markdown'].splitlines()[0])
+        self.assertIn('**Unknown freshness**', self.position_heading(draft))
         self.assertNotIn('future and unverified dates excluded', draft['body_markdown'])
 
     def test_last_published_and_recent_date_only_remain_unknown(self):
@@ -43,7 +46,7 @@ class FreshnessReportingTests(unittest.TestCase):
                 draft = prepare_email([pair], self.payload)
                 self.assertEqual(draft['future_dated_job_keys'], [pair[0].key])
                 self.assertEqual(draft['unknown_freshness_job_keys'], [pair[0].key])
-                self.assertIn('**Unknown freshness**', draft['body_markdown'].splitlines()[0])
+                self.assertIn('**Unknown freshness**', self.position_heading(draft))
                 self.assertNotIn('**Future-dated**', draft['body_markdown'])
                 self.assertEqual(pair[1].status, 'review')
                 self.assertEqual(pair[1].checks['freshness']['category'], 'future_date')
@@ -81,8 +84,8 @@ class FreshnessReportingTests(unittest.TestCase):
 
     def test_known_recent_posting_has_no_unverified_badge(self):
         draft = prepare_email([self.pair()], self.payload)
-        self.assertNotIn('Unknown freshness', draft['body_markdown'].splitlines()[0])
-        self.assertNotIn('Future-dated', draft['body_markdown'].splitlines()[0])
+        self.assertNotIn('Unknown freshness', self.position_heading(draft))
+        self.assertNotIn('Future-dated', self.position_heading(draft))
         self.assertEqual(draft['unknown_freshness_job_keys'], [])
         self.assertEqual(draft['future_dated_job_keys'], [])
 

@@ -1,9 +1,11 @@
 # Current automation rules
 
-Report readability update: render each numbered company/job line as a level-two
-heading with the position title explicitly bold. This makes every job larger and
-easy to skim in both Markdown and the HTML email. Keep the Unknown freshness
-label inline when applicable, followed by the existing links and Pros/Cons.
+Report readability update: group all positions from the same employer beneath
+one numbered level-two company heading, preserving employer priority. Show its
+careers link once. Render each position as a numbered level-three subheading
+(1.1, 1.2, then 2.1 under the next company) with its title explicitly bold.
+Keep the Unknown freshness label on the position heading when applicable,
+followed by its direct job link and Pros/Cons. Separate company groups clearly.
 
 Current freshness display update (supersedes the historical strict gate below):
 include otherwise non-rejected roles with insufficient original-date evidence,

@@ -100,11 +100,25 @@ def prepare_email(pairs, payload, saving='Local report generated; durable saving
     allow_unknown = criteria.get('include_unknown_freshness', False)
     allow_future = criteria.get('include_future_dated', False)
     selected, alternatives = select_roles(pairs, criteria.get('include_potential_matches', True), allow_unknown, allow_future)
+    companies = {}
+    for pair in selected:
+        companies.setdefault(pair[0].company_id, []).append(pair)
+    selected = [pair for jobs in companies.values() for pair in jobs]
     freshness_hours = payload.get('freshness_hours', 48)
     lines = []
-    for index, (job, assessment) in enumerate(selected, 1):
-        if lines:
-            lines += ['---', '']
+    current_company = None
+    company_index = 0
+    position_index = 0
+    for job, assessment in selected:
+        if job.company_id != current_company:
+            if lines:
+                lines += ['---', '']
+            current_company = job.company_id
+            company_index += 1
+            position_index = 0
+            lines += [f'## {company_index}. {clean(job.company)}',
+                      f'[Company careers]({link(job.metadata.get("careers_url", job.url))})', '']
+        position_index += 1
         pros = [assessment.family or 'Allowed role family']
         for key in ('portugal_eligibility', 'attendance', 'travel'):
             check = assessment.checks.get(key, {})
@@ -119,8 +133,8 @@ def prepare_email(pairs, payload, saving='Local report generated; durable saving
             concerns.append(clean(experience).rstrip('.'))
         cons = ('Potential match; requirements unconfirmed: ' if assessment.status == 'review' else '') + ('; '.join(concerns) or 'No material concerns identified in retrieved evidence; suitability still requires confirmation')
         freshness_label = ' · **Unknown freshness**' if unknown_freshness(assessment) or future_dated(assessment) else ''
-        lines += [f'## {index}. {clean(job.company)} — **{clean(job.title)}**{freshness_label}',
-                  f'[View job]({link(job.url)}) · [Company careers]({link(job.metadata.get("careers_url", job.url))})',
+        lines += [f'### {company_index}.{position_index} **{clean(job.title)}**{freshness_label}',
+                  f'[View job]({link(job.url)})',
                   f'- **Pros:** {"; ".join(pros)}.', f'- **Cons:** {cons}.', '']
     coverage = payload['coverage']
     if not selected:
