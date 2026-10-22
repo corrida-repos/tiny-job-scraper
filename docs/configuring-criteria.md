@@ -28,7 +28,9 @@ These are the current defaults; the committed JSON file is authoritative.
 | `exclude_mandatory_coding` | `true` | Reject mandatory code-writing or coding assessments. Set `false` to stop using this as an exclusion. |
 | `exclude_shift_on_call` | `true` | Reject recognized required shift/on-call/weekend patterns. Set `false` to stop using this as an exclusion. |
 | `max_post_age_days` | `2` | Verified original posting must fall within this many days before the run. `2` = 48 hours; `7` = one week. Valid range: 1–30. Scheduled runs use this value. |
-| `include_potential_matches` | `true` | Include fresh roles with unresolved requirements alongside verified eligible roles. Set `false` to report only verified eligible roles. Rejected roles and unverified publication dates remain excluded in both modes. |
+| `include_potential_matches` | `true` | Include review-status roles alongside verified eligible roles, subject to the freshness switches below. Set `false` to report only verified eligible roles. Hard failures remain excluded. |
+| `include_unknown_freshness` | `true` | Include roles lacking a verified original date or sufficient date-only precision, labelled **Unknown freshness**. They remain unverified potential matches. Requires `include_potential_matches=true`. Known old original dates are excluded. |
+| `include_future_dated` | `true` | Include roles whose available posting date is in the future, labelled **Future-dated**. They remain unverified potential matches, rather than verified recent postings. Requires `include_potential_matches=true`. |
 
 Supported language names (use these exact names): English, Portuguese, Spanish,
 German, French, Dutch, Italian, Polish, Czech, Danish, Swedish, Norwegian,
@@ -57,9 +59,10 @@ languages, wrong types and out-of-range values fail validation before retrieval.
   active only when its target family is enabled in `role_families`.
 - `home`, `timezone` and `notes` are context. Editing them does not relocate the
   Portugal eligibility logic or change the 08:00 Lisbon schedule.
-- Portugal hiring eligibility, senior-leadership exclusions, verified original
-  publication, future-date rejection, salary neutrality and employer-first
-  ordering remain fixed. Salary has no minimum requirement or ranking effect.
+- Portugal hiring eligibility, senior-leadership exclusions, original-date
+  provenance, salary neutrality and employer-first ordering remain fixed. Unknown
+  and future dates never become verified dates merely because they are included
+  in a report. Salary has no minimum requirement or ranking effect.
 - Unknown evidence stays unknown. Relaxing one configurable exclusion never
   removes an unrelated failure. Work-life balance cannot be guaranteed by a
   posting, and numerical travel caps still require explicit supporting evidence.

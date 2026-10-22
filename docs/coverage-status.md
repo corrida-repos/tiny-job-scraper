@@ -1,5 +1,12 @@
 # Current coverage — Top 56
 
+Current report display includes otherwise non-rejected roles with unknown
+original freshness or future posting dates, labelled **Unknown freshness** or
+**Future-dated** respectively. These remain unverified potential matches.
+Verified original dates older than the saved 48-hour window remain excluded.
+The historical validations below used the freshness policy in effect at their
+recorded commits; see [current criteria](configuring-criteria.md).
+
 Latest [residence-rule validation 39751220625](https://github.com/corrida-repos/tiny-job-scraper/actions/runs/39751220625)
 at commit `5043fb7` passed **115 tests** and completed **56/56 source scopes**.
 Greenhouse candidates now include their public application questions in

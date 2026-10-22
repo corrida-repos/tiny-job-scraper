@@ -138,7 +138,7 @@ def main(argv=None):
         except (OSError, ValueError) as error:
             print('Invalid criteria: '+str(error),file=sys.stderr)
             return 1
-        print(f"Valid criteria: {len(criteria['role_families'])} role families; {criteria['max_post_age_days']*24}-hour freshness; potential matches {'included' if criteria['include_potential_matches'] else 'excluded'}")
+        print(f"Valid criteria: {len(criteria['role_families'])} role families; {criteria['max_post_age_days']*24}-hour freshness; potential matches {'included' if criteria['include_potential_matches'] else 'excluded'}; unknown freshness {'included' if criteria['include_unknown_freshness'] else 'excluded'}; future-dated {'included' if criteria['include_future_dated'] else 'excluded'}")
         return 0
     if args.command=='run':
         if not 1<=args.workers<=12 or args.delay<0.5 or (args.max_pages is not None and not 1<=args.max_pages<=200) or not 1<=args.max_details<=1000:p.error('Use workers 1..12, delay >=0.5, pages 1..200, details 1..1000')

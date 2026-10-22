@@ -23,19 +23,32 @@ def location_tier(job):
     return 5
 
 
-def select_roles(pairs, include_potential_matches=True):
+def unknown_freshness(assessment):
+    check = assessment.checks.get('freshness', {})
+    return check.get('status') == 'unknown' and check.get('category') in {'original_date_unverified', 'date_only_uncertain'}
+
+
+def future_dated(assessment):
+    check = assessment.checks.get('freshness', {})
+    return check.get('status') == 'unknown' and check.get('category') == 'future_date'
+
+
+def select_roles(pairs, include_potential_matches=True, include_unknown_freshness=False, include_future_dated=False):
     groups = {}
     for job, assessment in pairs:
         if job.metadata.get('application_requirements_checked') is False:
             continue
         allowed = {'eligible', 'review'} if include_potential_matches else {'eligible'}
-        if assessment.status not in allowed or assessment.checks.get('freshness', {}).get('status') != 'pass':
+        freshness_ok = assessment.checks.get('freshness', {}).get('status') == 'pass'
+        if assessment.status not in allowed or not (freshness_ok
+                or (include_unknown_freshness and unknown_freshness(assessment))
+                or (include_future_dated and future_dated(assessment))):
             continue
         # Merge only exact substantive descriptions and assessments for remote
         # location variants. Uncertain duplicates remain separate for inspection.
         remote = job.workplace.lower() in {'remote', 'fully remote', 'telecommute'}
         key = (job.company_id, norm(job.title), norm(job.description),
-               str(job.salary), assessment.status,
+               str(job.salary), assessment.status, assessment.checks.get('freshness', {}).get('category'),
                tuple(sorted((k, v['status']) for k, v in assessment.checks.items()))) if remote and job.description else (job.key,)
         groups.setdefault(key, []).append((job, assessment))
     chosen = []
@@ -49,7 +62,7 @@ def select_roles(pairs, include_potential_matches=True):
         job, assessment = pair
         unknown = sum(v['status'] == 'unknown' for v in assessment.checks.values())
         important = sum(assessment.checks.get(k, {}).get('status') != 'pass' for k in ('work_schedule', 'portugal_eligibility', 'attendance', 'travel', 'experience'))
-        posted = parse_date(job.posted_at)
+        posted = parse_date(job.posted_at) if assessment.checks.get('freshness', {}).get('status') == 'pass' else None
         return (job.metadata.get('employer_rank', 999), assessment.status != 'eligible', important, unknown,
                 -(posted.timestamp() if posted else 0), norm(job.title), job.url)
     return sorted(chosen, key=order), alternatives
@@ -84,7 +97,9 @@ def salary_positive(job):
 
 def prepare_email(pairs, payload, saving='Local report generated; durable saving and email delivery not confirmed'):
     criteria = payload.get('criteria', {})
-    selected, alternatives = select_roles(pairs, criteria.get('include_potential_matches', True))
+    allow_unknown = criteria.get('include_unknown_freshness', False)
+    allow_future = criteria.get('include_future_dated', False)
+    selected, alternatives = select_roles(pairs, criteria.get('include_potential_matches', True), allow_unknown, allow_future)
     freshness_hours = payload.get('freshness_hours', 48)
     lines = []
     for index, (job, assessment) in enumerate(selected, 1):
@@ -103,26 +118,37 @@ def prepare_email(pairs, payload, saving='Local report generated; durable saving
         if re.search(r'prefer|ideally|optional|nice.to.have', experience):
             concerns.append(clean(experience).rstrip('.'))
         cons = ('Potential match; requirements unconfirmed: ' if assessment.status == 'review' else '') + ('; '.join(concerns) or 'No material concerns identified in retrieved evidence; suitability still requires confirmation')
-        lines += [f'{index}. {clean(job.company)} — {clean(job.title)}',
+        freshness_label = ' · **Unknown freshness**' if unknown_freshness(assessment) else ''
+        if future_dated(assessment):
+            freshness_label = ' · **Future-dated**'
+        lines += [f'{index}. {clean(job.company)} — {clean(job.title)}{freshness_label}',
                   f'[View job]({link(job.url)}) · [Company careers]({link(job.metadata.get("careers_url", job.url))})',
                   f'- **Pros:** {"; ".join(pros)}.', f'- **Cons:** {cons}.', '']
     coverage = payload['coverage']
     if not selected:
-        lines = [('Retrieval failed or was incomplete; no qualifying fresh roles were verified in the retrieved results.' if coverage['attention'] else f'No roles passed the verified {freshness_hours}-hour freshness gate and other hard filters.'), '']
+        if allow_unknown or allow_future:
+            lines = [('Retrieval failed or was incomplete; no roles passing the saved reporting criteria were found.' if coverage['attention'] else 'No roles passed the saved reporting criteria.'), '']
+        else:
+            lines = [('Retrieval failed or was incomplete; no qualifying fresh roles were verified in the retrieved results.' if coverage['attention'] else f'No roles passed the verified {freshness_hours}-hour freshness gate and other hard filters.'), '']
     timestamp = parse_date(payload['started_at'])
     marker = 'tiny-' + timestamp.strftime('%Y%m%dT%H%M%S.%fZ')
     failures = ['{}: {}{}'.format(clean(s['company']), clean(s['status']), ' — ' + clean('; '.join(s['messages'])) if s['messages'] else '') for s in payload['sources'] if not s['complete'] or s['status'] != 'ok']
+    freshness_note = f'Verified original publication within {freshness_hours} hours of run start; known older original dates excluded'
+    freshness_note += '; unverified original dates included as Unknown freshness' if allow_unknown else '; unverified original dates excluded'
+    freshness_note += '; future dates included as Future-dated (unverified)' if allow_future else '; future dates excluded'
     lines += ['## Run notes', '',
               f'- Checked: {timestamp.astimezone(ZoneInfo("Europe/Lisbon")).isoformat()}; {coverage["sources"]} configured source scopes.',
               f'- Coverage: {coverage["complete"]} complete; {coverage["attention"]} need attention.',
               f'- Results: {len(selected)} included; all current-run candidates retained in results.json.',
-              f'- Freshness: verified original publication within {freshness_hours} hours of run start; future and unverified dates excluded.',
+              '- Freshness: ' + freshness_note + '.',
               '- Filters: saved employer ranks and screening criteria; '
-              + ('fresh potential matches included' if criteria.get('include_potential_matches', True) else 'verified eligible roles only')
+              + ('potential matches included' if criteria.get('include_potential_matches', True) else 'verified eligible roles only')
               + '; salary informational only.'
               + (' Active settings are recorded in results.json.' if criteria else ''),
               '- Coverage gaps: ' + ('; '.join(failures) or 'None in the selected scopes.'),
               '- Saving: ' + saving + '.', f'- Run marker: {marker}', '']
     return {'subject': SUBJECT, 'run_marker': marker, 'delivery_status': 'not_sent',
             'job_keys': [j.key for j, _ in selected], 'alternative_urls': alternatives,
+            'unknown_freshness_job_keys': [j.key for j, a in selected if unknown_freshness(a)],
+            'future_dated_job_keys': [j.key for j, a in selected if future_dated(a)],
             'body_markdown': '\n'.join(lines)}

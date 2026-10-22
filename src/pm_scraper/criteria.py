@@ -18,7 +18,8 @@ LIMITS = {'max_post_age_days': (1, 30), 'max_office_days_per_week': (0, 5),
           'max_distant_office_visits_per_quarter': (0, 12),
           'max_mandatory_experience_years': (0, 50)}
 FLAGS = {'exclude_mandatory_coding': True, 'exclude_shift_on_call': True,
-         'include_potential_matches': True}
+         'include_potential_matches': True, 'include_unknown_freshness': False,
+         'include_future_dated': False}
 LISTS = {'allowed_languages', 'nearby_locations', 'excluded_companies',
          'explicit_inclusions', 'role_families', 'notes', 'allowed_residence_locations'}
 

@@ -186,23 +186,29 @@ class Screener:
             check("travel", "unknown", f"At most {self.cfg['max_abroad_calendar_days_per_quarter']} calendar days abroad per quarter, including all trips and transit, is not explicitly established" + (": " + "; ".join(travel_sentences)[:550] if travel_sentences else ""))
 
         posted = parse_date(job.posted_at)
-        if posted and job.date_kind == "original_posted":
+        freshness_category = 'original_date_unverified'
+        if posted and posted > now:
+            freshness_category = 'future_date'
+            check("freshness", "unknown", "Posting date is in the future: " + str(job.posted_at))
+        elif posted and job.date_kind == "original_posted":
             window = timedelta(days=self.cfg["max_post_age_days"])
             age = now - posted
             # A date without a clock denotes an interval, not invented midnight
             # precision. Include only when the entire possible day is in range.
             raw = str(job.posted_at).strip()
             date_only = not isinstance(job.posted_at, (int, float)) and not re.search(r"\d{1,2}:\d{2}", raw)
-            if age < timedelta(0):
-                check("freshness", "unknown", "Posting date is in the future: " + raw)
-            elif age > window:
+            if age > window:
+                freshness_category = 'older_than_window'
                 check("freshness", "fail", f"Original posting is older than {self.cfg['max_post_age_days']*24} hours")
             elif date_only and posted + timedelta(days=1) > now:
+                freshness_category = 'date_only_uncertain'
                 check("freshness", "unknown", "Date-only original publication does not establish the full freshness interval")
             else:
+                freshness_category = 'verified_recent'
                 check("freshness", "pass", f"Original posting date {job.posted_at}; source: {job.date_evidence}")
         else:
             check("freshness", "unknown", "Original posting date unverified; updated/last-published/first-seen dates are not treated as new")
+        checks['freshness']['category'] = freshness_category
         expires = parse_date(job.valid_through)
         check("active", "fail" if expires and expires < now else "pass", "Posting deadline expired" if expires and expires < now else "Present in current public board; no expired deadline found")
 

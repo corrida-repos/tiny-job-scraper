@@ -1,5 +1,15 @@
 # Current automation rules
 
+Current freshness display update (supersedes the historical strict gate below):
+include otherwise non-rejected roles with insufficient original-date evidence,
+labelled **Unknown freshness**. Include future-dated postings too, labelled
+**Future-dated**. Both categories remain review-status potential matches and
+must pass all other hard requirements. Keep verified original dates older than
+the saved 48-hour window excluded. These display exceptions are controlled by
+`include_unknown_freshness` and `include_future_dated`, both currently enabled;
+they also require potential-match reporting to be enabled. Preserve residence,
+experience, language, travel, coding and attendance exclusions.
+
 Residence rule: the candidate lives in Santo Tirso, Porto. Exclude mandatory
 residence/relocation outside the configured Porto/Braga area, even when a role
 is labelled remote. Inspect retrieved application requirements as well as the

@@ -1,5 +1,10 @@
 # Job requirement diagnostic
 
+Historical diagnostic: these counts used the strict verified-original-date gate
+in effect during the scan. The user subsequently enabled labelled **Unknown
+freshness** and **Future-dated** potential matches; those reporting exceptions
+are not reflected in the exclusion counts below.
+
 Run: 2026-10-22T09:05:51.070488+00:00. Coverage: 54/56 source scopes complete.
 Evaluated candidates: 226. Reportable before location deduplication: 0. Included roles: 0.
 Settings: 48-hour verified original freshness; up to 3 nearby office days/week; potential matches included.

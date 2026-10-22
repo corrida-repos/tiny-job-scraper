@@ -152,5 +152,7 @@
     "Leça do Balio",
     "Leca do Balio",
     "Santo Tirso"
-  ]
+  ],
+  "include_unknown_freshness": false,
+  "include_future_dated": false
 }
