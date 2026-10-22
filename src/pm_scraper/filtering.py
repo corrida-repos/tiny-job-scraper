@@ -3,7 +3,7 @@ import re
 from datetime import timedelta
 from .htmlutil import norm
 from .models import Assessment, parse_date, utcnow
-from .criteria import LANGUAGES, validate
+from .criteria import LANGUAGES, validate, experience_ceiling
 from .residence import incompatible_residence
 from .posting_dates import publication_candidate
 
@@ -236,13 +236,14 @@ class Screener:
         checks["salary"] = {"status":"informational", "evidence":"Salary has no eligibility or ranking requirement"}
 
         experience_fail, experience_unknown, experience_optional = [], [], []
+        experience_limit = experience_ceiling(self.cfg, now)
         pattern = re.compile(rf"(?P<low>{N})(?:\s*[-–—]\s*(?:{N}))?\s*\+?\s*(?:years?|anos?)\b.{{0,65}}(?:experience|experiencia|leadership|management|professional|lideranca|gestao)|(?:experience|experiencia).{{0,35}}?(?P<after>{N})(?:\s*[-–—]\s*(?:{N}))?\s*\+?\s*(?:years?|anos?)\b")
         # Split optional and mandatory clauses independently: a preference must
         # never cancel a distinct mandatory minimum in the same sentence.
         clauses = [norm(x) for x in re.split(r"[\n;]|(?<=[.!?])\s+|,\s*|\bbut\b|\band\b(?=\s+(?:(?:at least|minimum|ideally|preferably)\s+)?(?:\d|six|seven|eight|nine|ten))", job.description) if x.strip()]
         for clause in clauses:
             matches = list(pattern.finditer(clause))
-            high = [m for m in matches if number(m.group("low") or m.group("after")) > self.cfg.get("max_mandatory_experience_years", 5)]
+            high = [m for m in matches if number(m.group("low") or m.group("after")) > experience_limit]
             if not high:
                 continue
             optional = re.search(r"preferred|preferable|nice[- ]to[- ]have|optional|bonus|desirable|ideally|opcional|preferencial|valorizad", clause)
@@ -254,7 +255,8 @@ class Screener:
             else:
                 experience_unknown.append(clause[:500])
         check("experience", "fail" if experience_fail else "unknown" if experience_unknown else "pass" if job.detail_ok else "unknown",
-              "; ".join(experience_fail + experience_unknown + experience_optional) or f"No mandatory experience minimum above {self.cfg['max_mandatory_experience_years']} years identified")
+              "; ".join(experience_fail + experience_unknown + experience_optional) or f"No mandatory experience minimum above {experience_limit} years identified")
+        checks['experience']['limit_years'] = experience_limit
         checks["work_life_balance"] = {"status":"unverified", "evidence":"Employer-level reputation is contextual; actual workload, overtime and leave use require team-level confirmation"}
 
         # Overrides require dated evidence and can only resolve explicitly named checks.

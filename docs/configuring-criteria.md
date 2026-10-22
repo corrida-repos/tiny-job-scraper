@@ -19,7 +19,8 @@ These are the current defaults; the committed JSON file is authoritative.
 | --- | --- | --- |
 | `role_families` | 45 listed titles | Only these title families become candidates. Remove or add titles in this array. Added qualifiers and direct configured translations are accepted. |
 | `allowed_languages` | English, Portuguese, Spanish | Recognized mandatory languages outside this list exclude a job. Optional languages do not. |
-| `max_mandatory_experience_years` | `5` | Exclude mandatory minimums above this many years. Preferred experience does not exclude a job. Valid range: 0–50. |
+| `max_mandatory_experience_years` | `4` | Base ceiling for mandatory minimums: 4+ years is accepted; mandatory 5+ is excluded until the ceiling increases. Preferences do not exclude a job. Valid range: 0–50. |
+| `experience_growth_anchor` | `2026-09-01` | Add one to the base ceiling per completed anniversary, using Europe/Lisbon. First increase: 1 September 2027. Remove this setting for a fixed ceiling. |
 | `nearby_locations` | Porto, Braga and listed nearby towns | Locations eligible for the nearby-office rule. This is a text-match list, not a distance calculator. |
 | `allowed_residence_locations` | Santo Tirso, Porto, Braga and listed nearby towns | Reject explicit requirements to live, be based or relocate elsewhere. Country-wide Portugal/EU residence requirements remain compatible with Santo Tirso. This is independent of the office attendance allowance. |
 | `max_office_days_per_week` | `3` | Maximum explicitly stated nearby-office attendance. Valid range: 0–5. |
@@ -39,7 +40,7 @@ Finnish, Mandarin, Japanese and Arabic. Recognition uses English and selected
 Portuguese aliases; this is rule-based extraction, not exhaustive language
 understanding.
 
-For example, change `max_mandatory_experience_years` from `5` to `7` to allow
+For example, change `max_mandatory_experience_years` from `4` to `7` to allow
 roles requiring seven years; change `include_potential_matches` to `false` for
 verified matches only. Change `max_post_age_days` to `7` for a persistent
 seven-day window. The manual workflow's `2` or `7` freshness choices override

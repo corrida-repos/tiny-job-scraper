@@ -16,7 +16,7 @@ from .filtering import Screener
 from .fetchers import Fetcher
 from .http import HttpClient
 from .state import State
-from .criteria import load as load_criteria
+from .criteria import load as load_criteria, experience_ceiling
 
 ROOT=Path(__file__).resolve().parents[2]
 CONFIG=ROOT/"config" if (ROOT/"config").is_dir() else Path(sys.prefix)/"share/pm-career-scraper/config"
@@ -52,6 +52,7 @@ def export(out,results,pairs,delivery,selected,started,finished,requests,freshne
              'jobs':[{'job':j.to_dict(),'assessment':asdict(a)} for j,a in pairs]}
     if criteria is not None:
         payload['criteria'] = criteria
+        payload['effective_experience_ceiling'] = experience_ceiling(criteria, parse_date(started))
     atomic(out/'results.json',json.dumps(payload,ensure_ascii=False,indent=2)+'\n')
     atomic(out/'source-health.json',json.dumps(health,ensure_ascii=False,indent=2)+'\n')
     email = prepare_email(pairs, payload)

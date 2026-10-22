@@ -57,9 +57,17 @@ are withheld from reporting until those requirements can be checked.
 The active GitHub runner reads [config/criteria.json](../config/criteria.json).
 Its supported settings supersede the corresponding default values in the
 historical task instructions below. See [configuring criteria](configuring-criteria.md).
-Current defaults remain 48-hour freshness, five years' mandatory experience,
+Current defaults remain 48-hour freshness, four years' mandatory experience,
 three nearby office days/week and seven days abroad/quarter. GitHub Actions runs
 independently of ChatGPT and the old Library workflow.
+
+Experience ceiling: accept mandatory minimums up to 4 years (including 4+).
+Increase this ceiling by one per completed anniversary of 1 September 2026 in
+Europe/Lisbon: 5 on 1 September 2027, 6 on 1 September 2028, and so on.
+The base and anchor are configurable.
+Optional higher experience remains allowed. Each assessment records its effective
+limit; results.json also records the run's effective experience ceiling. This
+supersedes the historical fixed five-year rule below.
 
 Current watchlist: **Top 56**. COCUS, Float, JTA and Namecheap were removed at the user’s request. Retained employers preserve their relative order, now ranked 1–56; historical audit records remain unchanged.
 

@@ -1,5 +1,6 @@
 """Validate user-editable screening settings before retrieval or delivery."""
 import json
+from datetime import date
 from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -27,7 +28,7 @@ LISTS = {'allowed_languages', 'nearby_locations', 'excluded_companies',
 def validate(cfg):
     if not isinstance(cfg, dict):
         raise ValueError('Criteria must be a JSON object')
-    known = set(LIMITS) | set(FLAGS) | LISTS | {'timezone', 'home', 'portuguese_titles'}
+    known = set(LIMITS) | set(FLAGS) | LISTS | {'timezone', 'home', 'portuguese_titles', 'experience_growth_anchor'}
     unknown = set(cfg) - known
     if unknown:
         raise ValueError('Unknown criteria setting(s): ' + ', '.join(sorted(unknown)))
@@ -37,6 +38,13 @@ def validate(cfg):
     for key, default in FLAGS.items():
         if type(cfg.get(key, default)) is not bool:
             raise ValueError(f'{key} must be true or false')
+    if 'experience_growth_anchor' in cfg:
+        value = cfg['experience_growth_anchor']
+        try:
+            if not isinstance(value, str) or date.fromisoformat(value).isoformat() != value:
+                raise ValueError()
+        except (ValueError, TypeError):
+            raise ValueError('experience_growth_anchor must be a calendar date in YYYY-MM-DD format') from None
     for key in LISTS:
         values = cfg.get(key)
         if not isinstance(values, list) or not all(isinstance(x, str) and x.strip() for x in values):
@@ -62,6 +70,17 @@ def validate(cfg):
 
 def load(path):
     return validate(json.loads(Path(path).read_text()))
+
+
+def experience_ceiling(cfg, now):
+    """One additional year per completed local anniversary; absent anchor is fixed."""
+    base = cfg['max_mandatory_experience_years']
+    if 'experience_growth_anchor' not in cfg:
+        return base
+    anchor = date.fromisoformat(cfg['experience_growth_anchor'])
+    today = now.astimezone(ZoneInfo(cfg['timezone'])).date()
+    elapsed = today.year - anchor.year - ((today.month, today.day) < (anchor.month, anchor.day))
+    return base + max(0, elapsed)
 
 
 def freshness_days(source, override=None):
