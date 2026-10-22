@@ -14,7 +14,11 @@ class DailyReportTests(unittest.TestCase):
   pairs=[self.pair(source_id=str(i),url=f'https://example.org/jobs/{i}',title=f'Project Manager {i}',workplace='unknown') for i in range(13)]
   email=prepare_email(pairs,self.payload)
   self.assertEqual(len(email['job_keys']),13)
-  self.assertTrue(email['body_markdown'].startswith('1. Bosch'))
+  self.assertTrue(email['body_markdown'].startswith('## 1. Bosch — **Project Manager'))
+  from markdown_it import MarkdownIt
+  rendered=MarkdownIt('commonmark',{'html':False}).render(email['body_markdown'])
+  self.assertTrue(rendered.startswith('<h2>1. Bosch — <strong>Project Manager'))
+  self.assertEqual(rendered.count('<h2>'),14)  # 13 jobs plus Run notes.
   self.assertEqual(email['body_markdown'].count('- **Pros:**'),13)
   self.assertEqual(email['body_markdown'].count('- **Cons:**'),13)
   self.assertEqual(email['subject'],"Tiny's Daily Job Report")

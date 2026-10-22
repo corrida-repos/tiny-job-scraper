@@ -119,7 +119,7 @@ def prepare_email(pairs, payload, saving='Local report generated; durable saving
             concerns.append(clean(experience).rstrip('.'))
         cons = ('Potential match; requirements unconfirmed: ' if assessment.status == 'review' else '') + ('; '.join(concerns) or 'No material concerns identified in retrieved evidence; suitability still requires confirmation')
         freshness_label = ' · **Unknown freshness**' if unknown_freshness(assessment) or future_dated(assessment) else ''
-        lines += [f'{index}. {clean(job.company)} — {clean(job.title)}{freshness_label}',
+        lines += [f'## {index}. {clean(job.company)} — **{clean(job.title)}**{freshness_label}',
                   f'[View job]({link(job.url)}) · [Company careers]({link(job.metadata.get("careers_url", job.url))})',
                   f'- **Pros:** {"; ".join(pros)}.', f'- **Cons:** {cons}.', '']
     coverage = payload['coverage']
