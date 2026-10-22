@@ -44,7 +44,7 @@ the following list describes the current defaults.
 
 - Exact 45 allowed title families, with added qualifiers and defined direct Portuguese translations; excluded top-level leadership titles. Engineering Manager and Team Lead are included.
 - No mandatory code writing or coding tests. Reading/reviewing code is acceptable.
-- Santo Tirso base; nearby northern hybrid roles require at most two office days weekly. Distant offices require remote work and quarterly-or-less visits.
+- Santo Tirso base; nearby northern hybrid roles require at most three office days weekly. Distant offices require remote work and quarterly-or-less visits.
 - Exclude jobs requiring residence or relocation outside the permitted Porto/Braga area. Explicit residence requirements override remote labels; Greenhouse application questions are checked as well as descriptions.
 - **No more than seven calendar days abroad in any quarter**, across all business trips, onboarding, training, retreats/offsites and transit. Annual averages and percentages alone do not establish this cap.
 - Mandatory languages limited to Portuguese, English and Spanish.

@@ -7,7 +7,7 @@ This is a ranked company watchlist for the agreed PM-related roles, including co
 ## Screening rules
 
 - **First priority: work-life balance.** Check actual working hours, overtime, meeting time zones, workload, leave use and any shifts/on-call obligations.
-- **Location:** prefer remote work from Portugal. North Portugal roles should be practical from Santo Tirso; retain the existing target of no more than two office days per week. Porto, Matosinhos, Maia, Vila Nova de Gaia, Braga and nearby Lousado are relevant locations, subject to the real commute.
+- **Location:** prefer remote work from Portugal. North Portugal roles should be practical from Santo Tirso; retain the existing target of no more than three office days per week. Porto, Matosinhos, Maia, Vila Nova de Gaia, Braga and nearby Lousado are relevant locations, subject to the real commute.
 - **Distant offices:** only consider a remote arrangement with required visits no more often than quarterly.
 - **International travel:** **no more than one week abroad in any quarter**. Include client visits, training, onboarding, team retreats and company offsites. Confirm whether the employer's quoted allowance includes travel days. An annual average is not enough to establish compliance with a per-quarter cap.
 - A remote label, flexible-hours policy or nearby office does not establish compliance with the travel cap. **Except where a specific allowance is recorded, travel remains unverified.**
@@ -411,13 +411,13 @@ The company names link to employer careers pages or their official job boards. W
 
 ### 55. Fujitsu — Portugal Global Delivery Center
 
-- **Check before treating a vacancy as a match:** Confirm remote or no more than two Braga office days/week. Prioritise PMO/project/change roles with standard hours; service operations can involve shifts, on-call and client-driven schedules. Verify mandatory languages, client travel and the actual team's workload.
+- **Check before treating a vacancy as a match:** Confirm remote or no more than three Braga office days/week. Prioritise PMO/project/change roles with standard hours; service operations can involve shifts, on-call and client-driven schedules. Verify mandatory languages, client travel and the actual team's workload.
 - **Relevant titles to monitor:** Project Manager; PMO Analyst; PMO Specialist; Program Manager; Delivery Manager; Change Manager; Service Manager. These are role-family targets, not claims that suitable vacancies are open today.
 - **Evidence:** [Portugal Global Delivery Center — Fujitsu](https://global.fujitsu/pt-PT/careers/gdc); [Careers Portugal — Fujitsu](https://global.fujitsu/pt-pt/careers).
 
 ### 56. ICT Strypes
 
-- **Check before treating a vacancy as a match:** Only suitable if the Porto team confirms no more than two office days/week or an acceptable remote agreement. The company works with international, mainly Dutch clients: confirm onboarding, client and team trips together remain within one week abroad in each quarter. Screen management roles for mandatory development duties and coding tests.
+- **Check before treating a vacancy as a match:** Only suitable if the Porto team confirms no more than three office days/week or an acceptable remote agreement. The company works with international, mainly Dutch clients: confirm onboarding, client and team trips together remain within one week abroad in each quarter. Screen management roles for mandatory development duties and coding tests.
 - **Relevant titles to monitor:** Project Manager; Delivery Manager; Scrum Master; Product Owner; Team Lead. These are role-family targets, not claims that suitable vacancies are open today.
 - **Evidence:** [Official vacancies — ICT Strypes](https://strypes.recruitee.com/); [Working at ICT Strypes](https://www.ict-strypes.pt/working-ict-strypes); [Best Workplaces 2026 Portugal](https://www.greatplacetowork.pt/melhores-lugares-para-trabalhar).
 

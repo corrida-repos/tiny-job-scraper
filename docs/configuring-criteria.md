@@ -22,7 +22,7 @@ These are the current defaults; the committed JSON file is authoritative.
 | `max_mandatory_experience_years` | `5` | Exclude mandatory minimums above this many years. Preferred experience does not exclude a job. Valid range: 0–50. |
 | `nearby_locations` | Porto, Braga and listed nearby towns | Locations eligible for the nearby-office rule. This is a text-match list, not a distance calculator. |
 | `allowed_residence_locations` | Santo Tirso, Porto, Braga and listed nearby towns | Reject explicit requirements to live, be based or relocate elsewhere. Country-wide Portugal/EU residence requirements remain compatible with Santo Tirso. This is independent of the office attendance allowance. |
-| `max_office_days_per_week` | `2` | Maximum explicitly stated nearby-office attendance. Valid range: 0–5. |
+| `max_office_days_per_week` | `3` | Maximum explicitly stated nearby-office attendance. Valid range: 0–5. |
 | `max_distant_office_visits_per_quarter` | `1` | Maximum explicitly stated quarterly visits for distant offices in a remote arrangement. Set `0` to reject quarterly office visits. Valid range: 0–12. Routine weekly/monthly distant-office patterns remain excluded; the parser does not convert these into a quarterly allowance. |
 | `max_abroad_calendar_days_per_quarter` | `7` | Maximum required days abroad per quarter, including transit and all trips. Valid range: 0–90. Annual averages and ambiguous travel percentages do not establish compliance. |
 | `exclude_mandatory_coding` | `true` | Reject mandatory code-writing or coding assessments. Set `false` to stop using this as an exclusion. |
