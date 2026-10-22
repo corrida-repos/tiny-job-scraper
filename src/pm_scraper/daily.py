@@ -118,9 +118,7 @@ def prepare_email(pairs, payload, saving='Local report generated; durable saving
         if re.search(r'prefer|ideally|optional|nice.to.have', experience):
             concerns.append(clean(experience).rstrip('.'))
         cons = ('Potential match; requirements unconfirmed: ' if assessment.status == 'review' else '') + ('; '.join(concerns) or 'No material concerns identified in retrieved evidence; suitability still requires confirmation')
-        freshness_label = ' · **Unknown freshness**' if unknown_freshness(assessment) else ''
-        if future_dated(assessment):
-            freshness_label = ' · **Future-dated**'
+        freshness_label = ' · **Unknown freshness**' if unknown_freshness(assessment) or future_dated(assessment) else ''
         lines += [f'{index}. {clean(job.company)} — {clean(job.title)}{freshness_label}',
                   f'[View job]({link(job.url)}) · [Company careers]({link(job.metadata.get("careers_url", job.url))})',
                   f'- **Pros:** {"; ".join(pros)}.', f'- **Cons:** {cons}.', '']
@@ -135,7 +133,7 @@ def prepare_email(pairs, payload, saving='Local report generated; durable saving
     failures = ['{}: {}{}'.format(clean(s['company']), clean(s['status']), ' — ' + clean('; '.join(s['messages'])) if s['messages'] else '') for s in payload['sources'] if not s['complete'] or s['status'] != 'ok']
     freshness_note = f'Verified original publication within {freshness_hours} hours of run start; known older original dates excluded'
     freshness_note += '; unverified original dates included as Unknown freshness' if allow_unknown else '; unverified original dates excluded'
-    freshness_note += '; future dates included as Future-dated (unverified)' if allow_future else '; future dates excluded'
+    freshness_note += '; future dates also included as Unknown freshness' if allow_future else '; future dates excluded'
     lines += ['## Run notes', '',
               f'- Checked: {timestamp.astimezone(ZoneInfo("Europe/Lisbon")).isoformat()}; {coverage["sources"]} configured source scopes.',
               f'- Coverage: {coverage["complete"]} complete; {coverage["attention"]} need attention.',
@@ -149,6 +147,6 @@ def prepare_email(pairs, payload, saving='Local report generated; durable saving
               '- Saving: ' + saving + '.', f'- Run marker: {marker}', '']
     return {'subject': SUBJECT, 'run_marker': marker, 'delivery_status': 'not_sent',
             'job_keys': [j.key for j, _ in selected], 'alternative_urls': alternatives,
-            'unknown_freshness_job_keys': [j.key for j, a in selected if unknown_freshness(a)],
+            'unknown_freshness_job_keys': [j.key for j, a in selected if unknown_freshness(a) or future_dated(a)],
             'future_dated_job_keys': [j.key for j, a in selected if future_dated(a)],
             'body_markdown': '\n'.join(lines)}

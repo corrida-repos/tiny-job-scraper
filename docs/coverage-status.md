@@ -1,8 +1,8 @@
 # Current coverage — Top 56
 
 Current report display includes otherwise non-rejected roles with unknown
-original freshness or future posting dates, labelled **Unknown freshness** or
-**Future-dated** respectively. These remain unverified potential matches.
+original freshness or future posting dates, all labelled **Unknown freshness**
+as one report category. These remain unverified potential matches.
 Verified original dates older than the saved 48-hour window remain excluded.
 The historical validations below used the freshness policy in effect at their
 recorded commits; see [current criteria](configuring-criteria.md).

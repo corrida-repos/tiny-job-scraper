@@ -36,16 +36,25 @@ class FreshnessReportingTests(unittest.TestCase):
                 self.assertEqual(draft['unknown_freshness_job_keys'], [pair[0].key])
                 self.assertEqual(pair[1].checks['freshness']['status'], 'unknown')
 
-    def test_future_original_and_syndicated_dates_have_a_separate_label(self):
+    def test_future_original_and_syndicated_dates_use_unknown_freshness_category(self):
         for kind in ['original_posted', 'last_published']:
             with self.subTest(kind=kind):
                 pair = self.pair(posted_at='2026-10-20T12:00:00Z', date_kind=kind)
                 draft = prepare_email([pair], self.payload)
                 self.assertEqual(draft['future_dated_job_keys'], [pair[0].key])
-                self.assertEqual(draft['unknown_freshness_job_keys'], [])
-                self.assertIn('**Future-dated**', draft['body_markdown'].splitlines()[0])
+                self.assertEqual(draft['unknown_freshness_job_keys'], [pair[0].key])
+                self.assertIn('**Unknown freshness**', draft['body_markdown'].splitlines()[0])
+                self.assertNotIn('**Future-dated**', draft['body_markdown'])
                 self.assertEqual(pair[1].status, 'review')
                 self.assertEqual(pair[1].checks['freshness']['category'], 'future_date')
+
+    def test_combined_unknown_freshness_count_includes_both_kinds(self):
+        missing = self.pair(title='Alpha Project Manager', posted_at=None)
+        future = self.pair(source_id='future', title='Beta Project Manager', posted_at='2026-10-20')
+        draft = prepare_email([missing, future], self.payload)
+        self.assertEqual(set(draft['unknown_freshness_job_keys']), {missing[0].key, future[0].key})
+        self.assertEqual(draft['body_markdown'].count('**Unknown freshness**'), 2)
+        self.assertNotIn('Future-dated', draft['body_markdown'])
 
     def test_unknown_and_future_switches_are_independent(self):
         missing = self.pair(posted_at=None, date_kind='unknown')

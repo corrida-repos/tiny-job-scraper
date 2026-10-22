@@ -48,7 +48,7 @@ the following list describes the current defaults.
 - Exclude jobs requiring residence or relocation outside the permitted Porto/Braga area. Explicit residence requirements override remote labels; Greenhouse application questions are checked as well as descriptions.
 - **No more than seven calendar days abroad in any quarter**, across all business trips, onboarding, training, retreats/offsites and transit. Annual averages and percentages alone do not establish this cap.
 - Mandatory languages limited to Portuguese, English and Spanish.
-- Verified original publication within 48 hours of run start qualifies as fresh. Roles lacking sufficient date evidence are included as **Unknown freshness**; future-dated postings are included as **Future-dated**. Both remain unverified potential matches. Verified original dates older than 48 hours are excluded. Last-published, refreshed, modified and first-seen timestamps are not accepted as original publication.
+- Verified original publication within 48 hours of run start qualifies as fresh. Roles lacking sufficient date evidence are included as **Unknown freshness**; future-dated postings are also included as **Unknown freshness**. Both remain unverified potential matches. Verified original dates older than 48 hours are excluded. Last-published, refreshed, modified and first-seen timestamps are not accepted as original publication.
 - No salary threshold or ranking effect; explicit gross annual EUR45k+ salary is an optional positive in the email draft.
 - Mandatory experience minimums above five years are excluded; ambiguous requirements remain in review.
 - Only the configured 56 employers; no inferred sector exclusion. Bosch and Vestas remain included.

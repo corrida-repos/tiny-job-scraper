@@ -30,7 +30,7 @@ These are the current defaults; the committed JSON file is authoritative.
 | `max_post_age_days` | `2` | Verified original posting must fall within this many days before the run. `2` = 48 hours; `7` = one week. Valid range: 1–30. Scheduled runs use this value. |
 | `include_potential_matches` | `true` | Include review-status roles alongside verified eligible roles, subject to the freshness switches below. Set `false` to report only verified eligible roles. Hard failures remain excluded. |
 | `include_unknown_freshness` | `true` | Include roles lacking a verified original date or sufficient date-only precision, labelled **Unknown freshness**. They remain unverified potential matches. Requires `include_potential_matches=true`. Known old original dates are excluded. |
-| `include_future_dated` | `true` | Include roles whose available posting date is in the future, labelled **Future-dated**. They remain unverified potential matches, rather than verified recent postings. Requires `include_potential_matches=true`. |
+| `include_future_dated` | `true` | Include roles whose available posting date is in the future, labelled **Unknown freshness**, the same category as missing original-date evidence. They remain unverified potential matches, rather than verified recent postings. Requires `include_potential_matches=true`. |
 
 Supported language names (use these exact names): English, Portuguese, Spanish,
 German, French, Dutch, Italian, Polish, Czech, Danish, Swedish, Norwegian,

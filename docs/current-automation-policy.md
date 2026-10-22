@@ -3,7 +3,7 @@
 Current freshness display update (supersedes the historical strict gate below):
 include otherwise non-rejected roles with insufficient original-date evidence,
 labelled **Unknown freshness**. Include future-dated postings too, labelled
-**Future-dated**. Both categories remain review-status potential matches and
+**Unknown freshness**. Both cases share one report category and remain review-status potential matches and
 must pass all other hard requirements. Keep verified original dates older than
 the saved 48-hour window excluded. These display exceptions are controlled by
 `include_unknown_freshness` and `include_future_dated`, both currently enabled;
