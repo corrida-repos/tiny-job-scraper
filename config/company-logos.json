@@ -1,0 +1,396 @@
+{
+  "7-1-tech-hub": {
+    "file": "assets/company-logos/7-1-tech-hub.png",
+    "source_url": "https://www.prosiebensat1.com/favicons/apple-touch-icon-76x76.png",
+    "website": "https://www.prosiebensat1.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "aiven": {
+    "file": "assets/company-logos/aiven.png",
+    "source_url": "https://aiven.io/favicons/apple-touch-icon.png",
+    "website": "https://aiven.io/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "bosch": {
+    "file": "assets/company-logos/bosch.png",
+    "source_url": "https://www.bosch.com/media/tech/tech_images/apple-touch-icon.png",
+    "website": "https://www.bosch.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "buffer": {
+    "file": "assets/company-logos/buffer.png",
+    "source_url": "https://buffer.com/icons/apple-touch-icon.png",
+    "website": "https://buffer.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "camunda": {
+    "file": "assets/company-logos/camunda.png",
+    "source_url": "https://camunda.com/apple-icon.png?apple-icon.0ciipj7-3fplb.png",
+    "website": "https://camunda.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "cloudbeds": {
+    "file": "assets/company-logos/cloudbeds.png",
+    "source_url": "https://www.cloudbeds.com/wp-content/themes/cloudbeds-rebrand/assets/images/apple-touch-icon.png",
+    "website": "https://www.cloudbeds.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "contentsquare": {
+    "file": "assets/company-logos/contentsquare.png",
+    "source_url": "https://contentsquare.com/favicons/apple-touch-icon.png",
+    "website": "https://contentsquare.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "continental": {
+    "file": "assets/company-logos/continental.png",
+    "source_url": "https://cdn.continental.com/_assets/1ea205344a72e174bb6103d4cfe6e63c/Icons/Favicons/favicon-32.png",
+    "website": "https://www.continental.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "coverflex": {
+    "file": "assets/company-logos/coverflex.png",
+    "source_url": "https://cdn.prod.website-files.com/637392534cf5574c34db423a/65a8fea7429528ae890160d6_favicon.png",
+    "website": "https://www.coverflex.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "csg": {
+    "file": "assets/company-logos/csg.png",
+    "source_url": "https://www.csgi.com/favicon.ico",
+    "website": "https://www.csgi.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "dachser-corporate-it-hub": {
+    "file": "assets/company-logos/dachser-corporate-it-hub.png",
+    "source_url": "https://www.dachser.com/favicon.ico",
+    "website": "https://www.dachser.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "deus": {
+    "file": "assets/company-logos/deus.png",
+    "source_url": "https://www.deus.ai/apple-icon.png?apple-icon.9bde0995.png",
+    "website": "https://www.deus.ai/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "devexperts": {
+    "file": "assets/company-logos/devexperts.png",
+    "source_url": "https://devexperts.com/app/uploads/2025/12/cropped-favicon-252x252.png",
+    "website": "https://devexperts.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "diconium": {
+    "file": "assets/company-logos/diconium.png",
+    "source_url": "https://diconium.com/hubfs/2024%20theme%20assets/diconium_CI/favicon_diconium_new.jpg",
+    "website": "https://diconium.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "docker": {
+    "file": "assets/company-logos/docker.png",
+    "source_url": "https://www.docker.com/app/uploads/2024/02/cropped-docker-logo-favicon-180x180.png",
+    "website": "https://www.docker.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "doist-todoist": {
+    "file": "assets/company-logos/doist-todoist.png",
+    "source_url": "https://www.todoist.com/static/favicon-32x32.png",
+    "website": "https://www.todoist.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "duckduckgo": {
+    "file": "assets/company-logos/duckduckgo.png",
+    "source_url": "https://duckduckgo.com/static-assets/favicons/DDG-iOS-icon_76x76.png",
+    "website": "https://duckduckgo.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "elastic": {
+    "file": "assets/company-logos/elastic.png",
+    "source_url": "https://www.elastic.co/apple-touch-icon.png",
+    "website": "https://www.elastic.co/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "feedzai": {
+    "file": "assets/company-logos/feedzai.png",
+    "source_url": "https://www.feedzai.com/wp-content/uploads/2026/03/cropped-FavIcon-BG-180px-1-180x180.png",
+    "website": "https://feedzai.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "fujitsu-portugal-global-delivery-center": {
+    "file": "assets/company-logos/fujitsu-portugal-global-delivery-center.png",
+    "source_url": "https://global.fujitsu/favicon.ico",
+    "website": "https://www.fujitsu.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "gitbook": {
+    "file": "assets/company-logos/gitbook.png",
+    "source_url": "https://framerusercontent.com/images/RixubGcwFjRRIx4k36fKy7kV8Y.png",
+    "website": "https://www.gitbook.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "hostaway": {
+    "file": "assets/company-logos/hostaway.png",
+    "source_url": "https://www.hostaway.com/favicon.ico",
+    "website": "https://www.hostaway.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "ict-strypes": {
+    "file": "assets/company-logos/ict-strypes.png",
+    "source_url": "https://www.ict-strypes.pt/static/favicons/apple-touch-icon.png?v=WmS8mlwq2-j87tsvlsFTeBH_nbUhKu0gXZYvAyl16Wk8JdDctTbhcgrqN32Yq-xTxgdebQXCiw",
+    "website": "https://www.ict-strypes.pt/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "imaginary-cloud": {
+    "file": "assets/company-logos/imaginary-cloud.png",
+    "source_url": "https://cdn.prod.website-files.com/602e7c287eefab52cb3f36dd/60549e0e4f52f30174b4816a_IC_Favicon.png",
+    "website": "https://www.imaginarycloud.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "infineon": {
+    "file": "assets/company-logos/infineon.png",
+    "source_url": "https://www.infineon.com/content/dam/favicon-180x180.png",
+    "website": "https://www.infineon.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "infraspeak": {
+    "file": "assets/company-logos/infraspeak.png",
+    "source_url": "https://infraspeak.com/favicon.ico",
+    "website": "https://infraspeak.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "intellias": {
+    "file": "assets/company-logos/intellias.png",
+    "source_url": "https://career.intellias.com/vacancies/location_portugal/",
+    "website": "https://intellias.com/",
+    "kind": "official inline logo",
+    "retrieved_date": "2026-10-22",
+    "display_width": 96,
+    "display_height": 20
+  },
+  "k-rber": {
+    "file": "assets/company-logos/k-rber.png",
+    "source_url": "https://www.koerber.com/apple-touch-icon.png",
+    "website": "https://www.koerber.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "kuehne-nagel-porto-it-hub": {
+    "file": "assets/company-logos/kuehne-nagel-porto-it-hub.png",
+    "source_url": "https://www.kuehne-nagel.com/favicon.ico",
+    "website": "https://home.kuehne-nagel.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "loka": {
+    "file": "assets/company-logos/loka.png",
+    "source_url": "https://cdn.prod.website-files.com/6490383845d4c0f51f929ca8/649052c9d3731fb704eea658_favicon.svg",
+    "website": "https://www.loka.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "lokalise": {
+    "file": "assets/company-logos/lokalise.png",
+    "source_url": "https://lokalise.com/favicon.ico",
+    "website": "https://lokalise.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "maze": {
+    "file": "assets/company-logos/maze.png",
+    "source_url": "https://www.datocms-assets.com/38511/1762960626-image.png?w=76&h=76",
+    "website": "https://maze.co/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "mercedes-benz-io": {
+    "file": "assets/company-logos/mercedes-benz-io.png",
+    "source_url": "https://www.mercedes-benz.io/apple-touch-icon.png",
+    "website": "https://www.mercedes-benz.io/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "mindera": {
+    "file": "assets/company-logos/mindera.png",
+    "source_url": "https://mindera.com/favicon-light.ico",
+    "website": "https://mindera.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "noesis": {
+    "file": "assets/company-logos/noesis.png",
+    "source_url": "https://www.noesis.pt/-/media/Project/Noesis/Site/brand/noesis_favicon_02.ico",
+    "website": "https://www.noesis.pt/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "olx": {
+    "file": "assets/company-logos/olx.png",
+    "source_url": "https://www.olxgroup.com/content/themes/olxgroup/favicons/apple-touch-icon.png",
+    "website": "https://www.olxgroup.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "oyster": {
+    "file": "assets/company-logos/oyster.png",
+    "source_url": "https://cdn.prod.website-files.com/5ffc74fef1579006dc588807/69f1d08ac65f41cd0f099b89_webclip-light.png",
+    "website": "https://www.oysterhr.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "pandadoc": {
+    "file": "assets/company-logos/pandadoc.png",
+    "source_url": "https://www.pandadoc.com/favicon.ico",
+    "website": "https://www.pandadoc.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "pixelmatters": {
+    "file": "assets/company-logos/pixelmatters.png",
+    "source_url": "https://www.pixelmatters.com/icons/favicon-76x76.png",
+    "website": "https://www.pixelmatters.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "pleo": {
+    "file": "assets/company-logos/pleo.png",
+    "source_url": "https://www.pleo.io/favicon.ico",
+    "website": "https://www.pleo.io/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "red-hat": {
+    "file": "assets/company-logos/red-hat.png",
+    "source_url": "https://www.redhat.com/favicon.ico",
+    "website": "https://www.redhat.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "remote": {
+    "file": "assets/company-logos/remote.png",
+    "source_url": "https://remote.com/favicon.ico?favicon.0fjj_udb013m3.ico",
+    "website": "https://remote.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "salsify": {
+    "file": "assets/company-logos/salsify.png",
+    "source_url": "https://www.salsify.com/hubfs/Flower-Blue.ico",
+    "website": "https://www.salsify.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "sketch": {
+    "file": "assets/company-logos/sketch.png",
+    "source_url": "https://www.sketch.com/images/metadata/icon-180.png",
+    "website": "https://www.sketch.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "stellaxius": {
+    "file": "assets/company-logos/stellaxius.png",
+    "source_url": "https://stellaxius.com/wp-content/uploads/2025/06/Favicon-stellaxius.svg",
+    "website": "https://stellaxius.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "storyblok": {
+    "file": "assets/company-logos/storyblok.png",
+    "source_url": "https://a.storyblok.com/f/88751/1280x1280/84e0dae1bc/storyblok_logo.png/m/180x180/filters:format(png)/",
+    "website": "https://www.storyblok.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "stratio-automotive": {
+    "file": "assets/company-logos/stratio-automotive.png",
+    "source_url": "https://cdn.prod.website-files.com/6a4e1bc2c8e38f7b362214e0/6aabd8bf183fe2dd62b4a690_webclip.png",
+    "website": "https://stratioautomotive.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "testgorilla": {
+    "file": "assets/company-logos/testgorilla.png",
+    "source_url": "https://www.testgorilla.com/favicon.png",
+    "website": "https://www.testgorilla.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "toggl": {
+    "file": "assets/company-logos/toggl.png",
+    "source_url": "https://cdn.prod.website-files.com/69d5a66e796fcbe57f498e94/69f33041c3cd5f4319432537_webClip.png",
+    "website": "https://toggl.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "tui-technology": {
+    "file": "assets/company-logos/tui-technology.png",
+    "source_url": "https://www.tuigroup.com/favicons/tui-apple-touch-icon-180x180.png",
+    "website": "https://www.tuigroup.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "typeform": {
+    "file": "assets/company-logos/typeform.png",
+    "source_url": "https://cdn.prod.website-files.com/66ffe2174aa8e8d5661c2708/68b6f00951eb33cd19b77288_Frame%201867174.png",
+    "website": "https://www.typeform.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "vestas": {
+    "file": "assets/company-logos/vestas.png",
+    "source_url": "https://www.vestas.com/etc.clientlibs/vestas/clientlibs/clientlib-site/resources/icons/favicon.ico",
+    "website": "https://www.vestas.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "volkswagen-group-digital-solutions": {
+    "file": "assets/company-logos/volkswagen-group-digital-solutions.png",
+    "source_url": "https://vwg-digitalsolutions.pt/wp-content/uploads/2025/08/cropped-favicon-300x300.png",
+    "website": "https://vwg-digitalsolutions.pt/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "wellhub": {
+    "file": "assets/company-logos/wellhub.png",
+    "source_url": "https://wellhub.com/image/favicon-180x180.png",
+    "website": "https://wellhub.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "wolters-kluwer-basecone": {
+    "file": "assets/company-logos/wolters-kluwer-basecone.png",
+    "source_url": "https://www.wolterskluwer.com/-/media/project/wolterskluwer/oneweb/common/images/logo/favicon.png?rev=939e1a5cbc2d4c8ca7d3dfda28250865&hash=5CDBE3F20B144CE105D8C6ECE75680D2",
+    "website": "https://www.wolterskluwer.com/",
+    "kind": "official-site icon",
+    "retrieved_date": "2026-10-22"
+  },
+  "z-hlke": {
+    "file": "assets/company-logos/z-hlke.png",
+    "source_url": "https://www.zuehlke.com/",
+    "website": "https://www.zuehlke.com/",
+    "kind": "official inline logo",
+    "retrieved_date": "2026-10-22"
+  }
+}

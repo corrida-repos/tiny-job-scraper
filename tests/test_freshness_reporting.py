@@ -3,6 +3,7 @@ import unittest
 
 from pm_scraper.daily import prepare_email, select_roles
 from pm_scraper.filtering import Screener
+from pm_scraper.branding import company_heading
 from test_screening import CFG, NOW, BASE, job
 
 
@@ -79,6 +80,48 @@ class FreshnessReportingTests(unittest.TestCase):
                  self.pair(source_id='form', posted_at=None, metadata={'application_requirements_checked': False})]
         self.assertEqual(prepare_email(pairs, self.payload)['job_keys'], [])
 
+    def test_unknown_and_future_dates_cannot_bypass_other_hard_requirements(self):
+        screener = Screener({**CFG, 'max_office_days_per_week': 3})
+        failures = [
+            ('attendance', {'workplace': 'onsite', 'location': 'Porto', 'description': BASE+' Attend the office 3 days per week.'}),
+            ('attendance', {'workplace': 'presencial', 'location': 'Porto'}),
+            ('attendance', {'location': 'Porto, Portugal (On-site)'}),
+            ('attendance', {'description': BASE+' This role is fully on-site.'}),
+            ('attendance', {'description': BASE+' This is an on-site position.'}),
+            ('attendance', {'description': BASE+' Regime de trabalho presencial.'}),
+            ('attendance', {'description': BASE+' Modelo de trabalho: presencial.'}),
+            ('attendance', {'workplace': 'hybrid', 'location': 'Porto', 'description': BASE+' Attend the office 4 days per week.'}),
+            ('residence', {'description': BASE+' This candidate must reside in Lisbon.'}),
+            ('residence', {'metadata': {'application_questions': [{'label': 'This candidate must reside in Lisbon.', 'description': ''}]}}),
+            ('experience', {'description': BASE+' Minimum 8 years of experience required.'}),
+            ('languages', {'description': BASE+' Fluent German is required.'}),
+            ('travel', {'description': BASE.replace('No travel required.', 'Business travel is at most 10 calendar days per quarter including transit.')}),
+            ('code_writing', {'description': BASE+' You must write production code.'}),
+            ('work_schedule', {'description': BASE+' You must join the on-call rotation.'}),
+            ('portugal_eligibility', {'countries': ['US'], 'location': 'Remote United States', 'description': BASE.replace('within Portugal', 'within the United States')}),
+        ]
+        for date in [None, '2026-10-20T12:00:00Z']:
+            for requirement, values in failures:
+                with self.subTest(date=date, requirement=requirement, values=values):
+                    candidate = job(posted_at=date, **values)
+                    assessed = screener.assess(candidate, NOW)
+                    self.assertEqual(assessed.checks[requirement]['status'], 'fail')
+                    self.assertEqual(prepare_email([(candidate, assessed)], self.payload)['job_keys'], [])
+
+    def test_three_day_hybrid_remains_distinct_from_full_onsite(self):
+        screener = Screener({**CFG, 'max_office_days_per_week': 3})
+        candidate = job(posted_at=None, workplace='hybrid', location='Porto', description=BASE+' Hybrid role: attend the office 3 days per week.')
+        assessed = screener.assess(candidate, NOW)
+        self.assertEqual(assessed.checks['attendance']['status'], 'pass')
+        self.assertEqual(prepare_email([(candidate, assessed)], self.payload)['job_keys'], [candidate.key])
+
+    def test_attendance_override_cannot_allow_an_explicit_onsite_role(self):
+        candidate = job(posted_at=None, workplace='onsite', location='Porto')
+        assessed = self.screener.assess(candidate, NOW, {'verified_at': NOW.isoformat(),
+            'evidence': 'Older office arrangement confirmation', 'checks': {'attendance': 'pass'}})
+        self.assertEqual(assessed.checks['attendance']['status'], 'fail')
+        self.assertEqual(prepare_email([(candidate, assessed)], self.payload)['job_keys'], [])
+
     def test_verified_only_mode_still_excludes_unverified_matches(self):
         self.payload['criteria']['include_potential_matches'] = False
         pairs = [self.pair(), self.pair(source_id='unknown', posted_at=None),
@@ -115,10 +158,10 @@ class FreshnessReportingTests(unittest.TestCase):
         body = draft['body_markdown']
         verified, unknown = body.split('# Unknown Freshness\n')
         self.assertTrue(verified.startswith('# Verified Freshness\n'))
-        self.assertLess(verified.index('## 1. Bosch'),verified.index('## 2. Vestas'))
-        self.assertLess(unknown.index('## 1. Mindera'),unknown.index('## 2. Bosch'))
-        self.assertEqual(unknown.count('## 2. Bosch\n'),1)
-        self.assertIn('### 2.1 **Future Project Manager**',unknown)
-        self.assertIn('### 2.2 **Unknown Project Manager**',unknown)
+        self.assertLess(verified.index(company_heading('bosch','Bosch')),verified.index(company_heading('vestas','Vestas')))
+        self.assertLess(unknown.index(company_heading('mindera','Mindera')),unknown.index(company_heading('bosch','Bosch')))
+        self.assertEqual(unknown.count(company_heading('bosch','Bosch')+'\n'),1)
+        self.assertIn('### **Future Project Manager**',unknown)
+        self.assertIn('### **Unknown Project Manager**',unknown)
         self.assertNotIn('**Unknown freshness**',body)
         self.assertEqual(draft['job_keys'],[p[0].key for p in [verified_bosch,verified_vestas,unknown_mindera,future_bosch,unknown_bosch]])

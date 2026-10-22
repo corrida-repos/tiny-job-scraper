@@ -25,7 +25,9 @@ Exit code **0** means all configured sources completed, **2** means reports were
 The report and email group positions by **Verified Freshness / Unknown Freshness
 → Company → Position**. Company priority is preserved within each freshness
 category; future-dated roles share Unknown Freshness. Category labels appear
-once per section, while job titles remain bold subheadings.
+once per section. Company names include official-site logos; company and position
+headings are unnumbered. Job titles remain bold subheadings, with gender-only
+suffixes removed from display. Original titles and evidence remain in the audit.
 
 | File | Purpose |
 |---|---|
@@ -50,6 +52,7 @@ the following list describes the current defaults.
 - Exact 45 allowed title families, with added qualifiers and defined direct Portuguese translations; excluded top-level leadership titles. Engineering Manager and Team Lead are included.
 - No mandatory code writing or coding tests. Reading/reviewing code is acceptable.
 - Santo Tirso base; nearby northern hybrid roles require at most three office days weekly. Distant offices require remote work and quarterly-or-less visits.
+- Explicit on-site/presencial roles are excluded, including from Unknown Freshness. Unknown dates cannot override any other hard requirement.
 - Exclude jobs requiring residence or relocation outside the permitted Porto/Braga area. Explicit residence requirements override remote labels; Greenhouse application questions are checked as well as descriptions.
 - **No more than seven calendar days abroad in any quarter**, across all business trips, onboarding, training, retreats/offsites and transit. Annual averages and percentages alone do not establish this cap.
 - Mandatory languages limited to Portuguese, English and Spanish.

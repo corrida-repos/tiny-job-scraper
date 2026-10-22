@@ -2,6 +2,7 @@ import unittest
 from pm_scraper.daily import prepare_email, select_roles, salary_positive
 from test_screening import job, NOW, CFG
 from pm_scraper.filtering import Screener
+from pm_scraper.branding import company_heading
 
 class DailyReportTests(unittest.TestCase):
  def setUp(self):
@@ -14,12 +15,13 @@ class DailyReportTests(unittest.TestCase):
   pairs=[self.pair(source_id=str(i),url=f'https://example.org/jobs/{i}',title=f'Project Manager {i}',workplace='unknown') for i in range(13)]
   email=prepare_email(pairs,self.payload)
   self.assertEqual(len(email['job_keys']),13)
-  self.assertTrue(email['body_markdown'].startswith('# Verified Freshness\n\n## 1. Bosch\n'))
+  self.assertTrue(email['body_markdown'].startswith('# Verified Freshness\n\n'+company_heading('bosch','Bosch')+'\n'))
   from markdown_it import MarkdownIt
   rendered=MarkdownIt('commonmark',{'html':False}).render(email['body_markdown'])
   self.assertTrue(rendered.startswith('<h1>Verified Freshness</h1>'))
-  self.assertIn('<h2>1. Bosch</h2>',rendered)
-  self.assertIn('<h3>1.1 <strong>Project Manager',rendered)
+  from lxml import html
+  self.assertEqual(html.fromstring(rendered).xpath('//h2')[0].text_content().strip(),'Bosch')
+  self.assertIn('<h3><strong>Project Manager',rendered)
   self.assertEqual(rendered.count('<h2>'),1)  # Company.
   self.assertEqual(rendered.count('<h1>'),2)  # Freshness plus Run notes.
   self.assertEqual(rendered.count('<h3>'),13)
@@ -31,7 +33,7 @@ class DailyReportTests(unittest.TestCase):
   self.assertIn('# Run notes',email['body_markdown'])
   self.assertEqual(prepare_email(pairs,self.payload),email)
 
- def test_company_groups_keep_rank_and_all_positions_in_nested_numbering(self):
+ def test_company_groups_keep_rank_without_numbering(self):
   a=self.pair(source_id='a',title='Alpha Project Manager')
   b=self.pair(source_id='b',company_id='vestas',company='Vestas',title='Beta Project Manager')
   c=self.pair(source_id='c',title='Gamma Project Manager')
@@ -39,14 +41,14 @@ class DailyReportTests(unittest.TestCase):
   email=prepare_email([b,c,a],self.payload)
   body=email['body_markdown']
   self.assertEqual(email['job_keys'],[a[0].key,c[0].key,b[0].key])
-  self.assertEqual(body.count('## 1. Bosch\n'),1)
-  self.assertEqual(body.count('## 2. Vestas\n'),1)
-  self.assertIn('### 1.1 **Alpha Project Manager**',body)
-  self.assertIn('### 1.2 **Gamma Project Manager**',body)
-  self.assertIn('### 2.1 **Beta Project Manager**',body)
+  self.assertEqual(body.count(company_heading('bosch','Bosch')+'\n'),1)
+  self.assertEqual(body.count(company_heading('vestas','Vestas')+'\n'),1)
+  self.assertIn('### **Alpha Project Manager**',body)
+  self.assertIn('### **Gamma Project Manager**',body)
+  self.assertIn('### **Beta Project Manager**',body)
   self.assertEqual(body.count('[View job]'),3)
   self.assertEqual(body.count('[Company careers]'),2)
-  self.assertLess(body.index('### 1.2 '),body.index('## 2. Vestas'))
+  self.assertLess(body.index('### **Gamma Project Manager**'),body.index(company_heading('vestas','Vestas')))
  def test_fresh_review_included_old_and_rejected_excluded(self):
   fresh=self.pair(description=job().description.replace('No travel required.',''))
   self.assertEqual(fresh[1].status,'review')

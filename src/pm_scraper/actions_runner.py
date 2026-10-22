@@ -114,14 +114,18 @@ class Gmail:
             return rows[0].decode().split() if rows and rows[0] else []
 
     def send(self, recipient, draft, message_id):
-        from markdown_it import MarkdownIt
+        from .branding import render_email_html
         message = EmailMessage()
         message['From'] = self.address
         message['To'] = recipient
         message['Subject'] = draft['subject']
         message['Message-ID'] = message_id
         message.set_content(draft['body_markdown'])
-        message.add_alternative(MarkdownIt('commonmark', {'html':False}).render(draft['body_markdown']), subtype='html')
+        rendered, logos = render_email_html(draft['body_markdown'])
+        message.add_alternative(rendered, subtype='html')
+        html_part = message.get_payload()[-1]
+        for cid, data in logos:
+            html_part.add_related(data, maintype='image', subtype='png', cid='<'+cid+'>', filename=cid+'.png', disposition='inline')
         with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=45, context=ssl.create_default_context()) as smtp:
             smtp.login(self.address, self.password)
             refused = smtp.send_message(message)

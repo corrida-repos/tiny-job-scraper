@@ -3,6 +3,7 @@ import re
 from zoneinfo import ZoneInfo
 from .htmlutil import norm
 from .models import parse_date
+from .branding import company_heading
 
 SUBJECT = "Tiny's Daily Job Report"
 
@@ -70,7 +71,21 @@ def select_roles(pairs, include_potential_matches=True, include_unknown_freshnes
 
 def clean(value):
     # Postings are untrusted data, including Markdown metacharacters.
-    return re.sub(r'[\[\]*`<>]', '', ' '.join(str(value).split()))
+    text = re.sub(r'[\[\]*`<>]', '', ' '.join(str(value if value is not None else '').split()))
+    text = re.sub(r'([,;])(?:\s*[,;])+', r'\1', text)
+    text = re.sub(r'\s+([,;])', r'\1', text)
+    return text.strip(' ,;')
+
+
+def fragments(values):
+    parts = [clean(value).strip(' .,;') for value in values]
+    return clean('; '.join(part for part in parts if part))
+
+
+def display_title(value):
+    marker = r'(?:m|f|w|d|x|div\.?|diverse|non[- ]binary|all genders|any gender)'
+    text = re.sub(r'\s*\(\s*'+marker+r'(?:\s*[/|,\-]\s*'+marker+r')*\s*\)', '', str(value), flags=re.I)
+    return clean(text)
 
 
 def link(url):
@@ -109,8 +124,6 @@ def prepare_email(pairs, payload, saving='Local report generated; durable saving
     lines = []
     current_freshness = None
     current_company = None
-    company_index = 0
-    position_index = 0
     for job, assessment in selected:
         category = 'Verified Freshness' if assessment.checks['freshness']['status'] == 'pass' else 'Unknown Freshness'
         if category != current_freshness:
@@ -118,17 +131,13 @@ def prepare_email(pairs, payload, saving='Local report generated; durable saving
                 lines += ['---', '']
             current_freshness = category
             current_company = None
-            company_index = 0
             lines += [f'# {category}', '']
         if job.company_id != current_company:
             if current_company is not None:
                 lines += ['---', '']
             current_company = job.company_id
-            company_index += 1
-            position_index = 0
-            lines += [f'## {company_index}. {clean(job.company)}',
+            lines += [company_heading(job.company_id, clean(job.company)),
                       f'[Company careers]({link(job.metadata.get("careers_url", job.url))})', '']
-        position_index += 1
         pros = [assessment.family or 'Allowed role family']
         for key in ('portugal_eligibility', 'attendance', 'travel'):
             check = assessment.checks.get(key, {})
@@ -141,10 +150,10 @@ def prepare_email(pairs, payload, saving='Local report generated; durable saving
         experience = assessment.checks.get('experience', {}).get('evidence', '')
         if re.search(r'prefer|ideally|optional|nice.to.have', experience):
             concerns.append(clean(experience).rstrip('.'))
-        cons = ('Potential match; requirements unconfirmed: ' if assessment.status == 'review' else '') + ('; '.join(concerns) or 'No material concerns identified in retrieved evidence; suitability still requires confirmation')
-        lines += [f'### {company_index}.{position_index} **{clean(job.title)}**',
+        cons = ('Potential match; requirements unconfirmed: ' if assessment.status == 'review' else '') + (fragments(concerns) or 'No material concerns identified in retrieved evidence; suitability still requires confirmation')
+        lines += [f'### **{display_title(job.title)}**',
                   f'[View job]({link(job.url)})',
-                  f'- **Pros:** {"; ".join(pros)}.', f'- **Cons:** {cons}.', '']
+                  f'- **Pros:** {fragments(pros)}.', f'- **Cons:** {clean(cons).rstrip(".")}.', '']
     coverage = payload['coverage']
     if not selected:
         if allow_unknown or allow_future:
@@ -153,7 +162,11 @@ def prepare_email(pairs, payload, saving='Local report generated; durable saving
             lines = [('Retrieval failed or was incomplete; no qualifying fresh roles were verified in the retrieved results.' if coverage['attention'] else f'No roles passed the verified {freshness_hours}-hour freshness gate and other hard filters.'), '']
     timestamp = parse_date(payload['started_at'])
     marker = 'tiny-' + timestamp.strftime('%Y%m%dT%H%M%S.%fZ')
-    failures = ['{}: {}{}'.format(clean(s['company']), clean(s['status']), ' — ' + clean('; '.join(s['messages'])) if s['messages'] else '') for s in payload['sources'] if not s['complete'] or s['status'] != 'ok']
+    failures = []
+    for source in payload['sources']:
+        if not source['complete'] or source['status'] != 'ok':
+            messages = fragments(source['messages'])
+            failures.append(clean(source['company'])+': '+clean(source['status'])+(' — '+messages if messages else ''))
     freshness_note = f'Verified original publication within {freshness_hours} hours of run start; known older original dates excluded'
     freshness_note += '; unverified original dates included as Unknown freshness' if allow_unknown else '; unverified original dates excluded'
     freshness_note += '; future dates also included as Unknown freshness' if allow_future else '; future dates excluded'

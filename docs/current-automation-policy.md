@@ -4,12 +4,21 @@ Report hierarchy: freshness category, then company, then position. Show
 **Verified Freshness** first and **Unknown Freshness** second as level-one
 headings, omitting empty categories. The latter includes future-dated postings.
 Within each category, preserve employer priority and group positions beneath
-numbered level-two company headings, with each company's careers link once.
-Use numbered level-three position subheadings (1.1, 1.2, then 2.1 under the next
-company), with the title explicitly bold, followed by its job link and Pros/Cons.
+unnumbered level-two company headings, with each company's logo beside its name
+and careers link once. Use unnumbered level-three position subheadings, with the
+title explicitly bold, followed by its job link and Pros/Cons. Remove gender-only
+parentheses such as (f/m/div.) from displayed titles; retain original audit titles.
+Remove empty comma/semicolon fragments while preserving salary numbers.
 Do not repeat the freshness category as a badge on each position. Keep Run notes
 as a separate final top-level section. This hierarchy supersedes the historical
 global company-first layout described below.
+
+Unknown freshness only relaxes date reporting. It never overrides a hard failure
+for residence, attendance, Portugal eligibility, experience, languages, travel,
+coding or on-call duties. Explicit on-site/presencial roles are excluded even
+when another field says remote or supplies a weekly attendance count. Compatible
+hybrid roles remain limited to three nearby office days per week. Unavailable
+Greenhouse application requirements still withhold the affected candidate.
 
 Current freshness display update (supersedes the historical strict gate below):
 include otherwise non-rejected roles with insufficient original-date evidence,

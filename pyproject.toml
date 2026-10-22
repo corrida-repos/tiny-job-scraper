@@ -17,3 +17,4 @@ where = ["src"]
 
 [tool.setuptools.data-files]
 "share/pm-career-scraper/config" = ["config/*.json"]
+"share/pm-career-scraper/assets/company-logos" = ["assets/company-logos/*.png"]

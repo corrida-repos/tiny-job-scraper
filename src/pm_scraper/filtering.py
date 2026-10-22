@@ -143,7 +143,17 @@ class Screener:
             quarterly_office_counts.append(1)
         distant_limit = self.cfg['max_distant_office_visits_per_quarter']
         no_office = remote and (pt or worldwide) and not re.search(r"hybrid|hibrido|\b(?:office attendance|mandatory office|regular office)\b", text + " " + loc)
-        if office_values and max(office_values) > self.cfg["max_office_days_per_week"]:
+        onsite = norm(job.workplace).replace('_', ' ') in {'onsite', 'on-site', 'on site', 'presencial', 'in person', 'in-person'}
+        model_label = re.sub(r'\b(?:not|no|sem|nao)\s+(?:on[ -]?site|presencial)\b', '', loc + ' ' + title)
+        onsite = onsite or (bool(re.search(r'\bon[ -]?site\b|\bpresencial\b', model_label)) and not re.search(r'\bhybrid\b|\bhibrid[oa]\b', model_label))
+        for sentence in sentences:
+            if re.search(r'\b(?:not|no|sem|nao)\b.{0,15}(?:on[ -]?site|presencial)', sentence):
+                continue
+            if re.search(r'\b(?:this|the)\s+(?:role|position|job)\s+(?:is|will be)\s+(?:(?:fully|strictly|entirely|100%)\s+)?on[ -]?site\b|\b(?:fully|strictly|entirely|100%)\s+on[ -]?site\b|\b(?:an?|the)\s+on[ -]?site\s+(?:role|position|job)\b|\b(?:work(?:ing)? (?:model|arrangement)|location type)\s*:\s*(?:on[ -]?site|presencial)\b|\b(?:(?:regime|modelo)(?: de trabalho)?|modalidade|trabalho|funcao|vaga|posicao)\s*:?\s+(?:100%\s+)?presencial\b', sentence):
+                onsite = True
+        if onsite:
+            check('attendance', 'fail', 'Explicit on-site/presencial role; only remote or compatible hybrid roles are permitted')
+        elif office_values and max(office_values) > self.cfg["max_office_days_per_week"]:
             check("attendance", "fail", "; ".join(office_evidence))
         elif office_values and near:
             check("attendance", "pass", "; ".join(office_evidence))
@@ -153,8 +163,6 @@ class Screener:
             check("attendance", "pass", f"Remote arrangement within {distant_limit} office visits/quarter; travel duration checked separately")
         elif no_office:
             check("attendance", "pass", "Explicit remote arrangement; no routine office requirement identified")
-        elif job.workplace.lower() in {"onsite", "on-site", "on site"}:
-            check("attendance", "fail", f"On-site role lacks evidence of compliance with the {self.cfg['max_office_days_per_week']} office days/week cap")
         else:
             check("attendance", "unknown", "Exact office frequency is not published" + ("; North Portugal location" if near else ""))
 
@@ -242,6 +250,8 @@ class Screener:
             verified = parse_date(override.get("verified_at"))
             if verified and timedelta(0) <= now - verified < timedelta(days=90) and override.get("evidence"):
                 for key, val in override.get("checks", {}).items():
+                    if key == 'attendance' and val == 'pass' and onsite:
+                        continue
                     if key in {"travel", "attendance", "portugal_eligibility", "code_writing", "work_schedule"} and val in {"pass", "fail"}:
                         checks[key] = {"status":val, "evidence":"Verified override: " + override["evidence"]}
                 rejected = [k + ": " + v["evidence"] for k, v in checks.items() if v["status"] == "fail"]
