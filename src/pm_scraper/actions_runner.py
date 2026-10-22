@@ -167,7 +167,9 @@ def announce_coverage(folder):
     if gaps:print('::notice title=Coverage gaps::'+escaped('; '.join(gaps)))
 
 
-def execute(checkout, source, output, send=False, freshness_days=2):
+def execute(checkout, source, output, send=False, freshness_days=None):
+    from .criteria import freshness_days as configured_freshness
+    freshness_days = configured_freshness(source, freshness_days)
     key = key_bytes(os.environ['STATE_ENCRYPTION_KEY'])
     run_id = os.environ['GITHUB_RUN_ID']
     if not re.fullmatch(r'\d+', run_id):
@@ -297,7 +299,7 @@ def safe_error(error):
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('--state-checkout',required=True);p.add_argument('--source',default='.');p.add_argument('--output',default='output/actions');p.add_argument('--send',action='store_true')
-    p.add_argument('--freshness-days',type=int,choices=[2,7],default=2)
+    p.add_argument('--freshness-days',type=int,choices=range(1,31),default=None,help='One-run override; otherwise use saved criteria')
     args=p.parse_args()
     try:
         return execute(Path(args.state_checkout).resolve(),Path(args.source).resolve(),Path(args.output).resolve(),args.send,args.freshness_days)

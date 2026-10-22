@@ -4,7 +4,7 @@ from pathlib import Path
 from datetime import datetime,timezone,timedelta
 from pm_scraper.models import Job,parse_date,canonical_url
 from pm_scraper.filtering import Screener
-CFG=json.loads((Path(__file__).resolve().parents[1]/'config/criteria.json').read_text())
+CFG=json.loads((Path(__file__).resolve().parents[1]/'tests/fixtures/criteria.json').read_text())
 NOW=datetime(2026,10,19,12,tzinfo=timezone.utc)
 BASE='Fully remote within Portugal. You will coordinate delivery, manage stakeholder expectations and review technical proposals. No travel required. English is required.'
 def job(**kw):

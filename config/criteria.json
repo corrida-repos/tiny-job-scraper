@@ -137,5 +137,8 @@
     "No sector rule is inferred beyond the explicit employer allowlist."
   ],
   "max_distant_office_visits_per_quarter": 1,
-  "max_mandatory_experience_years": 5
+  "max_mandatory_experience_years": 5,
+  "exclude_mandatory_coding": true,
+  "exclude_shift_on_call": true,
+  "include_potential_matches": true
 }

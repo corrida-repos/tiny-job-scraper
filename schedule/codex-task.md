@@ -1,5 +1,9 @@
 # Prepared daily-task handoff
 
+> Historical handoff. Production now runs independently in GitHub Actions and
+> the original ChatGPT task is paused. The active Top 56 and configurable
+> reporting criteria are described in [the current guide](../docs/configuring-criteria.md).
+
 Status: prepared instructions only; the existing ChatGPT task has not moved.
 Schedule: every day at **08:00 Europe/Lisbon**, including daylight-saving changes.
 Do not enable a second daily task while the original is still active.

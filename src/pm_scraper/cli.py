@@ -16,6 +16,7 @@ from .filtering import Screener
 from .fetchers import Fetcher
 from .http import HttpClient
 from .state import State
+from .criteria import load as load_criteria
 
 ROOT=Path(__file__).resolve().parents[2]
 CONFIG=ROOT/"config" if (ROOT/"config").is_dir() else Path(sys.prefix)/"share/pm-career-scraper/config"
@@ -44,11 +45,13 @@ def atomic(path, content):
 
 def md(value):return str(value or '').replace('|','\\|').replace('\n',' ')
 
-def export(out,results,pairs,delivery,selected,started,finished,requests,freshness_hours=48):
+def export(out,results,pairs,delivery,selected,started,finished,requests,freshness_hours=48,criteria=None):
     health=[r.summary() for r in sorted(results,key=lambda x:x.company)]
     counts=Counter(a.status for j,a in pairs)
     payload={'freshness_hours':freshness_hours,'started_at':started,'finished_at':finished,'http_requests':requests,'coverage':{'sources':len(results),'complete':sum(r.complete and r.status=='ok' for r in results),'attention':sum(not r.complete or r.status!='ok' for r in results)},'counts':dict(counts),'sources':health,
              'jobs':[{'job':j.to_dict(),'assessment':asdict(a)} for j,a in pairs]}
+    if criteria is not None:
+        payload['criteria'] = criteria
     atomic(out/'results.json',json.dumps(payload,ensure_ascii=False,indent=2)+'\n')
     atomic(out/'source-health.json',json.dumps(health,ensure_ascii=False,indent=2)+'\n')
     email = prepare_email(pairs, payload)
@@ -85,7 +88,7 @@ def run(args, started=None):
     started = started or utcnow().isoformat()
     if args.require_existing_state and not Path(args.state).is_file():
         raise FileNotFoundError('Required production state is missing; refusing to create an empty database')
-    companies=json.loads(Path(args.companies).read_text());criteria=json.loads(Path(args.criteria).read_text())
+    companies=json.loads(Path(args.companies).read_text());criteria=load_criteria(args.criteria)
     if args.max_post_age_days is not None:
         criteria['max_post_age_days'] = args.max_post_age_days
     screener=Screener(criteria)
@@ -111,7 +114,7 @@ def run(args, started=None):
                     pairs+=local;state.record(r,local,utcnow().isoformat())
                     print(json.dumps({'company':r.company,'status':r.status,'listed':r.discovered,'candidates':len(r.jobs),'messages':r.messages},ensure_ascii=False),flush=True)
             finished=utcnow().isoformat();delivery,selected=state.eligible_delivery(pairs,finished)
-            payload=export(out,results,pairs,delivery,selected,started,finished,http.requests,criteria["max_post_age_days"]*24)
+            payload=export(out,results,pairs,delivery,selected,started,finished,http.requests,criteria["max_post_age_days"]*24,criteria)
             state.record_run(uuid.uuid4().hex,started,finished,payload['sources'])
             print(json.dumps({'output':str(out.resolve()),'coverage':payload['coverage'],'counts':payload['counts'],'delivery_id':delivery,'new_eligible':len(selected)},ensure_ascii=False))
             return 2 if payload['coverage']['attention'] else 0
@@ -122,12 +125,21 @@ def main(argv=None):
     sub=p.add_subparsers(dest='command',required=True)
     r=sub.add_parser('run');r.add_argument('--companies',default=str(CONFIG/'companies.json'));r.add_argument('--criteria',default=str(CONFIG/'criteria.json'));r.add_argument('--state',default='data/state.sqlite3');r.add_argument('--output',default='output/latest');r.add_argument('--overrides',default=str(CONFIG/'verified-overrides.json'))
     r.add_argument('--only',help='Comma-separated company IDs or ranks');r.add_argument('--workers',type=int,default=6);r.add_argument('--delay',type=float,default=1.0);r.add_argument('--timeout',type=int,default=25);r.add_argument('--max-pages',type=int,default=None,help='Override source page limits (normally 60; Infineon 200)');r.add_argument('--max-details',type=int,default=250)
-    r.add_argument('--max-post-age-days',type=int,choices=[2,7],default=None,help='One-run freshness override; does not modify saved criteria')
+    r.add_argument('--max-post-age-days',type=int,choices=range(1,31),default=None,help='One-run freshness override (1–30 days); default uses saved criteria')
     r.add_argument('--require-existing-state',action='store_true',help='Refuse to create a new state database; use for production migration')
     a=sub.add_parser('ack',help='Mark a digest reported only after confirmed successful delivery');a.add_argument('delivery_id');a.add_argument('--receipt',required=True);a.add_argument('--state',default='data/state.sqlite3')
     pending=sub.add_parser('pending',help='List unacknowledged digest attempts for send reconciliation');pending.add_argument('--state',default='data/state.sqlite3')
     s=sub.add_parser('sources');s.add_argument('--companies',default=str(CONFIG/'companies.json'))
+    v=sub.add_parser('validate-criteria',help='Check screening settings without network, state writes or email');v.add_argument('--criteria',default=str(CONFIG/'criteria.json'))
     args=p.parse_args(argv)
+    if args.command=='validate-criteria':
+        try:
+            criteria=load_criteria(args.criteria)
+        except (OSError, ValueError) as error:
+            print('Invalid criteria: '+str(error),file=sys.stderr)
+            return 1
+        print(f"Valid criteria: {len(criteria['role_families'])} role families; {criteria['max_post_age_days']*24}-hour freshness; potential matches {'included' if criteria['include_potential_matches'] else 'excluded'}")
+        return 0
     if args.command=='run':
         if not 1<=args.workers<=12 or args.delay<0.5 or (args.max_pages is not None and not 1<=args.max_pages<=200) or not 1<=args.max_details<=1000:p.error('Use workers 1..12, delay >=0.5, pages 1..200, details 1..1000')
         started = utcnow().isoformat()

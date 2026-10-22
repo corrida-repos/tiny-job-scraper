@@ -12,7 +12,7 @@ class FakeHTTP:
   self.calls.append(url);return self.data[len(self.calls)-1]
  def text(self,url,**kwargs):return '<html><main><p>Public description without an original posting date.</p></main></html>'
 class AdapterTests(unittest.TestCase):
- def setUp(self):self.s=Screener(json.loads((ROOT/'config/criteria.json').read_text()))
+ def setUp(self):self.s=Screener(json.loads((ROOT/'tests/fixtures/criteria.json').read_text()))
  def test_56_individually_configured_employers(self):
   cs=json.loads((ROOT/'config/companies.json').read_text());self.assertEqual(len(cs),56);self.assertEqual(len({c['id'] for c in cs}),56)
   self.assertEqual([c['rank'] for c in cs],list(range(1,57)))
@@ -52,7 +52,7 @@ class HtmlRegressions(unittest.TestCase):
     if 'startrow=10' in url:return '<a href="/job/Engineer2/2">Engineer</a><a href="?startrow=0">1</a><a href="?startrow=10&locale=fr_FR">French</a>'
     return '<a href="/job/Engineer/1">Engineer</a><a href="?startrow=0">1</a><a href="?startrow=10">2</a>'
   h=Pages();c={'id':'x','name':'X','source':{'adapter':'html','listing_url':'https://example.org/search/','job_pattern':'/job/','page_pattern':'startrow='}}
-  r=Fetcher(h,Screener(json.loads((ROOT/'config/criteria.json').read_text()))).fetch(c)
+  r=Fetcher(h,Screener(json.loads((ROOT/'tests/fixtures/criteria.json').read_text()))).fetch(c)
   self.assertEqual(r.status,'ok');self.assertEqual(r.discovered,2);self.assertEqual(len(h.urls),2)
 
 class NonJobMetadata(unittest.TestCase):
@@ -70,7 +70,7 @@ class BadSchemaRegression(unittest.TestCase):
   self.assertEqual(j.title,'Project Manager');self.assertIsNone(j.posted_at);self.assertGreater(len(j.description),60)
 
 class CoverageRepairs(unittest.TestCase):
- def setUp(self):self.s=Screener(json.loads((ROOT/'config/criteria.json').read_text()))
+ def setUp(self):self.s=Screener(json.loads((ROOT/'tests/fixtures/criteria.json').read_text()))
  def test_remote_structured_sections_and_no_original_date_assumption(self):
   row={'public_id':'abc','status':'open','accepting_applications':True,'title':'Product Manager','location':'EMEA','workplace':'remote'}
   detail=dict(row,opened_at='2026-10-20',description='-',advert_sections=[{'doc':{'content':[{'content':[{'text':'Coordinate product delivery with stakeholders, manage requirements and maintain a prioritized product backlog.'}]}]}}])

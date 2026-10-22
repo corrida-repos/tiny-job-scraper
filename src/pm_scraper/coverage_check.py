@@ -58,7 +58,7 @@ def summary(health, complete):
              f'**{complete}/{len(health)} source scopes complete; '
              f'{len(health) - complete} need attention.**', '',
              'A successful diagnostic job does not mean complete employer coverage. '
-             'Disposable database; no email or production-state writes. Freshness: 48 hours.', '',
+             'Disposable database; no email or production-state writes. Uses saved screening criteria.', '',
              '| Employer | Status | Listed | Candidates | Pages/requests | Reasons |',
              '| --- | --- | ---: | ---: | ---: | --- |']
     for row in health:
@@ -78,7 +78,7 @@ def check(selection, artifact_dir, summary_path=None):
             root = Path(temporary)
             code = cli.main(['run', '--only', ','.join(expected),
                              '--state', str(root / 'state.sqlite3'),
-                             '--output', str(root / 'output'), '--max-post-age-days', '2'])
+                             '--output', str(root / 'output')])
             health = json.loads((root / 'output/source-health.json').read_text())
             complete = validate_health(health, expected, code)
             (artifact_dir / 'source-health.json').write_text(

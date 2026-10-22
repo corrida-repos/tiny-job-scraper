@@ -11,7 +11,7 @@ from pm_scraper.http import FetchError
 
 FEED = 'https://weworkremotely.com/remote-jobs.rss'
 URL = 'https://weworkremotely.com/remote-jobs/float-project-manager'
-CFG = json.loads((Path(__file__).resolve().parents[1] / 'config/criteria.json').read_text())
+CFG = json.loads((Path(__file__).resolve().parents[1] / 'tests/fixtures/criteria.json').read_text())
 DESCRIPTION = '<p><strong>URL:</strong> <a href="https://float.com">float.com</a></p><p>Manage project delivery, stakeholder expectations and risk registers across complex projects.</p>'
 SOURCE = {'adapter': 'html', 'listing_url': 'https://float.com/careers', 'job_pattern': '/jobs/',
           'wwr_fallback': {'employer_names': ['Float'], 'employer_hosts': ['float.com', 'www.float.com']}}

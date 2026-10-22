@@ -23,10 +23,11 @@ def location_tier(job):
     return 5
 
 
-def select_roles(pairs):
+def select_roles(pairs, include_potential_matches=True):
     groups = {}
     for job, assessment in pairs:
-        if assessment.status not in {'eligible', 'review'} or assessment.checks.get('freshness', {}).get('status') != 'pass':
+        allowed = {'eligible', 'review'} if include_potential_matches else {'eligible'}
+        if assessment.status not in allowed or assessment.checks.get('freshness', {}).get('status') != 'pass':
             continue
         # Merge only exact substantive descriptions and assessments for remote
         # location variants. Uncertain duplicates remain separate for inspection.
@@ -80,7 +81,8 @@ def salary_positive(job):
 
 
 def prepare_email(pairs, payload, saving='Local report generated; durable saving and email delivery not confirmed'):
-    selected, alternatives = select_roles(pairs)
+    criteria = payload.get('criteria', {})
+    selected, alternatives = select_roles(pairs, criteria.get('include_potential_matches', True))
     freshness_hours = payload.get('freshness_hours', 48)
     lines = []
     for index, (job, assessment) in enumerate(selected, 1):
@@ -113,7 +115,10 @@ def prepare_email(pairs, payload, saving='Local report generated; durable saving
               f'- Coverage: {coverage["complete"]} complete; {coverage["attention"]} need attention.',
               f'- Results: {len(selected)} included; all current-run candidates retained in results.json.',
               f'- Freshness: verified original publication within {freshness_hours} hours of run start; future and unverified dates excluded.',
-              '- Filters: saved employer ranks, Portugal/attendance/language/noncoding/travel constraints, mandatory experience at most five years; salary informational only.',
+              '- Filters: saved employer ranks and screening criteria; '
+              + ('fresh potential matches included' if criteria.get('include_potential_matches', True) else 'verified eligible roles only')
+              + '; salary informational only.'
+              + (' Active settings are recorded in results.json.' if criteria else ''),
               '- Coverage gaps: ' + ('; '.join(failures) or 'None in the selected scopes.'),
               '- Saving: ' + saving + '.', f'- Run marker: {marker}', '']
     return {'subject': SUBJECT, 'run_marker': marker, 'delivery_status': 'not_sent',

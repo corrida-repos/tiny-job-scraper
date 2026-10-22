@@ -3,6 +3,7 @@ import re
 from datetime import timedelta
 from .htmlutil import norm
 from .models import Assessment, parse_date, utcnow
+from .criteria import LANGUAGES, validate
 
 NUMBERS = {"one":1,"two":2,"three":3,"four":4,"five":5,"six":6,"seven":7,"eight":8,"nine":9,"ten":10,"um":1,"uma":1,"dois":2,"duas":2,"tres":3,"quatro":4,"cinco":5,"seis":6,"sete":7,"oito":8,"nove":9,"dez":10}
 N = r"(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez)"
@@ -19,8 +20,8 @@ def subsequence(needle, haystack):
 
 class Screener:
     def __init__(self, cfg):
-        self.cfg = cfg
-        pairs = [(x, x) for x in cfg["role_families"]] + list(cfg.get("portuguese_titles", {}).items())
+        self.cfg = cfg = validate(cfg)
+        pairs = [(x, x) for x in cfg["role_families"]] + [(title, family) for title, family in cfg['portuguese_titles'].items() if family in cfg['role_families']]
         self.titles = sorted([(tokens(x), family) for x, family in pairs], key=lambda x: len(x[0]), reverse=True)
 
     def family(self, title):
@@ -68,15 +69,17 @@ class Screener:
                 continue
             coding.append(sentence[:350])
         check("code_writing", "fail" if coding else "pass" if job.detail_ok else "unknown", "; ".join(coding) or "No mandatory code-writing requirement found; code review is allowed")
+        if not self.cfg['exclude_mandatory_coding']:
+            checks['code_writing'] = {'status': 'informational', 'evidence': '; '.join(coding) or 'Code-writing requirements are not an exclusion in saved criteria'}
 
         language_fail = []
-        other_languages = r"german|french|dutch|italian|polish|czech|danish|swedish|norwegian|finnish|mandarin|japanese|arabic|alemao|frances|neerlandes|italiano"
+        other_languages = '|'.join(re.escape(alias) for name, aliases in LANGUAGES.items() if name not in self.cfg['allowed_languages'] for alias in aliases)
         for sentence in [title] + sentences:
-            if not re.search(r"\b(?:" + other_languages + r")\b", sentence): continue
+            if not other_languages or not re.search(r"\b(?:" + other_languages + r")\b", sentence): continue
             if re.search(r"nice[- ]to[- ]have|optional|bonus|plus|advantage|not required|desirable|prefer(?:red|able)|valorizad|opcional|nao obrigatori", sentence): continue
             if re.search(r"fluent|fluency|native|proficien|mandatory|required|must|c1|c2|b2|speaking|speaker|fluente|obrigatori|dominio", sentence):
                 language_fail.append(sentence[:350])
-        check("languages", "fail" if language_fail else "pass" if job.detail_ok else "unknown", "; ".join(language_fail) or "No mandatory language beyond PT/EN/ES identified")
+        check("languages", "fail" if language_fail else "pass" if job.detail_ok else "unknown", "; ".join(language_fail) or 'No recognized mandatory language outside: ' + ', '.join(self.cfg['allowed_languages']))
 
         schedule_flags = []
         for sentence in sentences:
@@ -84,6 +87,8 @@ class Screener:
             if re.search(r"(?:participate|join|required|must|rotat|24/7|regular).{0,45}(?:on.call|shift|weekend)|(?:on.call|shift|weekend).{0,45}(?:rotation|required|24/7)|trabalho por turnos", sentence):
                 schedule_flags.append(sentence[:350])
         check("work_schedule", "fail" if schedule_flags else "pass" if job.detail_ok else "unknown", "; ".join(schedule_flags) or "No required shift/on-call pattern identified; actual workload still merits interview checks")
+        if not self.cfg['exclude_shift_on_call']:
+            checks['work_schedule'] = {'status': 'informational', 'evidence': '; '.join(schedule_flags) or 'Shift/on-call requirements are not an exclusion in saved criteria'}
 
         loc = norm(job.location)
         country = [norm(c) for c in job.countries]
@@ -126,19 +131,22 @@ class Screener:
                 if m:quarterly_office_counts.append(number(m.group(1)))
                 if re.search(r"twice (?:a |per )?quarter|twice quarterly",sentence):quarterly_office_counts.append(2)
         rare_office = any(re.search(r"office|visit|gathering|meetup|offsite|encontro", s) and re.search(r"at most quarterly|no more than.{0,12}quarter|once (?:a|per|every) quarter|once every (?:three|3) months|quarterly|trimestral", s) for s in sentences)
+        if rare_office and not quarterly_office_counts:
+            quarterly_office_counts.append(1)
+        distant_limit = self.cfg['max_distant_office_visits_per_quarter']
         no_office = remote and (pt or worldwide) and not re.search(r"hybrid|hibrido|\b(?:office attendance|mandatory office|regular office)\b", text + " " + loc)
         if office_values and max(office_values) > self.cfg["max_office_days_per_week"]:
             check("attendance", "fail", "; ".join(office_evidence))
         elif office_values and near:
             check("attendance", "pass", "; ".join(office_evidence))
-        elif not near and (distant_frequent or (office_values and max(office_values) > 0) or (quarterly_office_counts and max(quarterly_office_counts)>1)):
-            check("attendance", "fail", "Required distant-office attendance is more frequent than quarterly")
-        elif remote and rare_office:
-            check("attendance", "pass", "Remote arrangement with quarterly-or-less office visits; travel duration checked separately")
+        elif not near and (distant_frequent or (office_values and max(office_values) > 0) or (quarterly_office_counts and max(quarterly_office_counts)>distant_limit)):
+            check("attendance", "fail", f"Distant-office attendance exceeds the configured {distant_limit} visits/quarter cap or requires a routine weekly/monthly pattern")
+        elif remote and quarterly_office_counts:
+            check("attendance", "pass", f"Remote arrangement within {distant_limit} office visits/quarter; travel duration checked separately")
         elif no_office:
             check("attendance", "pass", "Explicit remote arrangement; no routine office requirement identified")
         elif job.workplace.lower() in {"onsite", "on-site", "on site"}:
-            check("attendance", "fail", "On-site role does not meet the <=2 office days/week rule")
+            check("attendance", "fail", f"On-site role lacks evidence of compliance with the {self.cfg['max_office_days_per_week']} office days/week cap")
         else:
             check("attendance", "unknown", "Exact office frequency is not published" + ("; North Portugal location" if near else ""))
 
@@ -167,7 +175,7 @@ class Screener:
         elif travel_pass and (len(travel_pass) == len(travel_sentences) or not any(re.search(r"required|mandatory|must|expect|attend", s) for s in travel_sentences if s[:350] not in travel_pass)):
             check("travel", "pass", "; ".join(travel_pass))
         else:
-            check("travel", "unknown", "One week abroad per quarter, including all trips and transit, is not explicitly established" + (": " + "; ".join(travel_sentences)[:550] if travel_sentences else ""))
+            check("travel", "unknown", f"At most {self.cfg['max_abroad_calendar_days_per_quarter']} calendar days abroad per quarter, including all trips and transit, is not explicitly established" + (": " + "; ".join(travel_sentences)[:550] if travel_sentences else ""))
 
         posted = parse_date(job.posted_at)
         if posted and job.date_kind == "original_posted":
@@ -212,7 +220,7 @@ class Screener:
             else:
                 experience_unknown.append(clause[:500])
         check("experience", "fail" if experience_fail else "unknown" if experience_unknown else "pass" if job.detail_ok else "unknown",
-              "; ".join(experience_fail + experience_unknown + experience_optional) or "No mandatory experience minimum above five years identified")
+              "; ".join(experience_fail + experience_unknown + experience_optional) or f"No mandatory experience minimum above {self.cfg['max_mandatory_experience_years']} years identified")
         checks["work_life_balance"] = {"status":"unverified", "evidence":"Employer-level reputation is contextual; actual workload, overtime and leave use require team-level confirmation"}
 
         # Overrides require dated evidence and can only resolve explicitly named checks.
@@ -224,6 +232,8 @@ class Screener:
                         checks[key] = {"status":val, "evidence":"Verified override: " + override["evidence"]}
                 rejected = [k + ": " + v["evidence"] for k, v in checks.items() if v["status"] == "fail"]
                 pending = [k + ": " + v["evidence"] for k, v in checks.items() if v["status"] == "unknown"]
+        rejected = [k + ': ' + v['evidence'] for k, v in checks.items() if v['status'] == 'fail']
+        pending = [k + ': ' + v['evidence'] for k, v in checks.items() if v['status'] == 'unknown']
         status = "rejected" if rejected else "review" if pending else "eligible"
         score = 60 + (20 if remote else 10 if near else 0) + (10 if checks["travel"]["status"] == "pass" else 0) + (10 if checks["freshness"]["status"] == "pass" else 0)
         return Assessment(status, family, rejected + pending, checks, score)

@@ -48,7 +48,7 @@ class CoverageCheckTests(unittest.TestCase):
             paths.append(state.parent)
             self.assertFalse(state.exists())
             self.assertEqual(args[args.index('--only') + 1], 'noesis')
-            self.assertEqual(args[args.index('--max-post-age-days') + 1], '2')
+            self.assertNotIn('--max-post-age-days', args)
             state.write_text('disposable state')
             out.mkdir()
             (out / 'email.json').write_text('private draft')

@@ -1,5 +1,12 @@
 # Current automation rules
 
+The active GitHub runner reads [config/criteria.json](../config/criteria.json).
+Its supported settings supersede the corresponding default values in the
+historical task instructions below. See [configuring criteria](configuring-criteria.md).
+Current defaults remain 48-hour freshness, five years' mandatory experience,
+two nearby office days/week and seven days abroad/quarter. GitHub Actions runs
+independently of ChatGPT and the old Library workflow.
+
 Current watchlist: **Top 56**. COCUS, Float, JTA and Namecheap were removed at the user’s request. Retained employers preserve their relative order, now ranked 1–56; historical audit records remain unchanged.
 
 Retrieved from the active task on 2026-10-20. Recipient and private file IDs are redacted. The scheduled agent applies these rules; not all are implemented in the Python baseline. See UNFINISHED.md.

@@ -121,8 +121,9 @@ allowlist does not control GitHub-hosted runners' outbound network access.
 
 ## One-off freshness override
 
-Manual dispatch offers `freshness_days=7` for an explicitly requested seven-day
-report. It changes only that run's in-memory criteria and is recorded in the
-encrypted run metadata and report. Every scheduled event explicitly selects two
-days (48 hours), independent of the previous manual inputs. Saved criteria remain
-at two days. Manual runs still obey all other screening and delivery rules.
+Manual dispatch defaults to `freshness_days=configured`, which reads
+`config/criteria.json`. Scheduled events also use the saved criteria (currently
+two days / 48 hours). Choose `2` or `7` for a one-run freshness override; it is
+recorded in encrypted run metadata and the report, without rewriting the settings
+file. Previous manual choices do not affect the next scheduled run. See
+[criteria configuration](../docs/configuring-criteria.md) for persistent changes.

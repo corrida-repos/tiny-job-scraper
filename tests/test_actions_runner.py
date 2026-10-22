@@ -47,6 +47,8 @@ class ActionsRunnerTests(unittest.TestCase):
   checkout=self.root/'checkout';checkout.mkdir()
   encrypted=seal(self.data,self.key);(checkout/'state.enc').write_bytes(encrypted)
   source=self.root/'source';source.mkdir()
+  (source/'config').mkdir()
+  (source/'config/criteria.json').write_bytes((Path(__file__).parent/'fixtures/criteria.json').read_bytes())
   (source/'run.py').write_text('''import sys,json
 from pathlib import Path
 out=Path(sys.argv[sys.argv.index('--output')+1]);out.mkdir()
@@ -58,6 +60,8 @@ raise SystemExit(2)
   return checkout,source,encrypted
  def test_validation_never_sends_or_persists(self):
   checkout,source,encrypted=self.run_fixture()
+  settings=source/'config/criteria.json';cfg=json.loads(settings.read_text())
+  cfg['max_post_age_days']=5;settings.write_text(json.dumps(cfg))
   environment={'STATE_ENCRYPTION_KEY':base64.b64encode(self.key).decode(),'GITHUB_RUN_ID':'123'}
   with patch.dict(os.environ,environment),patch('pm_scraper.actions_runner.git',return_value='abc'),patch('pm_scraper.actions_runner.persist') as save,patch.object(Gmail,'send') as send:
    code=execute(checkout,source,self.root/'output',False)
@@ -65,6 +69,10 @@ raise SystemExit(2)
   self.assertEqual((checkout/'state.enc').read_bytes(),encrypted)
   restored=self.root/'validation';unseal((self.root/'output/validation.enc').read_bytes(),restored,self.key)
   draft=json.loads((restored/'email.json').read_text())
+  arguments=json.loads((restored/'results.json').read_text())['arguments']
+  self.assertEqual(arguments[arguments.index('--max-post-age-days')+1],'5')
+  self.assertEqual(json.loads((restored/'meta.json').read_text())['attempts']['123']['freshness_days'],5)
+  self.assertEqual(json.loads(settings.read_text())['max_post_age_days'],5)
   self.assertEqual(draft['run_marker'],'tiny-actions-123')
   self.assertIn('production state unchanged',draft['body_markdown'])
  def test_delivery_checkpoints_before_send_and_saves_receipt(self):
@@ -107,5 +115,5 @@ raise SystemExit(2)
   args=json.loads((restored/'results.json').read_text())['arguments']
   self.assertEqual(args[args.index('--max-post-age-days')+1],'7')
   self.assertEqual(json.loads((restored/'meta.json').read_text())['attempts']['123']['freshness_days'],7)
-  self.assertEqual(execute.__defaults__,(False,2))
+  self.assertEqual(execute.__defaults__,(False,None))
   self.assertEqual((checkout/'state.enc').read_bytes(),encrypted)

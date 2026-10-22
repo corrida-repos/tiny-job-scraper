@@ -1,4 +1,4 @@
-> **Recovery export:** Read [UNFINISHED.md](UNFINISHED.md) and [current automation rules](docs/current-automation-policy.md) before deployment. The CLI now implements the current screening and email-draft rules; durable production storage, Gmail delivery and scheduler migration remain external prerequisites. See [Codex handoff](docs/codex-handoff.md).
+> **Daily operation:** GitHub Actions runs this scraper independently of ChatGPT. The repository holds code, settings and encrypted persistent state; GitHub secrets supply Gmail credentials. See [runner setup](schedule/github-actions.md) and [criteria settings](docs/configuring-criteria.md).
 
 # PM careers scraper — 56 employers
 
@@ -37,6 +37,11 @@ The numeric priority score is a transparent rule-based convenience (remote/locat
 
 ## Your criteria
 
+Edit [config/criteria.json](config/criteria.json) to change screening and reporting
+preferences. See [the settings guide](docs/configuring-criteria.md) for supported
+controls and a direct GitHub edit link. Scheduled runs use the committed settings;
+the following list describes the current defaults.
+
 - Exact 45 allowed title families, with added qualifiers and defined direct Portuguese translations; excluded top-level leadership titles. Engineering Manager and Team Lead are included.
 - No mandatory code writing or coding tests. Reading/reviewing code is acceptable.
 - Santo Tirso base; nearby northern hybrid roles require at most two office days weekly. Distant offices require remote work and quarterly-or-less visits.
@@ -65,9 +70,16 @@ The original downloadable ZIP included a one-off audit snapshot. This Git import
 
 ## Scheduling
 
-The replacement ChatGPT task retains 08:00 Europe/Lisbon and materializes the saved code plus the latest state on each run. It saves updated state and a new version of the report. Local workspace paths are not assumed to survive between runs. Code execution, network access and connected apps must be available in the scheduled run; if unavailable the task must report that failure, preserve state and never substitute a broad web search or claim zero matches.
+GitHub Actions runs the scraper at 08:00 Europe/Lisbon, restores the encrypted
+state from the `runtime-state` branch, evaluates jobs and delivers the report
+through Gmail. It does not require ChatGPT, Codex, this chat or an always-on user
+computer. The original ChatGPT scheduled task is paused. GitHub's scheduler may
+start a run later than the requested time.
 
-For independent local deployment, `schedule/` contains systemd and Windows Task Scheduler setup examples. Do not enable both that schedule and the ChatGPT schedule unless you intentionally want two retrievals. A host running a local schedule must stay available. No additional scheduler is installed by this package.
+For independent local deployment, `schedule/` contains systemd and Windows Task
+Scheduler examples. Avoid enabling a second scheduler alongside GitHub Actions
+unless you intentionally want two retrievals. A local scheduler requires an
+available host.
 
 ## Source-specific readers and limitations
 
@@ -135,9 +147,10 @@ PYTHONPATH=src .venv/bin/python -m pm_scraper.coverage_check --source noesis --a
 ```
 
 The diagnostic retains only `source-health.json` and `summary.md`; its database,
-candidate details and email drafts are discarded. It always uses the 48-hour
-freshness rule. The daily workflow and schedule are independent and unchanged.
+candidate details and email drafts are discarded. It uses the saved screening
+criteria, currently a 48-hour freshness window. The daily schedule is independent.
 
 See [coverage status](docs/coverage-status.md) for the public HTML/sitemap readers
 and historical investigations. The active Top 56 excludes COCUS, Float, JTA and
-Namecheap; historical audits and job/delivery records remain preserved. All scheduled runs continue to use the 48-hour window.
+Namecheap; historical audits and job/delivery records remain preserved. Scheduled
+runs use the saved freshness window, currently 48 hours.

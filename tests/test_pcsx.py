@@ -7,7 +7,7 @@ from pm_scraper.fetchers import Fetcher
 from pm_scraper.filtering import Screener
 from pm_scraper.http import FetchError
 
-CFG = json.loads((Path(__file__).resolve().parents[1] / 'config/criteria.json').read_text())
+CFG = json.loads((Path(__file__).resolve().parents[1] / 'tests/fixtures/criteria.json').read_text())
 BASE = 'https://example.org'
 SOURCE = {'adapter': 'eightfold_pcsx', 'base': BASE, 'domain': 'example.org', 'max_pages': 200}
 DESCRIPTION = 'Coordinate delivery, stakeholder expectations and risk registers across multiple complex projects.'

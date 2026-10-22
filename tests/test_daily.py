@@ -93,9 +93,9 @@ class CliFailureTests(unittest.TestCase):
     result=FetchResult('bosch','Bosch','fixture',jobs=[job(posted_at='2026-10-15T12:00:00Z')])
     with patch('pm_scraper.cli.utcnow',return_value=NOW),patch('pm_scraper.cli.Fetcher') as fetcher:
      fetcher.return_value.fetch.return_value=result
-     code=main(['run','--only','20','--max-post-age-days',str(days),'--state',str(root/f'{days}.sqlite3'),'--output',str(out)])
+     code=main(['run','--only','bosch','--criteria',str(Path(__file__).parent/'fixtures/criteria.json'),'--max-post-age-days',str(days),'--state',str(root/f'{days}.sqlite3'),'--output',str(out)])
     self.assertEqual(code,0)
     email=json.loads((out/'email.json').read_text())
     self.assertEqual(len(email['job_keys']),expected)
     self.assertIn(f'within {days*24} hours',email['body_markdown'])
-   self.assertEqual(json.loads((Path(__file__).resolve().parents[1]/'config/criteria.json').read_text())['max_post_age_days'],2)
+   self.assertEqual(json.loads((Path(__file__).parent/'fixtures/criteria.json').read_text())['max_post_age_days'],2)

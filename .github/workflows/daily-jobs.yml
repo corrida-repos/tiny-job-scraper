@@ -7,12 +7,13 @@ on:
         type: boolean
         default: false
       freshness_days:
-        description: 'Freshness window for this manual run only; schedules always use 2 days'
+        description: 'Use saved criteria or a freshness override for this manual run'
         type: choice
         options:
+          - 'configured'
           - '2'
           - '7'
-        default: '2'
+        default: 'configured'
   schedule:
     # GitHub cron uses UTC. Only the trigger at 08:00 Lisbon passes the gate.
     - cron: '0 7 * * *'
@@ -62,6 +63,7 @@ jobs:
         working-directory: source
         run: |
           python -m pip install -r requirements-actions.txt
+          python run.py validate-criteria
           PYTHONPATH=src python -m unittest discover -s tests -v
       - name: Retrieve, checkpoint and optionally deliver
         if: steps.gate.outputs.run == 'true'
@@ -71,14 +73,15 @@ jobs:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           SEND_EMAIL: ${{ github.event_name == 'schedule' || inputs.send_email }}
-          FRESHNESS_DAYS: ${{ github.event_name == 'workflow_dispatch' && inputs.freshness_days || '2' }}
+          FRESHNESS_DAYS: ${{ github.event_name == 'workflow_dispatch' && inputs.freshness_days || 'configured' }}
           PYTHONPATH: src
         run: |
           git -C ../encrypted-state config user.name github-actions[bot]
           git -C ../encrypted-state config user.email 41898282+github-actions[bot]@users.noreply.github.com
           args=()
           if [ "$SEND_EMAIL" = true ]; then args+=(--send); fi
-          python -m pm_scraper.actions_runner --state-checkout ../encrypted-state --freshness-days "$FRESHNESS_DAYS" "${args[@]}"
+          if [ "$FRESHNESS_DAYS" != configured ]; then args+=(--freshness-days "$FRESHNESS_DAYS"); fi
+          python -m pm_scraper.actions_runner --state-checkout ../encrypted-state "${args[@]}"
       - uses: actions/upload-artifact@v4
         if: always() && steps.gate.outputs.run == 'true'
         with:

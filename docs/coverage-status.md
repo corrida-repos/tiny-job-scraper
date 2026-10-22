@@ -1,5 +1,9 @@
 # Current coverage — Top 56
 
+[Top 56 validation 39690885796](https://github.com/corrida-repos/tiny-job-scraper/actions/runs/39690885796)
+at commit `50a16cd` completed **56/56 source scopes**, with no coverage gaps and
+96 tests passing. It used `send_email=false` and the two-day freshness window.
+
 The active watchlist now contains 56 employers. COCUS, Float, JTA and Namecheap
 were removed at the user’s request, and the retained employers were renumbered
 1–56 without changing their relative order. Noesis remains included; the focused
