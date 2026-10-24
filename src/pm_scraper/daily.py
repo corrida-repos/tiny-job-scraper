@@ -43,10 +43,12 @@ def duplicate_description(description):
                           if not re.fullmatch(monetary_line, line.strip(), flags=re.I)))
 
 
-def select_roles(pairs, include_potential_matches=True, include_unknown_freshness=False, include_future_dated=False):
+def select_roles(pairs, include_potential_matches=True, include_unknown_freshness=False, include_future_dated=False, require_portugal_eligibility=False):
     groups = {}
     for job, assessment in pairs:
         if job.metadata.get('application_requirements_checked') is False:
+            continue
+        if require_portugal_eligibility and assessment.checks.get('portugal_eligibility', {}).get('status') != 'pass':
             continue
         allowed = {'eligible', 'review'} if include_potential_matches else {'eligible'}
         freshness_ok = assessment.checks.get('freshness', {}).get('status') == 'pass'
@@ -140,7 +142,7 @@ def prepare_email(pairs, payload, saving='Local report generated; durable saving
     criteria = payload.get('criteria', {})
     allow_unknown = criteria.get('include_unknown_freshness', False)
     allow_future = criteria.get('include_future_dated', False)
-    selected, alternatives = select_roles(pairs, criteria.get('include_potential_matches', True), allow_unknown, allow_future)
+    selected, alternatives = select_roles(pairs, criteria.get('include_potential_matches', True), allow_unknown, allow_future, criteria.get('require_portugal_eligibility', False))
     freshness_groups = {'Verified Freshness': {}, 'Unknown Freshness': {}}
     for pair in selected:
         category = 'Verified Freshness' if pair[1].checks['freshness']['status'] == 'pass' else 'Unknown Freshness'

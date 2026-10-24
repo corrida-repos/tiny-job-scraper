@@ -1,5 +1,14 @@
 # Current automation rules
 
+Portugal eligibility is mandatory for reporting (`require_portugal_eligibility:
+true`). Withhold candidates whose Portugal eligibility is unknown even when
+potential matches or Unknown Freshness are enabled. Explicit foreign-country
+ATS locations and country restrictions override generic remote/Portugal wording.
+Check description and application requirements for mandatory foreign residence
+or work locations. A required yes/no question about another location is unresolved
+until its meaning is established; it does not automatically mean the answer must
+be yes. Preserve northern-Portugal residence and compatible hybrid restrictions.
+
 Current publication-date policy: accept employer-declared posting and repost
 dates within the configured 48-hour window (`accept_employer_dates: true`).
 This supersedes original-publication-only requirements below. Preserve original

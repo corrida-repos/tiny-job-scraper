@@ -4,7 +4,7 @@ from datetime import timedelta
 from .htmlutil import norm
 from .models import Assessment, parse_date, utcnow
 from .criteria import LANGUAGES, validate, experience_ceiling
-from .residence import incompatible_residence
+from .residence import incompatible_residence, foreign_posting_location
 from .posting_dates import publication_candidate
 
 NUMBERS = {"one":1,"two":2,"three":3,"four":4,"five":5,"six":6,"seven":7,"eight":8,"nine":9,"ten":10,"um":1,"uma":1,"dois":2,"duas":2,"tres":3,"quatro":4,"cinco":5,"seis":6,"sete":7,"oito":8,"nove":9,"dez":10}
@@ -54,6 +54,21 @@ class Screener:
         check("employer", "fail" if excluded else "pass", ", ".join(excluded) if excluded else "Named employer in the configured watchlist")
         questions = job.metadata.get('application_questions', [])
         residence_text = job.description + '\n' + '\n'.join(q['label'] + '\n' + q.get('description', '') for q in questions)
+        unresolved_location_questions = []
+        for question in questions:
+            if question.get('required'):
+                # Required yes/no location screens are requirements, not mere
+                # mentions of offices or country-specific salary information.
+                match = re.search(r'\b(?:are you|do you)\s+(?:(?:currently|already)\s+)?(?:live|reside|(?:be\s+)?based|(?:be\s+)?located)\s+in\s+([^?]+)', norm(question['label']))
+                if match:
+                    place = match.group(1)
+                    # Elastic's sanctioned-territory declaration is not a
+                    # demand to live there; answering No is compatible with PT.
+                    sanctioned = set(re.findall(r'\b(?:belarus|cuba|iran|north korea|syria|russia)\b', place))
+                    if re.search(r'one of the (?:following|listed) countries', place) and len(sanctioned) >= 3:
+                        continue
+                    if incompatible_residence('You must be based in ' + match.group(1) + '.', self.cfg['allowed_residence_locations']):
+                        unresolved_location_questions.append(question['label'])
         residence_failures = incompatible_residence(residence_text, self.cfg['allowed_residence_locations'])
         check('residence', 'fail' if residence_failures else 'pass',
               '; '.join(residence_failures) or 'No explicit residence requirement outside the permitted Porto/Braga area found')
@@ -114,6 +129,10 @@ class Screener:
         excludes_pt = bool(re.search(r"(?:except|excluding|not (?:in|from)|cannot (?:hire|employ).{0,12})\s*portugal", text))
         if excludes_pt:
             check("portugal_eligibility", "fail", "Portugal explicitly excluded")
+        elif foreign_posting_location(job.location):
+            check('portugal_eligibility', 'fail', 'Posting location is outside Portugal: ' + job.location)
+        elif country and not any(c in {'pt','prt','portugal'} for c in country):
+            check("portugal_eligibility", "fail", "Eligible countries do not include Portugal: " + ", ".join(job.countries))
         elif pt:
             check("portugal_eligibility", "pass", job.location or ", ".join(job.countries))
         elif country and not worldwide:
@@ -122,6 +141,8 @@ class Screener:
             check("portugal_eligibility", "unknown", "Worldwide wording; Portuguese employment eligibility still needs confirmation")
         else:
             check("portugal_eligibility", "unknown", "Portugal eligibility not explicit in this posting")
+        if unresolved_location_questions and checks['portugal_eligibility']['status'] != 'fail':
+            check('portugal_eligibility', 'unknown', 'Required location screening questions do not establish that Portugal/northern Portugal is accepted: ' + '; '.join(unresolved_location_questions))
 
         office_values, office_evidence = [], []
         for sentence in sentences:

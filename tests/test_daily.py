@@ -77,6 +77,10 @@ class DailyReportTests(unittest.TestCase):
                          source_id=country,url='https://example.org/'+country,location=country,countries=[],workplace='unknown',
                          description=body+'\nThe typical starting salary range for this role is:\n'+amount,
                          salary={'range':amount}))
+  # Isolate grouping from country exclusion, which is tested separately.
+  for candidate,assessment in pairs:
+   assessment.status='review'
+   assessment.checks['portugal_eligibility']['status']='pass' if candidate.location=='Portugal' else 'unknown'
   selected,alternatives=select_roles(pairs)
   self.assertEqual(len(selected),1)
   self.assertEqual(selected[0][0].location,'Portugal')
@@ -87,13 +91,13 @@ class DailyReportTests(unittest.TestCase):
   self.assertEqual(email['body_markdown'].count('### **Software Engineering Manager'),1)
  def test_country_dedup_preserves_different_requirements_questions_and_same_location_openings(self):
   body=job().description+' Coordinate platform delivery and manage all stakeholder expectations across projects.'
-  first=self.pair(source_id='a',location='Spain',countries=[],workplace='unknown',description=body)
+  first=self.pair(source_id='a',location='Porto',countries=[],workplace='unknown',description=body)
   cases=[dict(description=body+' Required office attendance once per quarter.'),
          dict(description=body+' Manage an additional implementation team.'),
          dict(metadata={'application_questions':[{'label':'Must you live in Porto?','required':True}]}),
-         dict(location='Spain'),dict(company_id='other')]
+         dict(location='Porto'),dict(company_id='other')]
   for case in cases:
-   values=dict(source_id='b',url='https://example.org/b',location='Portugal',countries=[],workplace='unknown',description=body)
+   values=dict(source_id='b',url='https://example.org/b',location='Braga',countries=[],workplace='unknown',description=body)
    values.update(case)
    other=self.pair(**values)
    with self.subTest(case=case):self.assertEqual(len(select_roles([first,other])[0]),2)
