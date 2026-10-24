@@ -19,7 +19,7 @@ These are the current defaults; the committed JSON file is authoritative.
 | --- | --- | --- |
 | `role_families` | 45 listed titles | Only these title families become candidates. Remove or add titles in this array. Added qualifiers and direct configured translations are accepted. |
 | `allowed_languages` | English, Portuguese, Spanish | Recognized mandatory languages outside this list exclude a job. Optional languages do not. |
-| `require_portugal_eligibility` | `true` | Withhold roles without affirmative Portugal eligibility, including potential matches and Unknown Freshness. Explicit foreign-country restrictions remain hard exclusions. |
+| `require_portugal_eligibility` | `false` | Keep unconfirmed Portugal eligibility as a disclosed potential match. Set `true` to withhold it. Explicit foreign-country restrictions remain hard exclusions in either mode. |
 | `max_mandatory_experience_years` | `4` | Base ceiling for mandatory minimums: 4+ years is accepted; mandatory 5+ is excluded until the ceiling increases. Preferences do not exclude a job. Valid range: 0–50. |
 | `experience_growth_anchor` | `2026-09-01` | Add one to the base ceiling per completed anniversary, using Europe/Lisbon. First increase: 1 September 2027. Remove this setting for a fixed ceiling. |
 | `nearby_locations` | Porto, Braga and listed nearby towns | Locations eligible for the nearby-office rule. This is a text-match list, not a distance calculator. |

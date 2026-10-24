@@ -1,8 +1,7 @@
 # Current automation rules
 
-Portugal eligibility is mandatory for reporting (`require_portugal_eligibility:
-true`). Withhold candidates whose Portugal eligibility is unknown even when
-potential matches or Unknown Freshness are enabled. Explicit foreign-country
+Unconfirmed Portugal eligibility remains reportable as a potential match with
+the uncertainty disclosed (`require_portugal_eligibility: false`). Explicit foreign-country
 ATS locations and country restrictions override generic remote/Portugal wording.
 Check description and application requirements for mandatory foreign residence
 or work locations. A required yes/no question about another location is unresolved
