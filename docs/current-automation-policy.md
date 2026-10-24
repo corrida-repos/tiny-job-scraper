@@ -24,7 +24,8 @@ modification, internal creation and first-observed timestamps never prove freshn
 Date-only employer postings today can qualify without inventing a clock time;
 dates overlapping the old edge of the window remain uncertain. Future dates remain
 Unknown Freshness. Yearless labels are retained without guessing a year.
-The report shows the date evidence used. Historical observations can establish
+Keep individual date evidence in the audit, not the report or per-position Cons.
+Preserve the Verified Freshness / Unknown Freshness grouping. Historical observations can establish
 age when no usable current publication/repost date exists, but cannot defeat a
 fresh employer-declared repost. All other hard filters remain enforced.
 

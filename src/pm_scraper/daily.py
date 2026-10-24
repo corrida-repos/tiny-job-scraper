@@ -4,7 +4,6 @@ from zoneinfo import ZoneInfo
 from .htmlutil import norm
 from .models import parse_date
 from .branding import company_heading
-from .posting_dates import report_date
 
 SUBJECT = "Tiny's Daily Job Report"
 
@@ -178,7 +177,7 @@ def prepare_email(pairs, payload, saving='Local report generated; durable saving
         salary = salary_positive(job)
         if salary:
             pros.append(salary)
-        concerns = [clean(v['evidence']).rstrip('.') for v in assessment.checks.values() if v['status'] == 'unknown']
+        concerns = [clean(v['evidence']).rstrip('.') for key, v in assessment.checks.items() if v['status'] == 'unknown' and key != 'freshness']
         experience = assessment.checks.get('experience', {}).get('evidence', '')
         if re.search(r'prefer|ideally|optional|nice.to.have', experience):
             concerns.append(clean(experience).rstrip('.'))
@@ -186,9 +185,6 @@ def prepare_email(pairs, payload, saving='Local report generated; durable saving
         lines += [f'### **{display_title(job.title)}**',
                   f'[View job]({link(job.url)})',
                   f'- **Pros:** {fragments(pros)}.', f'- **Cons:** {clean(cons).rstrip(".")}.', '']
-        date_line = report_date(job, assessment.checks.get('freshness'))
-        if date_line:
-            lines[-1:-1] = ['- **Date evidence:** ' + clean(date_line)]
     coverage = payload['coverage']
     if not selected:
         if allow_unknown or allow_future:

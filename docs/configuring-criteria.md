@@ -99,4 +99,5 @@ the actual committed settings on every code/configuration push and daily run.
 can establish freshness within `max_post_age_days`. Set it to `false` to require
 original-publication evidence. Neither mode treats modification, internal creation
 or first-seen timestamps as fresh publication. Missing years and future dates
-remain Unknown Freshness; date evidence is shown beneath each position.
+remain Unknown Freshness. Individual date evidence stays in the audit and is
+omitted from the report, including per-position Cons.
