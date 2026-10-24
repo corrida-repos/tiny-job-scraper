@@ -69,6 +69,38 @@ class DailyReportTests(unittest.TestCase):
   self.assertEqual(len(alternatives[selected[0][0].key]),2)
   different=self.pair(source_id='different',description=job().description+' Manage a separate implementation team.')
   self.assertEqual(len(select_roles(pairs+[different])[0]),2)
+ def test_elastic_country_editions_with_salary_differences_report_portugal_once(self):
+  pairs=[]
+  body=('Manage the platform product engineering team, coach engineers and coordinate stakeholder priorities.\n'*4)
+  for country,amount in [('Spain','€67.000—€106.000 EUR'),('Greece','€61.100—€96.600 EUR'),('Portugal','€55.800—€88.300 EUR')]:
+   pairs.append(self.pair(company_id='elastic',company='Elastic',title='Software Engineering Manager - Global UX - Applications - Platform',
+                         source_id=country,url='https://example.org/'+country,location=country,countries=[],workplace='unknown',
+                         description=body+'\nThe typical starting salary range for this role is:\n'+amount,
+                         salary={'range':amount}))
+  selected,alternatives=select_roles(pairs)
+  self.assertEqual(len(selected),1)
+  self.assertEqual(selected[0][0].location,'Portugal')
+  self.assertEqual(selected[0][0].salary,{'range':'€55.800—€88.300 EUR'})
+  self.assertEqual(len(alternatives[selected[0][0].key]),2)
+  self.assertIn('€67.000—€106.000 EUR',pairs[0][0].description)
+  email=prepare_email(pairs,self.payload)
+  self.assertEqual(email['body_markdown'].count('### **Software Engineering Manager'),1)
+ def test_country_dedup_preserves_different_requirements_questions_and_same_location_openings(self):
+  body=job().description+' Coordinate platform delivery and manage all stakeholder expectations across projects.'
+  first=self.pair(source_id='a',location='Spain',countries=[],workplace='unknown',description=body)
+  cases=[dict(description=body+' Required office attendance once per quarter.'),
+         dict(description=body+' Manage an additional implementation team.'),
+         dict(metadata={'application_questions':[{'label':'Must you live in Porto?','required':True}]}),
+         dict(location='Spain'),dict(company_id='other')]
+  for case in cases:
+   values=dict(source_id='b',url='https://example.org/b',location='Portugal',countries=[],workplace='unknown',description=body)
+   values.update(case)
+   other=self.pair(**values)
+   with self.subTest(case=case):self.assertEqual(len(select_roles([first,other])[0]),2)
+ def test_salary_normalization_does_not_hide_experience_or_other_numbers(self):
+  from pm_scraper.daily import duplicate_description
+  self.assertNotEqual(duplicate_description('Minimum 4 years of experience.'),duplicate_description('Minimum 5 years of experience.'))
+  self.assertNotEqual(duplicate_description('Travel €500 budget and 3 days required.'),duplicate_description('Travel €600 budget and 4 days required.'))
  def test_partial_is_not_empty_success(self):
   self.payload['coverage']={'sources':1,'complete':0,'attention':1}
   self.payload['sources']=[dict(company='Example',status='network_error',complete=False,messages=['403'])]

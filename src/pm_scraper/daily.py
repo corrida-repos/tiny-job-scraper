@@ -35,6 +35,14 @@ def future_dated(assessment):
     return check.get('status') == 'unknown' and check.get('category') == 'future_date'
 
 
+def duplicate_description(description):
+    """Ignore only standalone monetary ranges, never duties/experience numbers."""
+    amount = r'[€£$]\s*\d[\d.,]*(?:\s*[–—-]\s*[€£$]?\s*\d[\d.,]*)?'
+    monetary_line = amount + r'(?:\s*(?:EUR|USD|GBP|CAD|AUD))?(?:\s*(?:per year|annually|/year|/yr))?'
+    return norm('\n'.join(line for line in description.splitlines()
+                          if not re.fullmatch(monetary_line, line.strip(), flags=re.I)))
+
+
 def select_roles(pairs, include_potential_matches=True, include_unknown_freshness=False, include_future_dated=False):
     groups = {}
     for job, assessment in pairs:
@@ -46,20 +54,36 @@ def select_roles(pairs, include_potential_matches=True, include_unknown_freshnes
                 or (include_unknown_freshness and unknown_freshness(assessment))
                 or (include_future_dated and future_dated(assessment))):
             continue
-        # Merge only exact substantive descriptions and assessments for remote
-        # location variants. Uncertain duplicates remain separate for inspection.
-        remote = job.workplace.lower() in {'remote', 'fully remote', 'telecommute'}
-        key = (job.company_id, norm(job.title), norm(job.description),
-               str(job.salary), assessment.status, assessment.checks.get('freshness', {}).get('category'),
-               tuple(sorted((k, v['status']) for k, v in assessment.checks.items()))) if remote and job.description else (job.key,)
+        # Country editions can lack an explicit remote label and carry local
+        # salary bands. Merge identical duties, preserving the chosen edition's
+        # salary and requirements; never merge by title or fuzzy similarity alone.
+        description = duplicate_description(job.description)
+        remote = norm(job.workplace) in {'remote', 'fully remote', 'telecommute'}
+        questions = tuple(sorted((norm(q.get('label','')), norm(q.get('description','')), bool(q.get('required')))
+                                 for q in job.metadata.get('application_questions', [])))
+        key = (job.company_id, norm(job.title), description, norm(job.workplace),
+               assessment.checks.get('freshness', {}).get('category'), questions,
+               tuple(sorted((k, v['status']) for k, v in assessment.checks.items() if k != 'portugal_eligibility'))) if len(description) >= 200 or (remote and description) else (job.key,)
         groups.setdefault(key, []).append((job, assessment))
     chosen = []
     alternatives = {}
     for variants in groups.values():
         variants.sort(key=lambda pair: (location_tier(pair[0]), pair[0].url))
-        job, assessment = variants[0]
-        chosen.append((job, assessment))
-        alternatives[job.key] = sorted({j.url for j, _ in variants[1:] if j.url != job.url})
+        editions = []
+        for pair in variants:
+            job, _ = pair
+            remote = norm(job.workplace) in {'remote', 'fully remote', 'telecommute'}
+            cluster = next((group for group in editions if
+                            (norm(job.location) and all(norm(j.location) != norm(job.location) for j, _ in group)) or
+                            (remote and all(norm(j.description) == norm(job.description) and j.salary == job.salary for j, _ in group))), None)
+            if cluster is None:
+                editions.append([pair])
+            else:
+                cluster.append(pair)
+        for cluster in editions:
+            job, assessment = cluster[0]
+            chosen.append((job, assessment))
+            alternatives[job.key] = sorted({j.url for j, _ in cluster[1:] if j.url != job.url})
     def order(pair):
         job, assessment = pair
         unknown = sum(v['status'] == 'unknown' for v in assessment.checks.values())

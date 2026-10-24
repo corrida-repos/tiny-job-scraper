@@ -31,6 +31,14 @@ Do not repeat the freshness category as a badge on each position. Keep Run notes
 as a separate final top-level section. This hierarchy supersedes the historical
 global company-first layout described below.
 
+Report duplicate handling: show country/location editions of the same employer,
+title and substantive duties once, preferring Braga, Porto, then Portugal.
+An explicit remote label is not required. Standalone local monetary ranges may
+differ; retain the chosen edition's salary, date and requirements. Preserve all
+raw candidates and alternative links in the audit. Different duties, application
+questions, work models or non-geographic assessment outcomes remain separate.
+Distinct same-location postings without explicit remote evidence remain separate.
+
 Unknown freshness only relaxes date reporting. It never overrides a hard failure
 for residence, attendance, Portugal eligibility, experience, languages, travel,
 coding or on-call duties. Explicit on-site/presencial roles are excluded even
