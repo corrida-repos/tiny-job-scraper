@@ -72,8 +72,9 @@ languages, wrong types and out-of-range values fail validation before retrieval.
 - Mandatory residence outside the permitted Porto/Braga area is a hard exclusion
   even if a vacancy says "Remote – Portugal". Greenhouse application questions
   and descriptions are included in residence screening. If those questions
-  cannot be checked, the candidate is retained in the audit and withheld from
-  email, including potential-match emails. Other adapters currently screen the
+  cannot be checked, the candidate can remain in potential-match emails with
+  the missing evidence disclosed. Title and employer must be confirmed, and
+  no known hard failure is allowed. Other adapters currently screen the
   public job evidence they retrieve; application-form coverage is not universal.
 
 Each run records its effective criteria in `results.json`, alongside its job

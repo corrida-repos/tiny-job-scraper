@@ -106,7 +106,7 @@ class ResidenceTests(unittest.TestCase):
                 candidate = Fetcher(http, self.screener).fetch(COMPANY).jobs[0]
                 self.assertEqual(self.screener.assess(candidate, NOW).checks['residence']['status'], expected)
 
-    def test_failed_or_malformed_question_retrieval_never_reports_fresh_candidate(self):
+    def test_failed_or_malformed_questions_report_candidate_with_explicit_uncertainty(self):
         for detail in [FetchError('HTTP 403', 'blocked'), {'id': POSTING['id']},
                        {'id': 0, 'questions': []}, {'id': POSTING['id'], 'questions': 'changed'},
                        {'id': POSTING['id'], 'questions': [{'label': QUESTION, 'required': 'true'}]}]:
@@ -117,15 +117,17 @@ class ResidenceTests(unittest.TestCase):
                 assessment = self.screener.assess(candidate, NOW)
                 self.assertFalse(candidate.metadata['application_requirements_checked'])
                 self.assertEqual(assessment.checks['application_requirements']['status'], 'unknown')
-                self.assertEqual(prepare_email([(candidate, assessment)], self.payload)['job_keys'], [])
+                email=prepare_email([(candidate, assessment)], self.payload)
+                self.assertEqual(email['job_keys'], [candidate.key])
+                self.assertIn('Application requirements could not be checked', email['body_markdown'])
 
-    def test_detail_cap_withholds_unchecked_application_requirements(self):
+    def test_detail_cap_preserves_candidate_as_potential_match(self):
         http = PublicBoard({'id': POSTING['id'], 'questions': []})
         result = Fetcher(http, self.screener, max_details=0).fetch(COMPANY)
         self.assertFalse(result.complete)
         self.assertNotIn(ENDPOINT, http.calls)
         candidate = result.jobs[0]
-        self.assertEqual(prepare_email([(candidate, self.screener.assess(candidate, NOW))], self.payload)['job_keys'], [])
+        self.assertEqual(prepare_email([(candidate, self.screener.assess(candidate, NOW))], self.payload)['job_keys'], [candidate.key])
 
     def test_no_custom_questions_is_checked_and_can_report(self):
         candidate = Fetcher(PublicBoard({'id': POSTING['id'], 'questions': []}), self.screener).fetch(COMPANY).jobs[0]

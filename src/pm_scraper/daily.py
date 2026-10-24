@@ -46,7 +46,11 @@ def duplicate_description(description):
 def select_roles(pairs, include_potential_matches=True, include_unknown_freshness=False, include_future_dated=False, require_portugal_eligibility=False):
     groups = {}
     for job, assessment in pairs:
-        if job.metadata.get('application_requirements_checked') is False:
+        if any(assessment.checks.get(key, {}).get('status') != 'pass' for key in ('title', 'employer')):
+            continue
+        if any(check.get('status') == 'fail' for check in assessment.checks.values()):
+            continue
+        if not include_potential_matches and job.metadata.get('application_requirements_checked') is False:
             continue
         if require_portugal_eligibility and assessment.checks.get('portugal_eligibility', {}).get('status') != 'pass':
             continue

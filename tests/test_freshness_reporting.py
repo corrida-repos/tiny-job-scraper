@@ -73,12 +73,39 @@ class FreshnessReportingTests(unittest.TestCase):
                 selected, _ = select_roles([missing, future], True, allow_unknown, allow_future)
                 self.assertEqual({j.key for j, a in selected}, set(expected))
 
-    def test_known_old_dates_other_hard_failures_and_unchecked_forms_stay_excluded(self):
+    def test_known_failures_exclude_but_unchecked_forms_remain_potential_matches(self):
         pairs = [self.pair(posted_at='2026-01-01'),
                  self.pair(source_id='residence', posted_at=None, date_kind='unknown', description=BASE+' You must reside in Lisbon.'),
                  self.pair(source_id='experience', posted_at='2026-10-20', description=BASE+' Minimum 8 years of experience required.'),
                  self.pair(source_id='form', posted_at=None, metadata={'application_requirements_checked': False})]
-        self.assertEqual(prepare_email(pairs, self.payload)['job_keys'], [])
+        self.assertEqual(prepare_email(pairs, self.payload)['job_keys'], [pairs[-1][0].key])
+
+    def test_matching_title_and_employer_keep_multiple_unconfirmed_requirements(self):
+        pair=self.pair(posted_at=None,date_kind='unknown',description='',detail_ok=False,
+                       workplace='unknown',location='EMEA',countries=[],
+                       metadata={'application_requirements_checked':False})
+        self.assertEqual(pair[1].status,'review')
+        self.assertGreater(sum(c['status']=='unknown' for c in pair[1].checks.values()),4)
+        draft=prepare_email([pair],self.payload)
+        self.assertEqual(draft['job_keys'],[pair[0].key])
+        self.assertIn('Potential match; requirements unconfirmed',draft['body_markdown'])
+        self.assertIn('Application requirements could not be checked',draft['body_markdown'])
+
+    def test_unconfirmed_title_or_employer_does_not_meet_minimum_match(self):
+        for key in ['title','employer']:
+            pair=self.pair(posted_at=None,date_kind='unknown')
+            pair[1].checks[key]['status']='unknown'
+            self.assertEqual(prepare_email([pair],self.payload)['job_keys'],[])
+
+    def test_potential_match_switch_still_requires_fully_confirmed_eligibility(self):
+        pair=self.pair(metadata={'application_requirements_checked':False})
+        payload={**self.payload,'criteria':{**self.payload['criteria'],'include_potential_matches':False}}
+        self.assertEqual(prepare_email([pair],payload)['job_keys'],[])
+
+    def test_missing_application_evidence_never_overrides_known_foreign_residence(self):
+        pair=self.pair(posted_at=None,date_kind='unknown',description=BASE+' You must reside in Germany.',
+                       metadata={'application_requirements_checked':False})
+        self.assertEqual(prepare_email([pair],self.payload)['job_keys'],[])
 
     def test_unknown_and_future_dates_cannot_bypass_other_hard_requirements(self):
         screener = Screener({**CFG, 'max_office_days_per_week': 3})

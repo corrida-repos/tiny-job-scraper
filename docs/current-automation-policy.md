@@ -1,5 +1,12 @@
 # Current automation rules
 
+Potential matches: keep a job when its approved title family and watched employer
+are confirmed and no retrieved requirement fails a hard rule. Do not invent a
+percentage score or reject it merely because other requirements are unconfirmed.
+This includes unavailable descriptions or application requirements; disclose each
+unknown in Cons and retain review status. Unknown/future freshness follows the
+enabled freshness display settings. Explicit incompatibilities remain exclusions.
+
 Unconfirmed Portugal eligibility remains reportable as a potential match with
 the uncertainty disclosed (`require_portugal_eligibility: false`). Explicit foreign-country
 ATS locations and country restrictions override generic remote/Portugal wording.
@@ -52,13 +59,13 @@ for residence, attendance, Portugal eligibility, experience, languages, travel,
 coding or on-call duties. Explicit on-site/presencial roles are excluded even
 when another field says remote or supplies a weekly attendance count. Compatible
 hybrid roles remain limited to three nearby office days per week. Unavailable
-Greenhouse application requirements still withhold the affected candidate.
+Greenhouse application requirements remain explicit uncertainties on potential matches.
 
 Current freshness display update (supersedes the historical strict gate below):
 include otherwise non-rejected roles with insufficient original-date evidence,
 labelled **Unknown freshness**. Include future-dated postings too, labelled
 **Unknown freshness**. Both cases share one report category and remain review-status potential matches and
-must pass all other hard requirements. Keep verified original dates older than
+must have no known failure of another hard requirement. Keep verified original dates older than
 the saved 48-hour window excluded. These display exceptions are controlled by
 `include_unknown_freshness` and `include_future_dated`, both currently enabled;
 they also require potential-match reporting to be enabled. Preserve residence,
@@ -68,7 +75,7 @@ Residence rule: the candidate lives in Santo Tirso, Porto. Exclude mandatory
 residence/relocation outside the configured Porto/Braga area, even when a role
 is labelled remote. Inspect retrieved application requirements as well as the
 job description. Greenhouse candidates with unavailable application questions
-are withheld from reporting until those requirements can be checked.
+remain potential matches with application requirements clearly marked unconfirmed.
 
 The active GitHub runner reads [config/criteria.json](../config/criteria.json).
 Its supported settings supersede the corresponding default values in the

@@ -73,7 +73,7 @@ class Screener:
         check('residence', 'fail' if residence_failures else 'pass',
               '; '.join(residence_failures) or 'No explicit residence requirement outside the permitted Porto/Braga area found')
         if job.metadata.get('application_requirements_checked') is False:
-            check('application_requirements', 'unknown', 'Application requirements could not be checked; withheld from reporting')
+            check('application_requirements', 'unknown', 'Application requirements could not be checked; location and other application-only restrictions need confirmation')
         if not job.detail_ok or len(job.description) < 60:
             check("description", "unknown", "Full job description was not retrieved")
         else:
