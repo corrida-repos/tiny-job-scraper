@@ -35,6 +35,7 @@ Open Settings → Secrets and variables → Actions and add repository secrets:
 | `STATE_ENCRYPTION_KEY` | Contents of the locally generated key file, supplied separately and never committed |
 | `GMAIL_ADDRESS` | Gmail account used to send the existing reports |
 | `GMAIL_APP_PASSWORD` | A Google app password for that account, used for TLS-protected SMTP and IMAP |
+| `TOMTOM_API_KEY` | *Optional.* TomTom Routing API key for traffic-aware driving windows; without it the report is weather-only. See [setup steps](../docs/daily-report.md#weather-and-traffic-setup) |
 
 The recipient is retained inside the encrypted migration snapshot. Do not guess
 or replace it with the sender. Enable IMAP access for the account if its settings

@@ -19,14 +19,52 @@ target, not a guaranteed deadline. No second scheduler or email is introduced.
 ## Weather and traffic setup
 
 Open-Meteo supplies hourly temperature, rain, probability, gusts, visibility and
-weather codes without an API key. For traffic-aware journey times, create a
-[TomTom developer account](https://developer.tomtom.com/) with Routing API access,
-then add its key as repository Actions secret **`TOMTOM_API_KEY`** in
-[repository settings](https://github.com/corrida-repos/tiny-job-scraper/settings/secrets/actions).
-Never commit the key or paste it into chat. Check the provider's current usage
-terms, quota and billing settings: a normal morning run uses **56 route requests**
-(four directions × fourteen hourly departures), plus batched weather requests.
-The existing Gmail/state secrets remain in use.
+weather codes without an API key. Traffic-aware journey times need a TomTom key
+stored as the GitHub Actions secret **`TOMTOM_API_KEY`**. Without it, the email
+still arrives, and every direction is clearly labelled **weather-only** (see
+below).
+
+### 1. Get a TomTom API key
+
+1. Sign up or log in at the [TomTom Developer Portal](https://developer.tomtom.com/).
+2. Open the **Dashboard → Keys** (API keys) page. New accounts usually get a
+   default key; otherwise create one. Make sure the key includes the
+   **Routing API**.
+3. Copy the key value. Never commit it, put it in a file in this repository, or
+   paste it into chat.
+4. Check the current free allowance, usage terms and billing settings on the
+   portal. A normal morning run uses **56 Routing requests** (four directions ×
+   fourteen hourly departures from 08:00 to 21:00); a manual run later in the
+   day uses fewer because only future departures are queried. Consider setting
+   a spending limit or staying on the free tier.
+
+### 2. Add the GitHub secret
+
+1. Open the repository's
+   [Settings → Secrets and variables → Actions](https://github.com/corrida-repos/tiny-job-scraper/settings/secrets/actions).
+2. Choose **New repository secret**.
+3. Name: `TOMTOM_API_KEY` (exactly, upper case). Secret: the TomTom key.
+4. Choose **Add secret**. The workflow already passes it to the report step;
+   no code or workflow change is needed. The existing Gmail and state secrets
+   stay as they are.
+
+### 3. Verify without sending an email
+
+1. Go to **Actions → Tiny’s Daily Report → Run workflow**, leave `send_email`
+   unchecked, and run it. Run it before 20:00 Lisbon time so at least two
+   future departures remain.
+2. Open the run summary. A **Traffic forecasts** notice reports one of:
+   - *TomTom traffic used for all 4 directions.* Setup is complete.
+   - *TOMTOM_API_KEY not configured…* The secret is missing or misnamed.
+   - *TOMTOM_API_KEY is set but N of 4 directions fell back to weather-only…*
+     The key is rejected, lacks Routing API access, or is over quota; check the
+     key on the TomTom dashboard. The key and request URLs are never logged.
+3. In the next email, each direction's windows show journey minutes and a
+   *traffic uplift*, and the **Weather-only comparison** banner is gone.
+
+To stop using traffic, delete the secret; reports return to weather-only.
+
+### What weather-only means
 
 Without that secret, or with failed/incomplete routing, the email explicitly
 shows **weather-only** windows using an approximate corridor. It does not claim
