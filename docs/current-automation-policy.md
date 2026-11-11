@@ -14,6 +14,11 @@ Check description and application requirements for mandatory foreign residence
 or work locations. A required yes/no question about another location is unresolved
 until its meaning is established; it does not automatically mean the answer must
 be yes. Preserve northern-Portugal residence and compatible hybrid restrictions.
+A dictated hybrid, on-site or unspecified work location outside northern Portugal
+(e.g. Lisbon, Oeiras, Coimbra, Aveiro, Faro; from the ATS location label or from
+the description) is a hard exclusion (`work_location`) unless the role is
+explicitly remote. Country-only labels (e.g. "Portugal") and labels offering a
+nearby northern location are not treated as dictated elsewhere.
 
 Current publication-date policy: accept employer-declared posting and repost
 dates within the configured 48-hour window (`accept_employer_dates: true`).
