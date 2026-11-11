@@ -4,7 +4,7 @@ from datetime import timedelta
 from .htmlutil import norm
 from .models import Assessment, parse_date, utcnow
 from .criteria import LANGUAGES, validate, experience_ceiling
-from .residence import incompatible_residence, foreign_posting_location
+from .residence import incompatible_residence, foreign_posting_location, dictated_location_outside_north, dictated_description_location
 from .posting_dates import publication_candidate
 
 NUMBERS = {"one":1,"two":2,"three":3,"four":4,"five":5,"six":6,"seven":7,"eight":8,"nine":9,"ten":10,"um":1,"uma":1,"dois":2,"duas":2,"tres":3,"quatro":4,"cinco":5,"seis":6,"sete":7,"oito":8,"nove":9,"dez":10}
@@ -141,6 +141,18 @@ class Screener:
             check("portugal_eligibility", "unknown", "Worldwide wording; Portuguese employment eligibility still needs confirmation")
         else:
             check("portugal_eligibility", "unknown", "Portugal eligibility not explicit in this posting")
+        # Distant offices require remote work: a dictated hybrid/on-site work
+        # location outside northern Portugal is a hard exclusion, not a review item.
+        if re.search(r"\b(?:this|the)\s+(?:role|position|job)\s+is\s+(?:(?:fully|100%)\s+)?remote\b|\b(?:fully|100%)\s+remote\s+(?:role|position|job)\b", text):
+            remote = True
+        if not remote and not near and checks['portugal_eligibility']['status'] != 'fail':
+            dictated = dictated_location_outside_north(job.location, self.cfg['nearby_locations'])
+            if dictated:
+                check('work_location', 'fail', 'Work location is dictated outside northern Portugal and the role is not remote: ' + dictated)
+            else:
+                dictated = dictated_description_location(job.description, self.cfg['nearby_locations'])
+                if dictated:
+                    check('work_location', 'fail', 'Description places the role outside northern Portugal: ' + '; '.join(dictated))
         if unresolved_location_questions and checks['portugal_eligibility']['status'] != 'fail':
             check('portugal_eligibility', 'unknown', 'Required location screening questions do not establish that Portugal/northern Portugal is accepted: ' + '; '.join(unresolved_location_questions))
 

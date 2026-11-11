@@ -73,3 +73,65 @@ def incompatible_residence(text, allowed_locations):
                 if not compatible:
                     failures.append(original.strip())
     return list(dict.fromkeys(failures))
+
+
+# Portuguese places outside the North region that commonly appear as ATS work
+# locations. A text list, deliberately conservative: unlisted towns are never
+# guessed to be outside the North.
+NON_NORTH_PORTUGAL = (
+    'lisbon|lisboa|greater lisbon|oeiras|sintra|cascais|amadora|almada|setubal|'
+    'seixal|barreiro|loures|odivelas|carnaxide|alfragide|linda a velha|paco de arcos|'
+    'porto salvo|taguspark|lagoas park|miraflores|algés|alges|torres vedras|mafra|'
+    'vila franca de xira|coimbra|aveiro|ilhavo|agueda|leiria|marinha grande|'
+    'caldas da rainha|santarem|tomar|torres novas|entroncamento|abrantes|viseu|'
+    'guarda|covilha|fundao|castelo branco|evora|beja|portalegre|sines|faro|'
+    'portimao|lagos|albufeira|loule|olhao|tavira|algarve|alentejo|madeira|funchal|'
+    'azores|acores|ponta delgada|centro region|regiao centro'
+)
+
+
+def _location_parts(location):
+    return [p.strip() for p in re.split(r'[;|/\n]|\s+(?:or|ou)\s+|\s+-\s+|,', norm(location)) if p.strip()]
+
+
+def dictated_location_outside_north(location, nearby_locations):
+    """Return the label when an ATS work-location label names only places
+    outside northern Portugal (non-North Portuguese towns or foreign places).
+
+    Country-only labels such as "Portugal" or "Remote" dictate no site, and a
+    label offering any nearby northern location remains compatible."""
+    label = norm(location)
+    if not label:
+        return None
+    nearby = [norm(x) for x in nearby_locations] + ['porto', 'braga', 'northern portugal',
+                                                     'north portugal', 'norte']
+    if any(re.search(r'\b' + re.escape(x) + r'\b', label) for x in nearby):
+        return None
+    if re.search(r'\b(?:remote|remoto|teletrabalho|anywhere|worldwide)\b', label):
+        return None
+    if re.search(r'\b(?:' + NON_NORTH_PORTUGAL + r')\b', label) or foreign_posting_location(label):
+        return location.strip()
+    return None
+
+
+def dictated_description_location(text, nearby_locations):
+    """Sentences that place the role's hybrid/on-site work in a non-North
+    Portuguese location, e.g. "Hybrid working from our Lisbon office"."""
+    nearby = [norm(x) for x in nearby_locations] + ['porto', 'braga']
+    place = r'\b(?:' + NON_NORTH_PORTUGAL + r')\b'
+    found = []
+    for original in re.split(r'[\n;]|(?<=[.!?])\s+', text):
+        sentence = norm(original)
+        if not sentence or not re.search(place, sentence):
+            continue
+        if any(re.search(r'\b' + re.escape(x) + r'\b', sentence) for x in nearby):
+            continue
+        if re.search(r'\b(?:remote|remotely|remoto|teletrabalho|optional|opcional|if you (?:prefer|wish|want)|'
+                     r'(?:can|may|could) (?:also )?(?:work|use|choose)|visit|head ?office|headquarter|hq|sede)\b', sentence):
+            continue
+        if re.search(r'\b(?:hybrid|hibrid[oa]|on[ -]?site|onsite|presencial|in[ -]office|'
+                     r'(?:role|position|job|vaga|funcao) (?:is |will be )?(?:based|located|sediad[oa])|'
+                     r'(?:work|working|trabalhar) (?:from|at|in|em|no|na) (?:our|the|o|a|nosso|nossa)?\s*(?:\w+\s+){0,3}(?:office|offices|escritorio|hub|site)|'
+                     r'location\s*:|local(?: de trabalho)?\s*:|work(?:place)? location\s*:)', sentence):
+            found.append(original.strip()[:300])
+    return found
