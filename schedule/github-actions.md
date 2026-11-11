@@ -2,11 +2,15 @@
 
 The workflow is `.github/workflows/daily-jobs.yml`. Daily delivery was enabled
 after the recipient confirmed the test email and paused the original ChatGPT
-task. No repository variable is required. To pause it, open Actions → Daily PM
-jobs → Disable workflow; re-enable it there when ready.
-GitHub schedules may start late; this is an 08:00 Lisbon target, not an exact-time
-service guarantee. Two UTC triggers are filtered against the date's Lisbon UTC
+task. No repository variable is required. To pause it, open Actions → Tiny’s Daily
+Report → Disable workflow; re-enable it there when ready.
+The workflow starts at 06:53 Lisbon to target email delivery before 08:00.
+GitHub schedules may start late; delivery is not an exact-time service guarantee. Two UTC triggers are filtered against the date's Lisbon UTC
 offset so only the appropriate trigger runs, including daylight-saving changes.
+
+The email combines jobs, weather and driving windows. See
+[Daily Report setup](../docs/daily-report.md) for the optional `TOMTOM_API_KEY`
+traffic secret and recommendation details.
 
 ## Prepared state
 
@@ -46,7 +50,7 @@ commits; no force-push permission is needed.
 
 ## Validate, then switch
 
-1. Add `STATE_ENCRYPTION_KEY`. In Actions → Daily PM jobs → Run workflow, leave
+1. Add `STATE_ENCRYPTION_KEY`. In Actions → Tiny’s Daily Report → Run workflow, leave
    `send_email` unchecked. The run restores a temporary copy, runs the real
    scraper and uploads an encrypted validation artifact. It never sends email
    or updates the production branch. Exit 2 from the scraper is recorded as

@@ -239,6 +239,8 @@ def execute(checkout, source, output, send=False, freshness_days=None):
             old_marker = draft['run_marker']
             draft['run_marker'] = marker
             draft['body_markdown'] = draft['body_markdown'].replace(old_marker, marker)
+            from .travel_report import attach_report
+            draft = attach_report(draft, source)
         announce_coverage(folder)
         attempt = {'status':'prepared','scraper_exit_code':code,'message_id':message_id,
                    'freshness_days':freshness_days, 'source_commit':git(source,'rev-parse','HEAD')}

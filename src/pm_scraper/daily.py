@@ -5,7 +5,7 @@ from .htmlutil import norm
 from .models import parse_date
 from .branding import company_heading
 
-SUBJECT = "Tiny's Daily Job Report"
+SUBJECT = "Tiny’s Daily Report"
 
 
 def location_tier(job):

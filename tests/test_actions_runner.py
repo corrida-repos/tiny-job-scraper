@@ -89,6 +89,29 @@ raise SystemExit(2)
   with patch.dict(os.environ,environment),patch.object(Gmail,'find',return_value=[]),patch.object(Gmail,'send') as send:
    with self.assertRaisesRegex(RuntimeError,'uncertain'):execute(checkout,source,self.root/'output',True)
    send.assert_not_called()
+ def test_combined_report_is_in_the_single_encrypted_delivery(self):
+  checkout,source,_=self.run_fixture()
+  (source/'config/daily-report.json').write_text('{}')
+  environment={'STATE_ENCRYPTION_KEY':base64.b64encode(self.key).decode(),'GITHUB_RUN_ID':'123','GMAIL_ADDRESS':'sender@example.org','GMAIL_APP_PASSWORD':'fixture-only'}
+  with patch.dict(os.environ,environment),patch('pm_scraper.actions_runner.git',return_value='abc'),patch('pm_scraper.actions_runner.persist'),patch.object(Gmail,'find',return_value=[]),patch.object(Gmail,'send') as send,patch('pm_scraper.travel_report.build_report',return_value='# Weather and driving today\n\nForecast evidence\n') as forecast:
+   self.assertEqual(execute(checkout,source,self.root/'output',True),0)
+  forecast.assert_called_once();send.assert_called_once()
+  draft=send.call_args.args[1]
+  self.assertEqual(draft['subject'],'Tiny’s Daily Report')
+  self.assertIn('Forecast evidence',draft['body_markdown'])
+  self.assertIn('No matches.',draft['body_markdown'])
+  self.assertEqual(draft['run_marker'],'tiny-actions-123')
+ def test_prepared_retry_keeps_original_forecast_without_refetch(self):
+  checkout,source,_=self.run_fixture(attempt={'status':'prepared','scraper_exit_code':2})
+  (source/'config/daily-report.json').write_text('{}')
+  draft={'subject':'Tiny’s Daily Report','run_marker':'tiny-actions-123','body_markdown':'Original forecast\n- Saving: pending'}
+  (self.data/'email.json').write_text(json.dumps(draft))
+  (checkout/'state.enc').write_bytes(seal(self.data,self.key))
+  environment={'STATE_ENCRYPTION_KEY':base64.b64encode(self.key).decode(),'GITHUB_RUN_ID':'123','GMAIL_ADDRESS':'sender@example.org','GMAIL_APP_PASSWORD':'fixture-only'}
+  with patch.dict(os.environ,environment),patch('pm_scraper.actions_runner.git',return_value='abc'),patch('pm_scraper.actions_runner.persist'),patch.object(Gmail,'find',return_value=[]),patch.object(Gmail,'send') as send,patch('pm_scraper.travel_report.build_report') as forecast:
+   self.assertEqual(execute(checkout,source,self.root/'output',True),0)
+  forecast.assert_not_called();send.assert_called_once()
+  self.assertIn('Original forecast',send.call_args.args[1]['body_markdown'])
  def test_sent_message_is_reconciled_without_retrieval_or_resend(self):
   checkout,source,_=self.run_fixture(attempt={'status':'sending'})
   environment={'STATE_ENCRYPTION_KEY':base64.b64encode(self.key).decode(),'GITHUB_RUN_ID':'123','GMAIL_ADDRESS':'sender@example.org','GMAIL_APP_PASSWORD':'fixture-only'}

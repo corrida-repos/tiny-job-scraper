@@ -28,7 +28,7 @@ class DailyReportTests(unittest.TestCase):
   self.assertEqual(email['body_markdown'].count('[Company careers]'),1)
   self.assertEqual(email['body_markdown'].count('- **Pros:**'),13)
   self.assertEqual(email['body_markdown'].count('- **Cons:**'),13)
-  self.assertEqual(email['subject'],"Tiny's Daily Job Report")
+  self.assertEqual(email['subject'],"Tiny’s Daily Report")
   self.assertEqual(email['delivery_status'],'not_sent')
   self.assertIn('# Run notes',email['body_markdown'])
   self.assertEqual(prepare_email(pairs,self.payload),email)
