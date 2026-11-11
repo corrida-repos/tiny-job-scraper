@@ -50,6 +50,17 @@ class TravelReportTests(unittest.TestCase):
         self.assertNotIn('private-key', report)
         self.assertNotIn('secret-url', report)
 
+    def test_traffic_status_distinguishes_missing_key_working_and_failing_routing(self):
+        with patch.object(travel, 'get_json', side_effect=self.route_data), patch.object(travel, 'forecasts', side_effect=self.forecasts):
+            working = travel.build_report(self.config, self.now, key='private-key')
+        with patch.object(travel, 'get_json', side_effect=RuntimeError('secret-url')), patch.object(travel, 'forecasts', side_effect=self.forecasts):
+            failing = travel.build_report(self.config, self.now, key='private-key')
+        self.assertIn('not configured', travel.traffic_status(failing, key=''))
+        self.assertIn('used for all 4 directions', travel.traffic_status(working, key='private-key'))
+        status = travel.traffic_status(failing, key='private-key')
+        self.assertIn('4 of 4 directions fell back', status)
+        self.assertNotIn('private-key', status)
+
     def test_missing_weather_excludes_samples_instead_of_assuming_clear(self):
         self.row['visibility'] = None
         with patch.object(travel, 'forecasts', side_effect=self.forecasts):

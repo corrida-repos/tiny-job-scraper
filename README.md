@@ -28,7 +28,7 @@ Its subject is **Tiny’s Daily Report**. Runs start at 06:53 Portugal time to
 target arrival before 08:00, with daylight saving handled automatically.
 Add the repository secret `TOMTOM_API_KEY` for traffic forecasts; otherwise the
 email explicitly provides weather-only comparisons. See
-[setup and recommendation details](docs/daily-report.md).
+[step-by-step setup and recommendation details](docs/daily-report.md#weather-and-traffic-setup).
 
 ## Daily output
 

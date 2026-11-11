@@ -251,6 +251,18 @@ def build_report(config, now=None, key=None):
     return '\n'.join(lines)
 
 
+def traffic_status(report, key=None):
+    """Workflow-log summary that confirms setup without revealing the key or report."""
+    key = os.environ.get('TOMTOM_API_KEY', '') if key is None else key
+    weather_only = report.count('**Weather-only comparison')
+    if not key:
+        return 'TOMTOM_API_KEY not configured; all directions are weather-only.'
+    if not weather_only:
+        return f'TomTom traffic used for all {len(ROUTES)} directions.'
+    return (f'TOMTOM_API_KEY is set but {weather_only} of {len(ROUTES)} directions fell back to weather-only '
+            '(routing failed or incomplete: check the key, Routing API access and quota).')
+
+
 def attach_report(draft, source):
     """Generate once per new draft. Prepared retries keep the checkpointed email."""
     path = Path(source) / 'config/daily-report.json'
@@ -260,8 +272,10 @@ def attach_report(draft, source):
     draft['subject'] = SUBJECT
     try:
         report = build_report(json.loads(path.read_text()))
+        print('::notice title=Traffic forecasts::' + traffic_status(report))
     except Exception:
         # Provider errors do not suppress jobs or leak credential-bearing URLs.
         report = '# Weather and driving today\n\nWeather/travel data unavailable for this run; no driving windows can be recommended.\n'
+        print('::notice title=Traffic forecasts::Weather/travel data unavailable; no driving windows in this report.')
     draft['body_markdown'] = report + '\n---\n\n# Job report\n\n' + draft['body_markdown']
     return draft
