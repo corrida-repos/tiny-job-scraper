@@ -7,6 +7,15 @@ Verified original dates older than the saved 48-hour window remain excluded.
 The historical validations below used the freshness policy in effect at their
 recorded commits; see [current criteria](configuring-criteria.md).
 
+## Daily-run source repairs — 11 November 2026
+
+Scheduled runs completed only 52–53/56 scopes (exit code 2) for these recurring reasons, now fixed and live-checked locally (4/4 complete):
+
+- **Aiven** — job links moved from `aiven.io/careers/job/<id>` to `careers.aiven.io/openings/<id>`; the job pattern now matches the new subdomain (44 listed; detail pages carry JobPosting data).
+- **Infineon** — the global PCSX inventory (~1,340 jobs, 130+ pages) drifted during pagination and drew HTTP 429. The search is now scoped to `location=Portugal` (18 jobs, Porto/Maia). Infineon offers only on-site/hybrid location types, so no remote roles are lost.
+- **Intellias** — the board listed one vacancy card twice, so unique jobs (107) were below its card total (108). Duplicate cards are now reported as a note; a real shortfall stays partial.
+- **TUI Technology** — the "Load more" button on its Radancy page belongs to a stories content feed, not job pagination; it no longer marks the source partial.
+
 Latest [residence-rule validation 39751220625](https://github.com/corrida-repos/tiny-job-scraper/actions/runs/39751220625)
 at commit `5043fb7` passed **115 tests** and completed **56/56 source scopes**.
 Greenhouse candidates now include their public application questions in

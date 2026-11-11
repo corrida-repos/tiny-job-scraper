@@ -405,18 +405,26 @@ class Fetcher:
 
     def intellias(self):
         # The official public filter JS posts this read-only action to WordPress AJAX.
-        posts=[];total=None;seen=set()
+        posts=[];total=None;seen=set();cards=0
         for page in range(1,self.max_pages+1):
             data=self.read('https://career.intellias.com/wp-admin/admin-ajax.php',form={'action':'fly_vacancies','page':page},as_json=True)
             batch=require_list(data,'posts');total=data.get('total')
-            fresh=[x for x in batch if x not in seen]
+            cards+=len(batch);fresh=[x for x in batch if x not in seen]
             if batch and not fresh:raise FetchError('Intellias repeated listing page','pagination_error')
             posts.extend(fresh);seen.update(fresh)
             if data.get('end') is True:break
             if not batch:raise FetchError('Intellias stopped without end marker','pagination_error')
         else:self.partial('Intellias pagination limit reached')
         self.html(initial_body='<html><body>'+''.join(posts)+'</body></html>')
-        if total is not None and self.r.discovered<int(total):self.partial('Intellias returned fewer unique jobs than its total')
+        # The board occasionally lists one vacancy twice; its total counts cards,
+        # so compare against unique vacancy links and only flag real shortfalls.
+        links=[canonical_url(urljoin('https://career.intellias.com/',htmllib.unescape(m))) for p in posts for m in re.findall(r'href=["\']([^"\']+)["\']',p) if re.search(self.s['job_pattern'],m)]
+        unique=len(set(links))
+        if total is not None and self.r.discovered<int(total):
+            duplicates=cards-unique
+            if cards==int(total) and self.r.discovered==unique and duplicates>0:
+                self.r.messages.append(f'Intellias listed {duplicates} vacancy card(s) more than once; all {unique} unique vacancies read')
+            else:self.partial('Intellias returned fewer unique jobs than its total')
 
     def phenom(self):
         seen=set()
@@ -603,9 +611,12 @@ class Fetcher:
     def eightfold_pcsx(self):
         # Current public careers UI contract. Enumerate its inventory rather than
         # sitemap slugs, which can omit new jobs and retain withdrawn IDs.
-        base=self.s['base'];domain=self.s['domain'];seen=set();start=0;expected=None
+        # An optional location scope (e.g. Portugal) keeps the inventory small:
+        # the global board needs 130+ pages, drifts while paginating and draws
+        # HTTP 429 responses. Only use it where the employer has no remote option.
+        base=self.s['base'];domain=self.s['domain'];location=self.s.get('location','');seen=set();start=0;expected=None
         for page in range(self.max_pages):
-            url=base+'/api/pcsx/search?'+urlencode({'domain':domain,'query':'','location':'','start':start})
+            url=base+'/api/pcsx/search?'+urlencode({'domain':domain,'query':'','location':location,'start':start})
             data=self.pcsx_data(url)
             rows=require_list(data,'positions');total=data.get('count')
             if not isinstance(total,int) or isinstance(total,bool) or total<0:
@@ -628,7 +639,7 @@ class Fetcher:
                 break
             if not new:raise FetchError('PCSX pagination repeated or stopped before total','pagination_error')
         else:self.partial('PCSX pagination limit reached')
-        self.r.messages.append('Coverage scope: public PCSX search inventory, all locations and titles')
+        self.r.messages.append('Coverage scope: public PCSX search inventory, '+(location+' location search' if location else 'all locations')+', all titles')
         for j in self.r.jobs:
             if self.details>=self.max_details:
                 self.partial('PCSX candidate detail limit reached');break
@@ -770,7 +781,9 @@ class Fetcher:
             if not page_jobs and len(seenpages)>1:
                 self.partial('A pagination page contained no recognizable job links')
             # A JS Load more button without a crawlable next link cannot prove completeness.
-            more=d.xpath('//button[contains(translate(normalize-space(.),"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz"),"load more")]|//*[@data-next-page]')
+            # Radancy pages (TUI) also carry a "Load more" button for an unrelated
+            # stories/content feed; that is not job pagination.
+            more=d.xpath('//button[contains(translate(normalize-space(.),"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz"),"load more")][not(contains(@data-hub-id,"content-feed")) and not(contains(@class,"js-hub-load-more-button"))]|//*[@data-next-page]')
             if more and not queue:self.partial('Dynamic pagination control found; complete enumeration is unverified')
         if not matched and d.xpath('//*[@data-total-results="0"]'):
             self.r.status='ok';self.r.complete=True;self.r.messages=['Employer search explicitly returned zero results for the configured Portugal scope'];return

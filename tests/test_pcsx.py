@@ -74,6 +74,15 @@ class PcsxTests(unittest.TestCase):
         self.assertEqual(result.jobs[0].date_kind, 'original_posted')
         self.assertTrue(result.jobs[0].detail_ok)
 
+    def test_optional_location_scope_is_sent_and_reported(self):
+        scoped = BASE + '/api/pcsx/search?domain=example.org&query=&location=Portugal&start=0'
+        http = Pages({scoped: page([row(2, 'Project Manager')], 1), job_url(2): schema(2)})
+        result = Fetcher(http, Screener(CFG)).fetch(
+            {'id': 'example', 'name': 'Example', 'source': dict(SOURCE, location='Portugal')})
+        self.assertTrue(result.complete)
+        self.assertEqual(http.calls[0], scoped)
+        self.assertIn('Portugal location search', ' '.join(result.messages))
+
     def test_empty_inventory_requires_explicit_zero(self):
         result, _ = self.fetch({search(0): page([], 0)})
         self.assertTrue(result.complete)

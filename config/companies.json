@@ -402,6 +402,7 @@
       "adapter": "eightfold_pcsx",
       "base": "https://jobs.infineon.com",
       "domain": "infineon.com",
+      "location": "Portugal",
       "max_pages": 200,
       "budget_seconds": 600,
       "mapped_at": "2026-10-21",
@@ -900,9 +901,9 @@
     "source": {
       "adapter": "html",
       "listing_url": "https://aiven.io/careers/job",
-      "job_pattern": "/careers/job/\\d+",
+      "job_pattern": "^https://careers\\.aiven\\.io/openings/\\d+",
       "kind": "aiven",
-      "mapped_at": "2026-10-19",
+      "mapped_at": "2026-11-11",
       "discovery_url": "https://aiven.io/careers"
     }
   },
