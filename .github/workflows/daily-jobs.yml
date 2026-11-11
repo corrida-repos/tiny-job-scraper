@@ -1,4 +1,4 @@
-name: Daily PM jobs
+name: Tiny’s Daily Report
 on:
   workflow_dispatch:
     inputs:
@@ -15,9 +15,10 @@ on:
           - '7'
         default: 'configured'
   schedule:
-    # GitHub cron uses UTC. Only the trigger at 08:00 Lisbon passes the gate.
-    - cron: '0 7 * * *'
-    - cron: '0 8 * * *'
+    # Start at 06:53 Lisbon, leaving time for retrieval before 08:00.
+    # Select the seasonal UTC trigger below, even if GitHub starts it late.
+    - cron: '53 5 * * *'
+    - cron: '53 6 * * *'
 permissions:
   contents: write
 concurrency:
@@ -38,8 +39,8 @@ jobs:
           import os
           from datetime import datetime, timezone
           from zoneinfo import ZoneInfo
-          local = datetime.now(ZoneInfo('Europe/Lisbon')).replace(hour=8, minute=0, second=0, microsecond=0)
-          expected = f"0 {local.astimezone(timezone.utc).hour} * * *"
+          local = datetime.now(ZoneInfo('Europe/Lisbon')).replace(hour=6, minute=53, second=0, microsecond=0)
+          expected = f"53 {local.astimezone(timezone.utc).hour} * * *"
           if os.environ['EVENT_NAME'] == 'workflow_dispatch' or os.environ['EVENT_SCHEDULE'] == expected:
               with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
                   output.write('run=true\n')
@@ -72,6 +73,7 @@ jobs:
           STATE_ENCRYPTION_KEY: ${{ secrets.STATE_ENCRYPTION_KEY }}
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          TOMTOM_API_KEY: ${{ secrets.TOMTOM_API_KEY }}
           SEND_EMAIL: ${{ github.event_name == 'schedule' || inputs.send_email }}
           FRESHNESS_DAYS: ${{ github.event_name == 'workflow_dispatch' && inputs.freshness_days || 'configured' }}
           PYTHONPATH: src

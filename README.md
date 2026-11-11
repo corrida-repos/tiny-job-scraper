@@ -20,6 +20,16 @@ Use `python run.py sources` to list all 56 IDs. For a focused check, use `python
 
 Exit code **0** means all configured sources completed, **2** means reports were written but at least one source needs attention, and other nonzero exits indicate a runtime/configuration failure. A partial run still returns usable results from sources that worked. Treat exit 2 as an operational warning, never as an empty successful search.
 
+## Tiny’s Daily Report
+
+The existing daily email now combines today’s weather and driving windows for
+Areias (Santo Tirso) ↔ Braga and Areias ↔ Porto with the complete job report.
+Its subject is **Tiny’s Daily Report**. Runs start at 06:53 Portugal time to
+target arrival before 08:00, with daylight saving handled automatically.
+Add the repository secret `TOMTOM_API_KEY` for traffic forecasts; otherwise the
+email explicitly provides weather-only comparisons. See
+[setup and recommendation details](docs/daily-report.md).
+
 ## Daily output
 
 The report and email group positions by **Verified Freshness / Unknown Freshness
@@ -80,7 +90,8 @@ The original downloadable ZIP included a one-off audit snapshot. This Git import
 
 ## Scheduling
 
-GitHub Actions runs the scraper at 08:00 Europe/Lisbon, restores the encrypted
+GitHub Actions starts the scraper at 06:53 Europe/Lisbon, targeting delivery
+before 08:00, and restores the encrypted
 state from the `runtime-state` branch, evaluates jobs and delivers the report
 through Gmail. It does not require ChatGPT, Codex, this chat or an always-on user
 computer. The original ChatGPT scheduled task is paused. GitHub's scheduler may
@@ -134,7 +145,7 @@ completed 55 of 60 configured source scopes; five coverage gaps were recorded in
 
 A repository-based replacement is implemented in
 [the Actions workflow](.github/workflows/daily-jobs.yml); follow
-[setup and cutover instructions](schedule/github-actions.md). Daily delivery is enabled for 08:00 Europe/Lisbon; use GitHub Actions
+[setup and cutover instructions](schedule/github-actions.md). Daily delivery targets before 08:00 Europe/Lisbon; use GitHub Actions
 “Disable workflow” to pause it. The encrypted `runtime-state` branch
 preserves job and delivery history. Gmail delivery was validated and the user confirmed the original ChatGPT task
 is paused. The [scheduled run on 22 October 2026](https://github.com/corrida-repos/tiny-job-scraper/actions/runs/39742353371)
