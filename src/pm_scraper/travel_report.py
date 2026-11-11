@@ -3,11 +3,14 @@
 Only TomTom supplies travel times; absent traffic is never replaced with a guess.
 Weather-only mode explicitly uses an approximate geographic corridor.
 """
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 import json
 import math
 import os
+import time
+import urllib.error
 from pathlib import Path
 import urllib.parse
 import urllib.request
@@ -26,6 +29,24 @@ def get_json(url, params):
                                      headers={'User-Agent': 'TinyDailyReport/1.0'})
     with urllib.request.urlopen(request, timeout=12) as response:
         return json.load(response)
+
+
+def get_route_json(url, params, attempts=4):
+    """Retry TomTom rate limiting and transient server errors with backoff."""
+    for attempt in range(attempts):
+        try:
+            return get_json(url, params)
+        except urllib.error.HTTPError as error:
+            if error.code != 429 and error.code < 500 or attempt == attempts - 1:
+                raise
+        time.sleep(2 ** attempt)
+
+
+def error_kind(error):
+    """Key-free failure category: an HTTP status or an exception class name."""
+    if isinstance(error, urllib.error.HTTPError):
+        return f'HTTP {error.code}'
+    return type(error).__name__
 
 
 def point_key(point):
@@ -67,7 +88,7 @@ def routing(task, places, key):
     if key:
         try:
             locations = f'{a[0]},{a[1]}:{b[0]},{b[1]}'
-            data = get_json('https://api.tomtom.com/routing/1/calculateRoute/' + locations + '/json',
+            data = get_route_json('https://api.tomtom.com/routing/1/calculateRoute/' + locations + '/json',
                             {'key': key, 'traffic': 'true', 'travelMode': 'car',
                              'routeType': 'fastest', 'computeTravelTimeFor': 'all',
                              'departAt': departure.isoformat(), 'routeRepresentation': 'polyline'})
@@ -81,8 +102,8 @@ def routing(task, places, key):
             points = [(p['latitude'], p['longitude']) for leg in route['legs'] for p in leg['points']]
             result.update(traffic=True, minutes=seconds / 60,
                           delay=max(0, seconds - baseline) / 60, samples=sample_path(points))
-        except Exception:
-            result['traffic_error'] = True
+        except Exception as error:
+            result['traffic_error'] = error_kind(error)
     if not result['traffic']:
         result['samples'] = sample_path([a, b])
     return result
@@ -179,7 +200,7 @@ def best_windows(rows, traffic):
     return selected
 
 
-def build_report(config, now=None, key=None):
+def build_report(config, now=None, key=None, diagnostics=None):
     now = (now or datetime.now(timezone.utc)).astimezone(LISBON)
     key = os.environ.get('TOMTOM_API_KEY', '') if key is None else key
     places = config['places']
@@ -189,6 +210,8 @@ def build_report(config, now=None, key=None):
     tasks = [(a, b, d) for a, b in ROUTES for d in departures]
     with ThreadPoolExecutor(max_workers=4) as pool:
         routes = list(pool.map(lambda task: routing(task, places, key), tasks))
+    if diagnostics is not None:
+        diagnostics['routing_errors'] = Counter(r['traffic_error'] for r in routes if 'traffic_error' in r)
     points = [point_key(p) for p in places.values()]
     points += [p for route in routes for p, _ in route['samples']]
     weather = forecasts(points)
@@ -251,7 +274,7 @@ def build_report(config, now=None, key=None):
     return '\n'.join(lines)
 
 
-def traffic_status(report, key=None):
+def traffic_status(report, key=None, errors=None):
     """Workflow-log summary that confirms setup without revealing the key or report."""
     key = os.environ.get('TOMTOM_API_KEY', '') if key is None else key
     weather_only = report.count('**Weather-only comparison')
@@ -259,8 +282,10 @@ def traffic_status(report, key=None):
         return 'TOMTOM_API_KEY not configured; all directions are weather-only.'
     if not weather_only:
         return f'TomTom traffic used for all {len(ROUTES)} directions.'
+    detail = ', '.join(f'{kind} ×{count}' for kind, count in sorted((errors or {}).items()))
     return (f'TOMTOM_API_KEY is set but {weather_only} of {len(ROUTES)} directions fell back to weather-only '
-            '(routing failed or incomplete: check the key, Routing API access and quota).')
+            '(routing failed or incomplete: check the key, Routing API access and quota).'
+            + (f' Routing errors: {detail}.' if detail else ''))
 
 
 def attach_report(draft, source):
@@ -271,8 +296,9 @@ def attach_report(draft, source):
     from .daily import SUBJECT
     draft['subject'] = SUBJECT
     try:
-        report = build_report(json.loads(path.read_text()))
-        print('::notice title=Traffic forecasts::' + traffic_status(report))
+        diagnostics = {}
+        report = build_report(json.loads(path.read_text()), diagnostics=diagnostics)
+        print('::notice title=Traffic forecasts::' + traffic_status(report, errors=diagnostics.get('routing_errors')))
     except Exception:
         # Provider errors do not suppress jobs or leak credential-bearing URLs.
         report = '# Weather and driving today\n\nWeather/travel data unavailable for this run; no driving windows can be recommended.\n'

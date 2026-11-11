@@ -61,6 +61,26 @@ class TravelReportTests(unittest.TestCase):
         self.assertIn('4 of 4 directions fell back', status)
         self.assertNotIn('private-key', status)
 
+    def test_routing_errors_report_status_codes_without_the_key(self):
+        error = travel.urllib.error.HTTPError('https://api.tomtom.com/?key=private-key', 403, 'Forbidden', {}, None)
+        diagnostics = {}
+        with patch.object(travel, 'get_json', side_effect=error), patch.object(travel, 'forecasts', side_effect=self.forecasts):
+            report = travel.build_report(self.config, self.now, key='private-key', diagnostics=diagnostics)
+        status = travel.traffic_status(report, key='private-key', errors=diagnostics['routing_errors'])
+        self.assertIn('Routing errors: HTTP 403 ×56.', status)
+        self.assertNotIn('private-key', status)
+
+    def test_rate_limited_routing_is_retried(self):
+        limited = travel.urllib.error.HTTPError('u', 429, 'Too Many Requests', {}, None)
+        with patch.object(travel, 'get_json', side_effect=[limited, limited, {'ok': 1}]) as network, patch.object(travel.time, 'sleep'):
+            self.assertEqual(travel.get_route_json('u', {}), {'ok': 1})
+        self.assertEqual(network.call_count, 3)
+        forbidden = travel.urllib.error.HTTPError('u', 403, 'Forbidden', {}, None)
+        with patch.object(travel, 'get_json', side_effect=forbidden) as network, patch.object(travel.time, 'sleep'):
+            with self.assertRaises(travel.urllib.error.HTTPError):
+                travel.get_route_json('u', {})
+        self.assertEqual(network.call_count, 1)
+
     def test_missing_weather_excludes_samples_instead_of_assuming_clear(self):
         self.row['visibility'] = None
         with patch.object(travel, 'forecasts', side_effect=self.forecasts):
