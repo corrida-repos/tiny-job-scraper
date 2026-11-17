@@ -1,7 +1,8 @@
-"""Same-day weather and independently evaluated, directional driving windows.
+"""Best times to leave home and to return home today, from rain and traffic.
 
 Only TomTom supplies travel times; absent traffic is never replaced with a guess.
-Weather-only mode explicitly uses an approximate geographic corridor.
+The home address lives in the HOME_ADDRESS secret (the repository is public) and
+is geocoded at run time; the configured parish centre is the fallback.
 """
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
@@ -19,8 +20,7 @@ from zoneinfo import ZoneInfo
 LISBON = ZoneInfo('Europe/Lisbon')
 FIELDS = ('temperature_2m', 'precipitation', 'precipitation_probability',
           'wind_gusts_10m', 'visibility', 'weather_code')
-ROUTES = [('Areias', 'Braga'), ('Braga', 'Areias'),
-          ('Areias', 'Porto'), ('Porto', 'Areias')]
+HOME = 'Home'
 
 
 # TomTom free keys allow only a few routing queries per second; one burst used to
@@ -211,139 +211,216 @@ def assess(route, weather):
     return dict(route, weather=w, risk=weather_risk(w))
 
 
-def best_windows(rows, traffic):
-    """Rank adjacent evaluated departures; exclude severe weather and missing data."""
-    windows = []
-    for a, b in zip(rows, rows[1:]):
-        if b['departure'] - a['departure'] != timedelta(hours=1):
-            continue
-        if max(a['risk'], b['risk']) >= 2:
-            continue
-        if traffic and not (a['traffic'] and b['traffic']):
-            continue
-        rain = max(a['weather']['rain'], b['weather']['rain'])
-        probability = max(a['weather']['probability'], b['weather']['probability'])
-        minutes = max(a['minutes'], b['minutes']) if traffic else 0
-        # Weather band first, then minutes plus explicit rain/probability penalties.
-        score = (max(a['risk'], b['risk']), minutes + 5 * rain + probability / 20)
-        windows.append((score, a, b))
-    selected = []
-    for _, a, b in sorted(windows, key=lambda w: (w[0], w[1]['departure'])):
-        if any(a['departure'] <= y['departure'] and b['departure'] >= x['departure'] for x, y in selected):
-            continue
-        selected.append((a, b))
-        if len(selected) == 3:
-            break
-    return selected
+def geocode(address, key):
+    data = get_json('https://api.tomtom.com/search/2/geocode/'
+                    + urllib.parse.quote(address, safe='') + '.json',
+                    {'key': key, 'countrySet': 'PT', 'limit': 1})
+    position = data['results'][0]['position']
+    return float(position['lat']), float(position['lon'])
+
+
+def resolve_home(config, key, diagnostics):
+    """Geocode HOME_ADDRESS; never log or print the address or its coordinates."""
+    fallback = tuple(config['home']['fallback'])
+    address = os.environ.get('HOME_ADDRESS', '').strip()
+    if not address:
+        diagnostics['home'] = 'HOME_ADDRESS not set'
+        return fallback, False
+    if not key:
+        diagnostics['home'] = 'TOMTOM_API_KEY needed to locate HOME_ADDRESS'
+        return fallback, False
+    try:
+        point = geocode(address, key)
+    except Exception as error:
+        diagnostics['home'] = 'address lookup failed (' + error_category(error) + ')'
+        return fallback, False
+    # A match far from the configured area is a wrong match, not home.
+    if distance(point, fallback) > 0.15:
+        diagnostics['home'] = 'address lookup matched a place too far from the configured area'
+        return fallback, False
+    diagnostics['home'] = 'ok'
+    return point, True
+
+
+RAIN_PENALTY = 15  # rain worth about 15 extra minutes of driving; see docs
+
+
+def score(row, traffic):
+    """One scale for rain and traffic: predicted minutes plus rain penalties."""
+    minutes = row['minutes'] if traffic else 0
+    w = row['weather']
+    return minutes + RAIN_PENALTY * row['risk'] + 5 * w['rain'] + w['probability'] / 20
+
+
+def describe(row, traffic):
+    w = row['weather']
+    if w['rain'] == 0 and w['probability'] < 20:
+        rain = 'dry'
+    elif w['rain'] < 0.5:
+        rain = f"little or no rain, {w['probability']:.0f}% chance"
+    elif w['rain'] < 4:
+        rain = f"rain up to {w['rain']:.1f} mm/h, {w['probability']:.0f}% chance"
+    else:
+        rain = f"heavy rain up to {w['rain']:.1f} mm/h"
+    extras = []
+    if w['gust'] >= 40:
+        extras.append(f"gusts {w['gust']:.0f} km/h")
+    if w['visibility'] < 5000:
+        extras.append(f"visibility {w['visibility'] / 1000:.1f} km")
+    if traffic:
+        delay = row['delay']
+        level = 'light' if delay < 5 else 'moderate' if delay < 15 else 'heavy'
+        text = f"about {row['minutes']:.0f} min · {level} traffic (+{delay:.0f} min) · {rain}"
+    else:
+        text = rain
+    return text + ''.join(' · ' + e for e in extras)
+
+
+def choose(rows):
+    """Best, runner-up and worst departure. Severe weather is never recommended."""
+    traffic = any(r['traffic'] for r in rows)
+    usable = [r for r in rows if r['traffic'] or not traffic]
+    ranked = sorted((r for r in usable if r['risk'] < 2),
+                    key=lambda r: (score(r, traffic), r['departure']))
+    worst = max(usable, key=lambda r: (r['risk'] == 2, score(r, traffic), -r['departure'].timestamp()), default=None)
+    return traffic, ranked, worst
+
+
+def leg_lines(title, rows, hours):
+    lines = []
+    span = f'{hours[0]:02d}:00–{hours[-1]:02d}:00'
+    if not rows:
+        return [f'**{title}:** no times left to check today ({span}).']
+    traffic, ranked, worst = choose(rows)
+    if not ranked:
+        return [f'**{title}:** no good time between {span}: heavy rain, storms, strong wind, '
+                'ice or poor visibility are forecast at every hour checked.']
+    best = ranked[0]
+    lines.append(f"**{title}: {best['departure']:%H:%M}** · {describe(best, traffic)}")
+    if len(ranked) > 1:
+        lines.append(f"- Next best: {ranked[1]['departure']:%H:%M} · {describe(ranked[1], traffic)}")
+    if worst is not None and worst not in ranked[:2] and score(worst, traffic) > score(best, traffic):
+        lines.append(f"- Avoid: {worst['departure']:%H:%M} · {describe(worst, traffic)}")
+    missing = [r['departure'].strftime('%H:%M') for r in rows if not r['traffic']]
+    if not traffic:
+        lines.append('_Traffic forecast unavailable, so this is based on rain only._')
+    elif missing:
+        lines.append('_No traffic forecast for ' + ', '.join(missing) + '; not considered._')
+    return lines
 
 
 def build_report(config, now=None, key=None, diagnostics=None):
+    diagnostics = {} if diagnostics is None else diagnostics
     now = (now or datetime.now(timezone.utc)).astimezone(LISBON)
     key = os.environ.get('TOMTOM_API_KEY', '') if key is None else key
-    places = config['places']
-    hours = range(config['first_departure_hour'], config['last_departure_hour'] + 1)
-    departures = [now.replace(hour=h, minute=0, second=0, microsecond=0) for h in hours]
-    departures = [d for d in departures if d > now]
-    tasks = [(a, b, d) for a, b in ROUTES for d in departures]
+    home, exact = resolve_home(config, key, diagnostics)
+    places = {HOME: home, **{n: tuple(p) for n, p in config['destinations'].items()}}
+    windows = {'leave': list(range(config['leave_hours'][0], config['leave_hours'][1] + 1)),
+               'return': list(range(config['return_hours'][0], config['return_hours'][1] + 1))}
+
+    def future(hours):
+        times = [now.replace(hour=h, minute=0, second=0, microsecond=0) for h in hours]
+        return [t for t in times if t > now]
+
+    tasks = []
+    for name in config['destinations']:
+        tasks += [(HOME, name, d) for d in future(windows['leave'])]
+        tasks += [(name, HOME, d) for d in future(windows['return'])]
     with ThreadPoolExecutor(max_workers=2) as pool:
         routes = list(pool.map(lambda task: routing(task, places, key), tasks))
     points = [point_key(p) for p in places.values()]
     points += [p for route in routes for p, _ in route['samples']]
     weather = forecasts(points)
-    lines = ['# Weather and driving today', '',
-             f'{now:%A, %d %B %Y} · Europe/Lisbon · generated {now:%H:%M %Z}.', '',
-             'Areias, Santo Tirso → Braga / Porto and return. Locations are parish/city centres; toll roads are allowed.', '',
-             '## Today’s weather', '']
+
+    label = config['home']['label']
+    where = f'from home ({label})' if exact else f'from {label} centre (home address not set up)'
+    lines = ['# Leaving and returning home today', '',
+             f'{now:%A, %d %B %Y} · {where} · generated {now:%H:%M %Z}.', '']
+    unavailable = 0
+    for name in config['destinations']:
+        lines += [f'## {name}', '']
+        for leg, origin, destination, title in (('leave', HOME, name, 'Leave home'),
+                                                ('return', name, HOME, 'Return home')):
+            rows = []
+            for route in routes:
+                if (route['origin'], route['destination']) == (origin, destination):
+                    try:
+                        rows.append(assess(route, weather))
+                    except (KeyError, ValueError, TypeError):
+                        unavailable += 1
+            lines += leg_lines(title, rows, windows[leg]) + ['']
+            diagnostics.setdefault('weather_only', 0)
+            if rows and not any(r['traffic'] for r in rows):
+                diagnostics['weather_only'] += 1
+    diagnostics['legs'] = 2 * len(config['destinations'])
+    diagnostics['routes'] = len(routes)
+    diagnostics['traffic_ok'] = sum(r['traffic'] for r in routes)
+    errors = {}
+    for r in routes:
+        if r.get('traffic_error'):
+            errors[r['traffic_error']] = errors.get(r['traffic_error'], 0) + 1
+    diagnostics['errors'] = errors
+
+    lines += ['## Weather today', '']
     for name, point in places.items():
         today = [r for stamp, r in weather[point_key(point)].items()
                  if datetime.fromtimestamp(stamp, LISBON).date() == now.date()]
+        shown = 'Home' if name == HOME else name
         if not today or any(r.get(f) is None for r in today for f in FIELDS):
-            lines.append(f'- **{name}:** weather unavailable.')
+            lines.append(f'- **{shown}:** weather unavailable.')
             continue
-        lines.append(f"- **{name}:** {min(r['temperature_2m'] for r in today):.0f}–{max(r['temperature_2m'] for r in today):.0f} °C; "
-                     f"{sum(r['precipitation'] for r in today):.1f} mm rain; "
-                     f"rain probability up to {max(r['precipitation_probability'] for r in today):.0f}%; "
-                     f"gusts up to {max(r['wind_gusts_10m'] for r in today):.0f} km/h.")
-    lines += ['', '## Best departure windows', '']
-    unavailable = 0
-    for origin, destination in ROUTES:
-        raw = [r for r in routes if (r['origin'], r['destination']) == (origin, destination)]
-        rows = []
-        for route in raw:
-            try:
-                rows.append(assess(route, weather))
-            except (KeyError, ValueError, TypeError):
-                unavailable += 1
-        # One failed departure no longer discards traffic for the whole direction;
-        # windows still require traffic at both ends.
-        traffic = any(r['traffic'] for r in rows)
-        lines += [f'### {origin} → {destination}', '']
-        if not traffic:
-            lines += ['**Weather-only comparison: traffic unavailable or incomplete.** Approximate corridor; no journey-time claim.', '']
-        missing = [r['departure'].strftime('%H:%M') for r in rows if not r['traffic']]
-        if traffic and missing:
-            lines += ['Traffic forecast unavailable at ' + ', '.join(missing) + '; those departures are not recommended.', '']
-        windows = best_windows(rows, traffic)
-        for a, b in windows:
-            w = [a['weather'], b['weather']]
-            label = 'lower weather concern' if max(a['risk'], b['risk']) == 0 else 'weather caution'
-            timing = (f"; {min(a['minutes'], b['minutes']):.0f}–{max(a['minutes'], b['minutes']):.0f} min, "
-                      f"traffic uplift up to {max(a['delay'], b['delay']):.0f} min") if traffic else ''
-            lines.append(f"- **{a['departure']:%H:%M}–{b['departure']:%H:%M}**: {label}{timing}; "
-                         f"rain ≤{max(x['rain'] for x in w):.1f} mm/h, "
-                         f"gusts ≤{max(x['gust'] for x in w):.0f} km/h, "
-                         f"visibility ≥{min(x['visibility'] for x in w)/1000:.1f} km.")
-        if not windows:
-            lines.append('No recommended window: severe forecast conditions, insufficient data, or fewer than two future departure samples.')
-        severe = [r['departure'].strftime('%H:%M') for r in rows if r['risk'] == 2]
-        if severe:
-            lines.append('Higher weather concern at sampled departures: ' + ', '.join(severe) + '.')
-        lines.append('')
-    if diagnostics is not None:
-        diagnostics['routes'] = len(routes)
-        diagnostics['traffic_ok'] = sum(r['traffic'] for r in routes)
-        errors = {}
-        for r in routes:
-            if r.get('traffic_error'):
-                errors[r['traffic_error']] = errors.get(r['traffic_error'], 0) + 1
-        diagnostics['errors'] = errors
+        wet = [datetime.fromtimestamp(stamp, LISBON).hour for stamp, r in sorted(weather[point_key(point)].items())
+               if datetime.fromtimestamp(stamp, LISBON).date() == now.date() and r['precipitation'] >= 0.5]
+        periods = []
+        for hour in wet:
+            if periods and periods[-1][1] == hour:
+                periods[-1][1] = hour + 1
+            else:
+                periods.append([hour, hour + 1])
+        when = ', '.join(f'{a:02d}:00–{b % 24:02d}:00' for a, b in periods)
+        lines.append(f"- **{shown}:** {min(r['temperature_2m'] for r in today):.0f}–{max(r['temperature_2m'] for r in today):.0f} °C, "
+                     f"{sum(r['precipitation'] for r in today):.1f} mm rain"
+                     + (f" (rain {when})" if when else ', no rain expected') + '.')
+    lines.append('')
     if unavailable:
-        lines += [f'Weather coverage missing for {unavailable} departure samples; those samples were excluded.', '']
-    lines += [f"Departures sampled hourly from {config['first_departure_hour']:02d}:00 to {config['last_departure_hour']:02d}:00; "
-              'windows span two evaluated departures. Conditions between samples may vary. '
-              'Recommendations favour better weather, then shorter journeys. '
-              'Heavy rain, very poor visibility, strong gusts, snow, ice or thunderstorms exclude a window. '
-              'These are planning recommendations, not road-safety guarantees.', '',
-              'Sources: [Open-Meteo](https://open-meteo.com/) hourly forecast; '
-              '[TomTom Routing](https://developer.tomtom.com/routing-api/documentation/tomtom-maps/calculate-route) '
-              'traffic-aware forecasts when configured (historical traffic plus available live information). '
-              'Later traffic is a prediction; incidents and closures can change. Check navigation and '
-              '[IPMA warnings](https://www.ipma.pt/en/otempo/prev-sam/) before leaving.', '']
+        lines += [f'Weather data missing for {unavailable} departure times; those were left out.', '']
+    lines += [f"Leave times checked hourly {windows['leave'][0]:02d}:00–{windows['leave'][-1]:02d}:00, "
+              f"return times {windows['return'][0]:02d}:00–{windows['return'][-1]:02d}:00. "
+              'Best balances rain against predicted journey time: rain counts like roughly 15–25 extra minutes of traffic. '
+              'Heavy rain, storms, strong gusts, ice or very poor visibility rule a time out. '
+              'Rain is checked along the route at the time you would pass each point.', '',
+              'Sources: [Open-Meteo](https://open-meteo.com/) forecast; '
+              '[TomTom](https://developer.tomtom.com/) predicted traffic. '
+              'Check navigation and [IPMA warnings](https://www.ipma.pt/en/otempo/prev-sam/) before leaving.', '']
     return '\n'.join(lines)
 
 
 def traffic_status(report, key=None, diagnostics=None):
-    """Workflow-log summary that confirms setup without revealing the key or report."""
+    """Workflow-log summary that confirms setup without revealing the key, address or report."""
     key = os.environ.get('TOMTOM_API_KEY', '') if key is None else key
-    weather_only = report.count('**Weather-only comparison')
+    diagnostics = diagnostics or {}
+    home = diagnostics.get('home')
+    home_text = '' if home in (None, 'ok') else f' Home location: {home}; using the configured parish centre.'
     if not key:
-        return 'TOMTOM_API_KEY not configured; all directions are weather-only.'
+        return 'TOMTOM_API_KEY not configured; recommendations use rain only.' + home_text
+    legs = diagnostics.get('legs', 0)
+    weather_only = diagnostics.get('weather_only', 0)
     detail = ''
-    if diagnostics and diagnostics.get('routes'):
+    if diagnostics.get('routes'):
         detail = f" {diagnostics['traffic_ok']}/{diagnostics['routes']} departure forecasts succeeded"
         if diagnostics.get('errors'):
             detail += ' (failures: ' + ', '.join(f'{k} ×{v}' for k, v in sorted(diagnostics['errors'].items())) + ')'
         detail += '.'
     if not weather_only:
-        return f'TomTom traffic used for all {len(ROUTES)} directions.' + detail
+        return f'TomTom traffic used for all {legs} trips.' + detail + home_text
+    errors = diagnostics.get('errors', {})
     hint = ''
-    errors = (diagnostics or {}).get('errors', {})
     if 'HTTP 401' in errors or 'HTTP 403' in errors:
         hint = ' HTTP 401/403 means the key is invalid or lacks Routing API access.'
     elif 'HTTP 429' in errors:
         hint = ' HTTP 429 means the daily quota or rate limit was exceeded.'
-    return (f'TOMTOM_API_KEY is set but {weather_only} of {len(ROUTES)} directions fell back to weather-only '
-            '(routing failed or incomplete: check the key, Routing API access and quota).' + detail + hint)
+    return (f'TOMTOM_API_KEY is set but {weather_only} of {legs} trips fell back to rain only '
+            '(routing failed: check the key, Routing API access and quota).' + detail + hint + home_text)
 
 
 def attach_report(draft, source):
@@ -359,7 +436,7 @@ def attach_report(draft, source):
         print('::notice title=Traffic forecasts::' + traffic_status(report, diagnostics=diagnostics))
     except Exception:
         # Provider errors do not suppress jobs or leak credential-bearing URLs.
-        report = '# Weather and driving today\n\nWeather/travel data unavailable for this run; no driving windows can be recommended.\n'
-        print('::notice title=Traffic forecasts::Weather/travel data unavailable; no driving windows in this report.')
+        report = '# Leaving and returning home today\n\nWeather/traffic data unavailable for this run; no times can be recommended.\n'
+        print('::notice title=Traffic forecasts::Weather/traffic data unavailable; no leave/return times in this report.')
     draft['body_markdown'] = report + '\n---\n\n# Job report\n\n' + draft['body_markdown']
     return draft

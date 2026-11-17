@@ -1,9 +1,12 @@
 {
-  "places": {
-    "Areias": [41.36205, -8.47560],
+  "home": {
+    "label": "Areias, Santo Tirso",
+    "fallback": [41.36205, -8.47560]
+  },
+  "destinations": {
     "Braga": [41.55106, -8.42800],
     "Porto": [41.15022, -8.61035]
   },
-  "first_departure_hour": 8,
-  "last_departure_hour": 21
+  "leave_hours": [8, 12],
+  "return_hours": [15, 21]
 }

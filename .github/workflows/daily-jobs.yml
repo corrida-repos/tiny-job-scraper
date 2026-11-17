@@ -74,6 +74,7 @@ jobs:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           TOMTOM_API_KEY: ${{ secrets.TOMTOM_API_KEY }}
+          HOME_ADDRESS: ${{ secrets.HOME_ADDRESS }}
           SEND_EMAIL: ${{ github.event_name == 'schedule' || inputs.send_email }}
           FRESHNESS_DAYS: ${{ github.event_name == 'workflow_dispatch' && inputs.freshness_days || 'configured' }}
           PYTHONPATH: src

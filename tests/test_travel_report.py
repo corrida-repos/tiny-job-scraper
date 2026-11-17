@@ -28,68 +28,107 @@ class TravelReportTests(unittest.TestCase):
                             'legs': [{'points': [{'latitude': 41.36, 'longitude': -8.48},
                                                  {'latitude': 41.55, 'longitude': -8.43}]}]}]}
 
-    def test_forecast_traffic_directions_and_weather_are_in_report(self):
-        with patch.object(travel, 'get_json', side_effect=self.route_data), patch.object(travel, 'forecasts', side_effect=self.forecasts):
-            report = travel.build_report(self.config, self.now, key='fixture')
-        self.assertNotIn('Weather-only comparison', report)
-        self.assertIn('40–40 min', report)
-        self.assertIn('60–60 min', report)
-        self.assertIn('08:00–09:00', report)
-        for a, b in travel.ROUTES:
-            self.assertIn(f'{a} → {b}', report)
+    def report_for(self, key='fixture', router=None, env=None, now=None):
+        diagnostics = {}
+        with patch.object(travel, 'get_json', side_effect=router or self.route_data), \
+                patch.object(travel, 'forecasts', side_effect=self.forecasts), \
+                patch.dict('os.environ', env or {}, clear=False):
+            if not env:
+                import os
+                os.environ.pop('HOME_ADDRESS', None)
+            report = travel.build_report(self.config, now or self.now, key=key, diagnostics=diagnostics)
+        return report, diagnostics
 
-    def test_no_key_does_not_invent_traffic_or_call_router(self):
+    def test_best_leave_and_return_times_per_destination(self):
+        def router(url, params):
+            data = self.route_data(url, params)
+            hour = int(params['departAt'][11:13])
+            # Rush hours are slower: 08:00 and 18:00 should never win.
+            if hour in (8, 18):
+                data['routes'][0]['summary']['travelTimeInSeconds'] += 20 * 60
+            return data
+        report, diagnostics = self.report_for(router=router)
+        for name in ('Braga', 'Porto'):
+            self.assertIn(f'## {name}', report)
+        self.assertEqual(report.count('**Leave home: 09:00**'), 2)
+        self.assertEqual(report.count('**Return home: 15:00**'), 2)
+        self.assertIn('- Avoid: 08:00', report)
+        self.assertIn('- Avoid: 18:00', report)
+        self.assertIn('heavy traffic', report)
+        self.assertNotIn('rain only', report)
+        self.assertEqual(diagnostics['routes'], 24)
+        self.assertIn('used for all 4 trips', travel.traffic_status(report, key='fixture', diagnostics=diagnostics))
+
+    def test_rain_moves_the_recommendation(self):
+        start = self.now.replace(hour=0).timestamp()
+        def forecasts(points):
+            data = self.forecasts(points)
+            for hourly in data.values():
+                for h in (9, 10, 15, 16):
+                    hourly[int(start + h * 3600)]['precipitation'] = 2
+                    hourly[int(start + h * 3600)]['precipitation_probability'] = 90
+            return data
+        with patch.object(travel, 'get_json', side_effect=self.route_data), patch.object(travel, 'forecasts', side_effect=forecasts):
+            report = travel.build_report(self.config, self.now, key='fixture')
+        self.assertEqual(report.count('**Leave home: 11:00**'), 2)
+        self.assertEqual(report.count('**Return home: 17:00**'), 2)
+        self.assertIn('(rain 09:00–11:00, 15:00–17:00)', report)
+
+    def test_home_address_is_geocoded_and_never_printed(self):
+        seen = []
+        def router(url, params):
+            if '/geocode/' in url:
+                return {'results': [{'position': {'lat': 41.3611, 'lon': -8.4801}}]}
+            seen.append(url)
+            return self.route_data(url, params)
+        report, diagnostics = self.report_for(router=router, env={'HOME_ADDRESS': 'Secret Street 1, Areias'})
+        self.assertEqual(diagnostics['home'], 'ok')
+        self.assertTrue(any('41.3611,-8.4801:' in u for u in seen))
+        self.assertIn('from home (Areias, Santo Tirso)', report)
+        status = travel.traffic_status(report, key='fixture', diagnostics=diagnostics)
+        self.assertNotIn('Secret', report + status)
+        self.assertNotIn('41.3611', report + status)
+
+    def test_far_or_failed_geocode_falls_back_to_parish_centre(self):
+        def far(url, params):
+            if '/geocode/' in url:
+                return {'results': [{'position': {'lat': 38.72, 'lon': -9.14}}]}
+            return self.route_data(url, params)
+        report, diagnostics = self.report_for(router=far, env={'HOME_ADDRESS': 'x'})
+        self.assertIn('too far', diagnostics['home'])
+        self.assertIn('from Areias, Santo Tirso centre (home address not set up)', report)
+        report, diagnostics = self.report_for()
+        self.assertEqual(diagnostics['home'], 'HOME_ADDRESS not set')
+        self.assertIn('HOME_ADDRESS not set', travel.traffic_status(report, key='fixture', diagnostics=diagnostics))
+
+    def test_no_key_uses_rain_only_and_never_calls_router(self):
         with patch.object(travel, 'get_json') as network, patch.object(travel, 'forecasts', side_effect=self.forecasts):
             report = travel.build_report(self.config, self.now, key='')
         network.assert_not_called()
-        self.assertEqual(report.count('Weather-only comparison'), 4)
-        self.assertNotIn('traffic uplift up to', report)
+        self.assertEqual(report.count('based on rain only'), 4)
+        self.assertNotIn('traffic (+', report)
+        self.assertIn('not configured', travel.traffic_status(report, key=''))
 
-    def test_provider_failure_degrades_to_explicit_weather_only(self):
-        with patch.object(travel, 'get_json', side_effect=RuntimeError('secret-url')), patch.object(travel, 'forecasts', side_effect=self.forecasts):
-            report = travel.build_report(self.config, self.now, key='private-key')
-        self.assertEqual(report.count('Weather-only comparison'), 4)
-        self.assertNotIn('private-key', report)
-        self.assertNotIn('secret-url', report)
-
-    def test_traffic_status_distinguishes_missing_key_working_and_failing_routing(self):
-        with patch.object(travel, 'get_json', side_effect=self.route_data), patch.object(travel, 'forecasts', side_effect=self.forecasts):
-            working = travel.build_report(self.config, self.now, key='private-key')
-        with patch.object(travel, 'get_json', side_effect=RuntimeError('secret-url')), patch.object(travel, 'forecasts', side_effect=self.forecasts):
-            failing = travel.build_report(self.config, self.now, key='private-key')
-        self.assertIn('not configured', travel.traffic_status(failing, key=''))
-        self.assertIn('used for all 4 directions', travel.traffic_status(working, key='private-key'))
-        status = travel.traffic_status(failing, key='private-key')
-        self.assertIn('4 of 4 directions fell back', status)
-        self.assertNotIn('private-key', status)
-
-    def test_one_failed_departure_keeps_traffic_for_the_direction(self):
-        def flaky(url, params):
-            if params['departAt'].startswith('2026-11-11T12:'):
-                raise urllib.error.HTTPError(url, 429, 'Too Many Requests', {}, None)
-            return self.route_data(url, params)
-        diagnostics = {}
-        with patch.object(travel, 'get_json', side_effect=flaky), patch.object(travel, 'forecasts', side_effect=self.forecasts):
-            report = travel.build_report(self.config, self.now, key='private-key', diagnostics=diagnostics)
-        self.assertNotIn('Weather-only comparison', report)
-        self.assertIn('Traffic forecast unavailable at 12:00', report)
-        self.assertNotIn('**11:00–12:00**', report)
-        self.assertNotIn('**12:00–13:00**', report)
-        self.assertEqual(diagnostics['errors'], {'HTTP 429': 4})
-        status = travel.traffic_status(report, key='private-key', diagnostics=diagnostics)
-        self.assertIn('used for all 4 directions', status)
-        self.assertIn('52/56 departure forecasts succeeded', status)
-
-    def test_status_names_http_failure_without_leaking_key(self):
+    def test_provider_failure_degrades_to_rain_only_without_leaking(self):
         error = urllib.error.HTTPError('https://api.tomtom.com/x?key=private-key', 403, 'Forbidden', {}, None)
-        diagnostics = {}
-        with patch.object(travel, 'get_json', side_effect=error), patch.object(travel, 'forecasts', side_effect=self.forecasts):
-            report = travel.build_report(self.config, self.now, key='private-key', diagnostics=diagnostics)
+        report, diagnostics = self.report_for(key='private-key', router=lambda *a: (_ for _ in ()).throw(error))
+        self.assertEqual(report.count('based on rain only'), 4)
         status = travel.traffic_status(report, key='private-key', diagnostics=diagnostics)
-        self.assertIn('4 of 4 directions fell back', status)
-        self.assertIn('HTTP 403 ×56', status)
+        self.assertIn('4 of 4 trips fell back', status)
+        self.assertIn('HTTP 403 ×24', status)
         self.assertIn('invalid or lacks Routing API access', status)
         self.assertNotIn('private-key', status + report)
+
+    def test_one_failed_departure_keeps_traffic_for_the_trip(self):
+        def flaky(url, params):
+            if params['departAt'].startswith('2026-11-11T09:'):
+                raise urllib.error.HTTPError(url, 429, 'Too Many Requests', {}, None)
+            return self.route_data(url, params)
+        report, diagnostics = self.report_for(router=flaky)
+        self.assertNotIn('rain only', report)
+        self.assertIn('No traffic forecast for 09:00', report)
+        self.assertNotIn('**Leave home: 09:00**', report)
+        self.assertEqual(diagnostics['errors'], {'HTTP 429': 2})
 
     def test_rate_limited_requests_are_retried_but_bad_keys_are_not(self):
         url = 'https://api.tomtom.com/routing'
@@ -118,18 +157,14 @@ class TravelReportTests(unittest.TestCase):
 
     def test_missing_weather_excludes_samples_instead_of_assuming_clear(self):
         self.row['visibility'] = None
-        with patch.object(travel, 'forecasts', side_effect=self.forecasts):
-            report = travel.build_report(self.config, self.now, key='')
-        self.assertNotIn('**08:00–09:00**', report)
-        self.assertIn('No recommended window', report)
-        self.assertIn('Weather coverage missing for 56 departure samples', report)
+        report, _ = self.report_for(key='')
+        self.assertNotIn('**Leave home:', report.replace('**Leave home:** no', ''))
+        self.assertIn('Weather data missing for 24 departure times', report)
 
-    def test_severe_weather_never_recommends_least_bad_window(self):
+    def test_severe_weather_never_recommends_least_bad_time(self):
         self.row['precipitation'] = 6
-        with patch.object(travel, 'forecasts', side_effect=self.forecasts):
-            report = travel.build_report(self.config, self.now, key='')
-        self.assertEqual(report.count('No recommended window'), 4)
-        self.assertIn('Higher weather concern', report)
+        report, _ = self.report_for(key='')
+        self.assertEqual(report.count('no good time'), 4)
 
     def test_bounding_hours_catch_rain_at_arrival(self):
         t = int(self.now.timestamp())
@@ -147,10 +182,11 @@ class TravelReportTests(unittest.TestCase):
         self.assertTrue(all(p[1] == -8 or p[0] == 42 for p, _ in samples))
 
     def test_late_manual_run_has_no_past_departure_recommendations(self):
-        with patch.object(travel, 'forecasts', side_effect=self.forecasts):
-            report = travel.build_report(self.config, self.now.replace(hour=22), key='')
-        self.assertEqual(report.count('No recommended window'), 4)
-        self.assertNotIn('**08:00–09:00**', report)
+        report, _ = self.report_for(key='', now=self.now.replace(hour=22))
+        self.assertEqual(report.count('no times left to check today'), 4)
+        report, _ = self.report_for(key='', now=self.now.replace(hour=13))
+        self.assertEqual(report.count('**Leave home:** no times left'), 2)
+        self.assertEqual(report.count('**Return home: 15:00**'), 2)
 
     def test_full_day_summary_uses_lisbon_date_across_summer_offset(self):
         utc = datetime(2026, 7, 10, 0, tzinfo=timezone.utc)
@@ -159,7 +195,7 @@ class TravelReportTests(unittest.TestCase):
         with patch.object(travel, 'forecasts', side_effect=self.forecasts):
             report = travel.build_report(self.config, utc, key='')
         self.assertIn('generated 01:00 WEST', report)
-        self.assertIn('**Areias:** 14–14 °C', report)
+        self.assertIn('**Home:** 14–14 °C', report)
 
     def test_weather_outage_keeps_job_report_and_renames_email(self):
         with tempfile.TemporaryDirectory() as temp:

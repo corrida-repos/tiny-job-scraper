@@ -1,7 +1,8 @@
 # Tiny’s Daily Report
 
-The existing production email now starts with today's weather and recommended
-departure windows, followed by the complete job report. Gmail sender, recipient,
+The production email now starts with **the best time to leave home and the best
+time to return home** for Braga and Porto, chosen from forecast rain and predicted
+traffic, followed by the complete job report. Gmail sender, recipient,
 encrypted runtime state and duplicate-send reconciliation use the existing setup.
 The subject is **Tiny’s Daily Report**. A weather failure leaves a visible
 unavailable section and the job report still goes out. A prepared delivery retry
@@ -33,9 +34,10 @@ below).
 3. Copy the key value. Never commit it, put it in a file in this repository, or
    paste it into chat.
 4. Check the current free allowance, usage terms and billing settings on the
-   portal. A normal morning run uses **56 Routing requests** (four directions ×
-   fourteen hourly departures from 08:00 to 21:00); a manual run later in the
-   day uses fewer because only future departures are queried. Consider setting
+   portal. A normal morning run uses **24 Routing requests** (for each of Braga
+   and Porto: five leave times 08:00–12:00 and seven return times 15:00–21:00)
+   plus one address lookup; a manual run later in the day uses fewer because
+   only future times are queried. Consider setting
    a spending limit or staying on the free tier.
 
 ### 2. Add the GitHub secret
@@ -48,57 +50,70 @@ below).
    no code or workflow change is needed. The existing Gmail and state secrets
    stay as they are.
 
-### 3. Verify without sending an email
+### 3. Add your home address (kept out of the public repository)
+
+This repository is public, so the home address is never committed. Add a second
+repository secret on the same page: Name `HOME_ADDRESS`, Secret your full street
+address including postcode, e.g. `Rua Example 1, 4780-000 Areias, Santo Tirso`.
+Each run asks TomTom (same key) for its coordinates and routes from your door.
+The address and coordinates are never printed in logs or the email. If the
+secret is missing, the lookup fails, or the match is more than ~15 km from the
+configured parish centre, the report uses the Areias parish centre and says so.
+
+### 4. Verify without sending an email
 
 1. Go to **Actions → Tiny’s Daily Report → Run workflow**, leave `send_email`
    unchecked, and run it. Run it before 20:00 Lisbon time so at least two
    future departures remain.
 2. Open the run summary. A **Traffic forecasts** notice reports one of:
-   - *TomTom traffic used for all 4 directions.* Setup is complete.
+   - *TomTom traffic used for all 4 trips.* Setup is complete. If it also says
+     *Home location: HOME_ADDRESS not set* (or *address lookup failed*), the
+     report is using the parish centre instead of your door.
    - *TOMTOM_API_KEY not configured…* The secret is missing or misnamed.
-   - *TOMTOM_API_KEY is set but N of 4 directions fell back to weather-only…*
+   - *TOMTOM_API_KEY is set but N of 4 trips fell back to rain only…*
      The notice adds how many departure forecasts succeeded and the HTTP
      status of failures: 401/403 means the key is rejected or lacks Routing API
      access; 429 means it is over quota. The key and request URLs are never logged.
-3. In the next email, each direction's windows show journey minutes and a
-   *traffic uplift*, and the **Weather-only comparison** banner is gone.
+3. In the next email, each recommendation shows journey minutes and traffic
+   level, and no *based on rain only* note appears.
 
-To stop using traffic, delete the secret; reports return to weather-only.
+To stop using traffic, delete the secret; recommendations return to rain only.
 
-### What weather-only means
+### What rain only means
 
-Without that secret, or with failed/incomplete routing, the email explicitly
-shows **weather-only** windows using an approximate corridor. It does not claim
+Without that secret, or with failed routing, the email explicitly says the time
+was chosen **based on rain only**, using an approximate corridor. It does not claim
 to account for traffic or invent journey times. Requests to TomTom are spaced
-out and rate-limit refusals are retried. If only some departures in a direction
-fail, the direction keeps its traffic comparison, lists the departures without a
-forecast, and never recommends a window that includes them; only a direction
-with no traffic forecasts at all becomes weather-only.
+out and rate-limit refusals are retried. If only some times fail, the trip keeps its
+traffic comparison, lists the times without a forecast and never recommends
+them; only a trip with no traffic forecasts at all falls back to rain only.
 
 ## Locations and recommendations
 
-Edit `config/daily-report.json` for origin/destination coordinates and first/last
-departure hours. Areias is the **parish centre in Santo Tirso**, near the supplied
-home postcode, rather than an exact home address; Braga and Porto are city
-centres. Door-to-door endpoints can materially change the results. Default
-TomTom routes allow toll roads and use the fastest car route.
+`config/daily-report.json` sets the home label and fallback point (the Areias
+parish centre), the destinations (Braga and Porto city centres), and the hour
+ranges: **leave 08:00–12:00** and **return 15:00–21:00**, checked hourly. Edit
+those ranges to match your day. Routes are the fastest car route with tolls allowed.
 
-Each direction is queried independently for departures from **08:00 to 21:00**.
-Only future departures are evaluated in manual/late runs. Five points along each
-returned route get weather checks at approximate passage times proportional to
-distance. These are rounded to 0.01° for weather lookup. The worse of the bounding
-hourly forecasts is used, including arrival weather. Without routing, the next
-two hours are checked at five approximate corridor points; no duration is inferred.
+For each destination the email gives:
 
-The email shows up to three nonoverlapping one-hour windows spanning adjacent
-evaluated departures. Forecasts between those samples may differ. It ranks lower
-weather concern first, then maximum journey minutes plus five times rain in mm/h
-plus rain probability divided by twenty. Weather-only ranking omits journey
-minutes. Caution starts at rain 0.5 mm/h, gusts 40 km/h or visibility under 5 km.
-Samples with rain at least 4 mm/h, gusts at least 60 km/h, visibility under 1 km,
-snow/ice/thunderstorms, or precipitation at temperatures at most 2 °C are excluded.
-If no suitable pair remains, it says so. Missing weather is excluded rather than
-treated as clear. These thresholds are planning aids, not calibrated safety ratings.
+- **Leave home: HH:MM** (home → destination) and **Return home: HH:MM**
+  (destination → home), each with predicted minutes, traffic level (light under
+  5 extra minutes, moderate under 15, heavy beyond) and rain;
+- a *Next best* time and, when clearly worse, a time to *Avoid*;
+- a short weather summary for home and each destination with the rain periods.
+
+Each time is scored as predicted minutes plus a rain penalty: 15 minutes once
+rain reaches 0.5 mm/h, gusts 40 km/h or visibility under 5 km, plus 5 × mm/h of
+rain plus rain probability ÷ 20. The lowest score wins. So a time that is dry
+beats one about 15–25 minutes quicker in steady rain. Times with rain at least
+4 mm/h, gusts at least 60 km/h, visibility under 1 km, snow, ice, thunderstorms
+or rain near freezing are never recommended; if every time is like that, the
+email says there is no good time. Rain is checked at five points along the
+route at the time you would pass each one, using the worse of the two bounding
+hourly forecasts. Without traffic, the next two hours along an approximate
+corridor are checked and no journey time is claimed. Missing weather is left
+out rather than treated as dry. These are planning aids, not safety ratings.
 
 TomTom predicts later traffic from historical patterns and available live
 information. The uplift compares predicted duration to the provider's no-traffic

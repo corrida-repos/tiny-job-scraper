@@ -22,12 +22,14 @@ Exit code **0** means all configured sources completed, **2** means reports were
 
 ## Tiny’s Daily Report
 
-The existing daily email now combines today’s weather and driving windows for
-Areias (Santo Tirso) ↔ Braga and Areias ↔ Porto with the complete job report.
+The daily email starts with the best time to leave home and to return home for
+Braga and Porto, based on forecast rain and predicted traffic, then the complete
+job report.
 Its subject is **Tiny’s Daily Report**. Runs start at 06:53 Portugal time to
 target arrival before 08:00, with daylight saving handled automatically.
-Add the repository secret `TOMTOM_API_KEY` for traffic forecasts; otherwise the
-email explicitly provides weather-only comparisons. See
+Add the repository secrets `TOMTOM_API_KEY` for traffic forecasts and
+`HOME_ADDRESS` to route from your door (kept out of this public repository);
+without the key, times are chosen on rain only. See
 [step-by-step setup and recommendation details](docs/daily-report.md#weather-and-traffic-setup).
 
 ## Daily output
