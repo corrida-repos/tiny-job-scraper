@@ -4,8 +4,21 @@
     "fallback": [41.36205, -8.47560]
   },
   "destinations": {
-    "Braga": [41.55106, -8.42800],
-    "Porto": [41.15022, -8.61035]
+    "Parque Urbano Sara Moreira": {
+      "search": "Parque Urbano Sara Moreira, Santo Tirso",
+      "fallback": [41.3412, -8.4776]
+    },
+    "São Vítor, Braga": {
+      "search": "São Vítor, Braga",
+      "fallback": [41.5475, -8.4227]
+    },
+    "Porto city centre": {
+      "point": [41.1486, -8.6110]
+    },
+    "Pingo Doce Santo Tirso (Fontiscos)": {
+      "search": "Pingo Doce Santo Tirso, Lugar de Fontiscos",
+      "fallback": [41.3412, -8.4776]
+    }
   },
   "leave_hours": [8, 12],
   "return_hours": [15, 21]

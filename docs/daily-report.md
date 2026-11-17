@@ -1,8 +1,9 @@
 # Tiny’s Daily Report
 
 The production email now starts with **the best time to leave home and the best
-time to return home** for Braga and Porto, chosen from forecast rain and predicted
-traffic, followed by the complete job report. Gmail sender, recipient,
+time to return home** for Parque Urbano Sara Moreira, São Vítor (Braga), Porto
+city centre and Pingo Doce Santo Tirso (Fontiscos), chosen from forecast rain
+and predicted traffic, followed by the complete job report. Gmail sender, recipient,
 encrypted runtime state and duplicate-send reconciliation use the existing setup.
 The subject is **Tiny’s Daily Report**. A weather failure leaves a visible
 unavailable section and the job report still goes out. A prepared delivery retry
@@ -19,8 +20,24 @@ target, not a guaranteed deadline. No second scheduler or email is introduced.
 
 ## Weather and traffic setup
 
-Open-Meteo supplies hourly temperature, rain, probability, gusts, visibility and
-weather codes without an API key. Traffic-aware journey times need a TomTom key
+Weather comes from two keyless sources, combined:
+
+- **IPMA** (the Portuguese weather service) hourly forecasts for the nearest
+  municipality to each point on the route (Santo Tirso, Trofa, Maia, Porto,
+  Famalicão, Braga…). These are IPMA's statistically corrected blend of ECMWF
+  and its 2.5 km AROME model, the same data as ipma.pt's hourly page. The report
+  uses IPMA's **rain probability** (published every 3 hours), **rain intensity**
+  (light/moderate/heavy) and weather type (thunderstorms, hail, snow), plus the
+  **district warnings** for Porto and Braga. An orange or red rain, wind,
+  thunderstorm, snow, fog or cold warning rules a time out; yellow counts against
+  it. Sea warnings are ignored. IPMA does not publish rain amounts, gusts or
+  visibility per hour.
+- **ECMWF IFS** (9 km) via Open-Meteo for those: rain in mm/h, gusts, visibility,
+  temperature and weather codes. ECMWF is chosen explicitly because Open-Meteo's
+  default blend uses ICON-EU here, and Météo-France AROME returned no rain at all
+  for Areias on a day with 90–100% rain chance from IPMA and ECMWF.
+
+If IPMA is unavailable the report says so and uses ECMWF alone. Traffic-aware journey times need a TomTom key
 stored as the GitHub Actions secret **`TOMTOM_API_KEY`**. Without it, the email
 still arrives, and every direction is clearly labelled **weather-only** (see
 below).
@@ -30,13 +47,14 @@ below).
 1. Sign up or log in at the [TomTom Developer Portal](https://developer.tomtom.com/).
 2. Open the **Dashboard → Keys** (API keys) page. New accounts usually get a
    default key; otherwise create one. Make sure the key includes the
-   **Routing API**.
+   **Routing API** and **Search API** (used to find the destinations and your
+   home address).
 3. Copy the key value. Never commit it, put it in a file in this repository, or
    paste it into chat.
 4. Check the current free allowance, usage terms and billing settings on the
-   portal. A normal morning run uses **24 Routing requests** (for each of Braga
-   and Porto: five leave times 08:00–12:00 and seven return times 15:00–21:00)
-   plus one address lookup; a manual run later in the day uses fewer because
+   portal. A normal morning run uses **48 Routing requests** (for each of the
+   four destinations: five leave times 08:00–12:00 and seven return times
+   15:00–21:00) plus up to four place/address lookups; a manual run later in the day uses fewer because
    only future times are queried. Consider setting
    a spending limit or staying on the free tier.
 
@@ -91,8 +109,12 @@ them; only a trip with no traffic forecasts at all falls back to rain only.
 ## Locations and recommendations
 
 `config/daily-report.json` sets the home label and fallback point (the Areias
-parish centre), the destinations (Braga and Porto city centres), and the hour
-ranges: **leave 08:00–12:00** and **return 15:00–21:00**, checked hourly. Edit
+parish centre), the destinations, and the hour ranges. Each destination is
+either a fixed `point` (Porto city centre: Avenida dos Aliados) or a TomTom
+`search` (Parque Urbano Sara Moreira, São Vítor, Pingo Doce Fontiscos) with a
+`fallback` point, the IPMA municipality centre. A search result more than
+`max_km` (default 5 km) from its fallback is rejected; then, or without a TomTom
+key, the fallback is used and the heading says *approximate location*. Hours: **leave 08:00–12:00** and **return 15:00–21:00**, checked hourly. Edit
 those ranges to match your day. Routes are the fastest car route with tolls allowed.
 
 For each destination the email gives:
@@ -118,7 +140,7 @@ out rather than treated as dry. These are planning aids, not safety ratings.
 TomTom predicts later traffic from historical patterns and available live
 information. The uplift compares predicted duration to the provider's no-traffic
 duration; it is not a live congestion measurement for later hours. Incidents,
-closures and conditions can change after generation. The email links IPMA
+closures and conditions can change after generation. The email shows IPMA
 warnings and recommends checking current navigation before departure.
 
 Forecasts stay within the encrypted email draft. Public Actions artifacts keep

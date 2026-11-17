@@ -15,6 +15,12 @@ class TravelReportTests(unittest.TestCase):
         self.now = datetime(2026, 11, 11, 7, tzinfo=travel.LISBON)
         self.config = json.loads((Path(__file__).parents[1] / 'config/daily-report.json').read_text())
         self.row = dict(zip(travel.FIELDS, [14, 0, 10, 15, 10000, 1]))
+        # No test may reach IPMA; dedicated tests below feed it fixtures.
+        empty = {'nearest': {}, 'hourly': {}, 'probability': {}, 'daily': {}, 'warnings': []}
+        self.ipma_patch = patch.object(travel, 'ipma_layer', return_value=empty)
+        self.ipma_patch.start()
+        self.addCleanup(patch.stopall)
+        self.dest = list(self.config['destinations'])
 
     def forecasts(self, points):
         start = self.now.replace(hour=0).timestamp()
@@ -23,10 +29,10 @@ class TravelReportTests(unittest.TestCase):
     def route_data(self, url, params):
         # Reverse directions deliberately get different traffic predictions.
         minutes = 40 if '/41.36205,' in url else 60
+        ends = [tuple(map(float, p.split(','))) for p in url.split('/calculateRoute/')[1].split('/')[0].split(':')]
         return {'routes': [{'summary': {'travelTimeInSeconds': minutes * 60,
                                        'noTrafficTravelTimeInSeconds': 30 * 60},
-                            'legs': [{'points': [{'latitude': 41.36, 'longitude': -8.48},
-                                                 {'latitude': 41.55, 'longitude': -8.43}]}]}]}
+                            'legs': [{'points': [{'latitude': a, 'longitude': b} for a, b in ends]}]}]}
 
     def report_for(self, key='fixture', router=None, env=None, now=None):
         diagnostics = {}
@@ -48,16 +54,16 @@ class TravelReportTests(unittest.TestCase):
                 data['routes'][0]['summary']['travelTimeInSeconds'] += 20 * 60
             return data
         report, diagnostics = self.report_for(router=router)
-        for name in ('Braga', 'Porto'):
+        for name in self.dest:
             self.assertIn(f'## {name}', report)
-        self.assertEqual(report.count('**Leave home: 09:00**'), 2)
-        self.assertEqual(report.count('**Return home: 15:00**'), 2)
+        self.assertEqual(report.count('**Leave home: 09:00**'), 4)
+        self.assertEqual(report.count('**Return home: 15:00**'), 4)
         self.assertIn('- Avoid: 08:00', report)
         self.assertIn('- Avoid: 18:00', report)
         self.assertIn('heavy traffic', report)
         self.assertNotIn('rain only', report)
-        self.assertEqual(diagnostics['routes'], 24)
-        self.assertIn('used for all 4 trips', travel.traffic_status(report, key='fixture', diagnostics=diagnostics))
+        self.assertEqual(diagnostics['routes'], 48)
+        self.assertIn('used for all 8 trips', travel.traffic_status(report, key='fixture', diagnostics=diagnostics))
 
     def test_rain_moves_the_recommendation(self):
         start = self.now.replace(hour=0).timestamp()
@@ -70,8 +76,8 @@ class TravelReportTests(unittest.TestCase):
             return data
         with patch.object(travel, 'get_json', side_effect=self.route_data), patch.object(travel, 'forecasts', side_effect=forecasts):
             report = travel.build_report(self.config, self.now, key='fixture')
-        self.assertEqual(report.count('**Leave home: 11:00**'), 2)
-        self.assertEqual(report.count('**Return home: 17:00**'), 2)
+        self.assertEqual(report.count('**Leave home: 11:00**'), 4)
+        self.assertEqual(report.count('**Return home: 17:00**'), 4)
         self.assertIn('(rain 09:00–11:00, 15:00–17:00)', report)
 
     def test_home_address_is_geocoded_and_never_printed(self):
@@ -105,17 +111,18 @@ class TravelReportTests(unittest.TestCase):
         with patch.object(travel, 'get_json') as network, patch.object(travel, 'forecasts', side_effect=self.forecasts):
             report = travel.build_report(self.config, self.now, key='')
         network.assert_not_called()
-        self.assertEqual(report.count('based on rain only'), 4)
+        self.assertEqual(report.count('based on rain only'), 8)
         self.assertNotIn('traffic (+', report)
         self.assertIn('not configured', travel.traffic_status(report, key=''))
 
     def test_provider_failure_degrades_to_rain_only_without_leaking(self):
         error = urllib.error.HTTPError('https://api.tomtom.com/x?key=private-key', 403, 'Forbidden', {}, None)
         report, diagnostics = self.report_for(key='private-key', router=lambda *a: (_ for _ in ()).throw(error))
-        self.assertEqual(report.count('based on rain only'), 4)
+        self.assertEqual(report.count('based on rain only'), 8)
         status = travel.traffic_status(report, key='private-key', diagnostics=diagnostics)
-        self.assertIn('4 of 4 trips fell back', status)
-        self.assertIn('HTTP 403 ×24', status)
+        self.assertIn('8 of 8 trips fell back', status)
+        self.assertIn('HTTP 403 ×48', status)
+        self.assertIn('São Vítor, Braga: lookup failed (HTTP 403)', status)
         self.assertIn('invalid or lacks Routing API access', status)
         self.assertNotIn('private-key', status + report)
 
@@ -128,7 +135,92 @@ class TravelReportTests(unittest.TestCase):
         self.assertNotIn('rain only', report)
         self.assertIn('No traffic forecast for 09:00', report)
         self.assertNotIn('**Leave home: 09:00**', report)
-        self.assertEqual(diagnostics['errors'], {'HTTP 429': 2})
+        self.assertEqual(diagnostics['errors'], {'HTTP 429': 4})
+
+    # Real IPMA locality records for the area (api.ipma.pt public-data/forecast/locations.json).
+    IPMA_LOCATIONS = [
+        {'globalIdLocal': 1131400, 'local': 'Santo Tirso', 'idAreaAviso': 'PTO', 'latitude': '41.3412', 'longitude': '-8.4776'},
+        {'globalIdLocal': 1131800, 'local': 'Trofa', 'idAreaAviso': 'PTO', 'latitude': '41.3390', 'longitude': '-8.5602'},
+        {'globalIdLocal': 1130600, 'local': 'Maia', 'idAreaAviso': 'PTO', 'latitude': '41.2335', 'longitude': '-8.6216'},
+        {'globalIdLocal': 1131200, 'local': 'Porto', 'idAreaAviso': 'PTO', 'latitude': '41.1580', 'longitude': '-8.6294'},
+        {'globalIdLocal': 1031200, 'local': 'Vila Nova de Famalicão', 'idAreaAviso': 'BRG', 'latitude': '41.4087', 'longitude': '-8.5205'},
+        {'globalIdLocal': 1030300, 'local': 'Braga', 'idAreaAviso': 'BRG', 'latitude': '41.5475', 'longitude': '-8.4227'},
+        {'globalIdLocal': 1080500, 'local': 'Faro', 'idAreaAviso': 'FAR', 'latitude': '37.0146', 'longitude': '-7.9331'},
+    ]
+
+    def ipma_router(self, hourly=None, warnings=(), fail=False):
+        """Serve IPMA fixtures shaped like the live API, TomTom routes otherwise."""
+        start = self.now.replace(hour=0).astimezone(timezone.utc)
+        def aggregate(gid):
+            rows = []
+            for h in range(48):
+                when = start + timedelta(hours=h)
+                row = {'idPeriodo': 1, 'globalIdLocal': gid, 'dataPrev': when.strftime('%Y-%m-%dT%H:%M:%S'),
+                       'idTipoTempo': 3, 'probabilidadePrecipita': '5.0' if h % 3 == 0 else '-99.0'}
+                row.update((hourly or (lambda gid, hour: {}))(gid, h))
+                rows.append(row)
+            rows.append({'idPeriodo': 24, 'globalIdLocal': gid, 'dataPrev': start.strftime('%Y-%m-%dT00:00:00'),
+                         'idTipoTempo': 9, 'probabilidadePrecipita': '95.0'})
+            return rows
+        def router(url, params):
+            if 'api.ipma.pt' in url:
+                if fail:
+                    raise urllib.error.URLError('down')
+                if url.endswith('locations.json'):
+                    return self.IPMA_LOCATIONS
+                if 'warnings' in url:
+                    return list(warnings)
+                return aggregate(int(url.rsplit('/', 1)[1].split('.')[0]))
+            return self.route_data(url, params)
+        return router
+
+    def ipma_report(self, **kw):
+        self.ipma_patch.stop()
+        return self.report_for(router=self.ipma_router(**kw))
+
+    def test_ipma_probability_and_intensity_override_ecmwf(self):
+        # ECMWF fixture says 10%; IPMA says 90% and moderate rain from 08:00 to 10:00 UTC.
+        def wet(gid, hour):
+            return {'probabilidadePrecipita': '90.0', 'idIntensidadePrecipita': 2, 'idTipoTempo': 9} if 8 <= hour <= 10 else {}
+        report, diagnostics = self.ipma_report(hourly=wet)
+        self.assertEqual(diagnostics['ipma'], 'ok')
+        self.assertIn('moderate rain, 90% chance', report)
+        self.assertEqual(report.count('**Leave home: 11:00**'), 4)
+        self.assertIn('IPMA (Santo Tirso): rain/showers, 95% rain chance', report)
+        self.assertIn('IPMA (Braga)', report)
+
+    def test_orange_warning_rules_out_only_that_district(self):
+        warning = {'idAreaAviso': 'BRG', 'awarenessTypeName': 'Precipitação', 'awarenessLevelID': 'orange',
+                   'startTime': '2026-11-11T07:00:00', 'endTime': '2026-11-11T13:00:00',
+                   'text': 'Chuva por vezes forte.'}
+        sea = dict(warning, awarenessTypeName='Agitação Marítima', awarenessLevelID='red')
+        report, _ = self.ipma_report(warnings=[warning, sea])
+        self.assertIn('IPMA orange warning — rain, Braga district, 07:00–11/11 13:00.** Chuva por vezes forte.', report)
+        self.assertNotIn('IPMA red', report)
+        self.assertEqual(report.count('⚠ **IPMA'), 1)
+        braga = report.split('## São Vítor, Braga')[1].split('## ')[0]
+        self.assertIn('**Leave home:** no good time', braga)
+        self.assertIn('**Return home: 15:00**', braga)
+        porto = report.split('## Porto city centre')[1].split('## ')[0]
+        self.assertIn('**Leave home: 08:00**', porto)
+
+    def test_ipma_thunderstorms_are_never_recommended(self):
+        storm = lambda gid, hour: {'idTipoTempo': 23, 'idIntensidadePrecipita': 2}
+        report, _ = self.ipma_report(hourly=storm)
+        self.assertEqual(report.count('no good time'), 8)
+
+    def test_ipma_outage_keeps_ecmwf_report(self):
+        report, diagnostics = self.ipma_report(fail=True)
+        self.assertIn('IPMA was unavailable for this run', report)
+        self.assertEqual(report.count('**Leave home: 08:00**'), 4)
+        self.assertIn('IPMA unavailable (network error); ECMWF only.',
+                      travel.traffic_status(report, key='fixture', diagnostics=diagnostics))
+
+    def test_ipma_ignores_localities_far_away(self):
+        self.ipma_patch.stop()
+        with patch.object(travel, 'get_json', side_effect=self.ipma_router()):
+            layer = travel.ipma_layer([(41.36, -8.48), (39.5, -8.0)], self.now.date())
+        self.assertEqual([l['local'] for l in layer['nearest'].values()], ['Santo Tirso'])
 
     def test_rate_limited_requests_are_retried_but_bad_keys_are_not(self):
         url = 'https://api.tomtom.com/routing'
@@ -159,12 +251,12 @@ class TravelReportTests(unittest.TestCase):
         self.row['visibility'] = None
         report, _ = self.report_for(key='')
         self.assertNotIn('**Leave home:', report.replace('**Leave home:** no', ''))
-        self.assertIn('Weather data missing for 24 departure times', report)
+        self.assertIn('Weather data missing for 48 departure times', report)
 
     def test_severe_weather_never_recommends_least_bad_time(self):
         self.row['precipitation'] = 6
         report, _ = self.report_for(key='')
-        self.assertEqual(report.count('no good time'), 4)
+        self.assertEqual(report.count('no good time'), 8)
 
     def test_bounding_hours_catch_rain_at_arrival(self):
         t = int(self.now.timestamp())
@@ -183,10 +275,10 @@ class TravelReportTests(unittest.TestCase):
 
     def test_late_manual_run_has_no_past_departure_recommendations(self):
         report, _ = self.report_for(key='', now=self.now.replace(hour=22))
-        self.assertEqual(report.count('no times left to check today'), 4)
+        self.assertEqual(report.count('no times left to check today'), 8)
         report, _ = self.report_for(key='', now=self.now.replace(hour=13))
-        self.assertEqual(report.count('**Leave home:** no times left'), 2)
-        self.assertEqual(report.count('**Return home: 15:00**'), 2)
+        self.assertEqual(report.count('**Leave home:** no times left'), 4)
+        self.assertEqual(report.count('**Return home: 15:00**'), 4)
 
     def test_full_day_summary_uses_lisbon_date_across_summer_offset(self):
         utc = datetime(2026, 7, 10, 0, tzinfo=timezone.utc)

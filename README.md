@@ -23,8 +23,9 @@ Exit code **0** means all configured sources completed, **2** means reports were
 ## Tiny’s Daily Report
 
 The daily email starts with the best time to leave home and to return home for
-Braga and Porto, based on forecast rain and predicted traffic, then the complete
-job report.
+Parque Urbano Sara Moreira, São Vítor (Braga), Porto city centre and Pingo Doce
+Santo Tirso, based on IPMA and ECMWF rain forecasts, IPMA warnings and TomTom
+predicted traffic, then the complete job report.
 Its subject is **Tiny’s Daily Report**. Runs start at 06:53 Portugal time to
 target arrival before 08:00, with daylight saving handled automatically.
 Add the repository secrets `TOMTOM_API_KEY` for traffic forecasts and

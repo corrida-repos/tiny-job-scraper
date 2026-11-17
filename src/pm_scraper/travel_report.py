@@ -154,7 +154,9 @@ def forecasts(points):
         data = get_json('https://api.open-meteo.com/v1/forecast', {
             'latitude': ','.join(str(p[0]) for p in batch),
             'longitude': ','.join(str(p[1]) for p in batch),
-            'hourly': ','.join(FIELDS), 'timezone': 'UTC',
+            # ECMWF IFS (9 km) rather than the default blend: ICON-EU drives
+            # best_match here, and Météo-France AROME's edge returns dry fill.
+            'hourly': ','.join(FIELDS), 'models': 'ecmwf_ifs', 'timezone': 'UTC',
             'timeformat': 'unixtime', 'forecast_days': 2, 'past_days': 1,
             'wind_speed_unit': 'kmh', 'precipitation_unit': 'mm'})
         rows = data if isinstance(data, list) else [data]
@@ -183,31 +185,128 @@ def weather_at(hourly, when):
             'codes': {r['weather_code'] for r in rows}}
 
 
+# IPMA: official hourly forecasts per municipality (statistically corrected
+# ECMWF + AROME) and district warnings. They add official rain probability,
+# intensity and storm/snow types; ECMWF still supplies mm/h, gusts, visibility.
+IPMA = 'https://api.ipma.pt/public-data/forecast/'
+IPMA_WARNINGS = 'https://api.ipma.pt/open-data/forecast/warnings/warnings_www.json'
+IPMA_SEVERE_TYPES = {18, 19, 20, 21, 23, 28, 29, 30}   # snow, thunder, hail
+IPMA_HEAVY_TYPES = {8, 11, 14}                        # heavy rain/showers
+IPMA_INTENSITY = {1: 'light', 2: 'moderate', 3: 'heavy', 4: 'very heavy'}
+WARNING_TYPES = {'Precipitação': 'rain', 'Vento': 'wind', 'Trovoada': 'thunderstorms',
+                 'Neve': 'snow', 'Nevoeiro': 'fog', 'Tempo Frio': 'cold'}
+WARNING_LEVELS = {'yellow': 1, 'orange': 2, 'red': 3}
+IPMA_RADIUS = 0.2   # degrees (~20 km) to the nearest IPMA locality
+IPMA_TYPE_NAMES = {1: 'clear sky', 2: 'partly cloudy', 3: 'sunny intervals', 4: 'cloudy',
+                   5: 'high cloud', 6: 'showers/rain', 7: 'light showers', 8: 'heavy showers',
+                   9: 'rain/showers', 10: 'light rain', 11: 'heavy rain', 12: 'intermittent rain',
+                   13: 'intermittent light rain', 14: 'intermittent heavy rain', 15: 'drizzle',
+                   16: 'mist', 17: 'fog', 18: 'snow', 19: 'thunderstorms',
+                   20: 'showers and thunderstorms', 21: 'hail', 22: 'frost',
+                   23: 'rain and thunderstorms', 24: 'convective clouds', 25: 'partly cloudy',
+                   26: 'fog', 27: 'cloudy', 28: 'snow showers', 29: 'rain and snow', 30: 'rain and snow'}
+
+
+def _utc(text):
+    return datetime.fromisoformat(text).replace(tzinfo=timezone.utc)
+
+
+def ipma_layer(points, today):
+    """Nearest IPMA locality per point, its hourly/daily rows and today's warnings."""
+    locations = get_json(IPMA + 'locations.json', {})
+    nearest = {}
+    for point in points:
+        best = min(locations, key=lambda l: distance(point, (float(l['latitude']), float(l['longitude']))))
+        if distance(point, (float(best['latitude']), float(best['longitude']))) <= IPMA_RADIUS:
+            nearest[point] = best
+    layer = {'nearest': nearest, 'hourly': {}, 'probability': {}, 'daily': {}, 'warnings': []}
+    for gid in sorted({l['globalIdLocal'] for l in nearest.values()}):
+        rows = get_json(IPMA + f'aggregate/{gid}.json', {})
+        hourly = {int(_utc(r['dataPrev']).timestamp()): r for r in rows if r.get('idPeriodo') == 1}
+        layer['hourly'][gid] = hourly
+        # Probability is published every third hour for the preceding 3 hours.
+        layer['probability'][gid] = sorted((stamp, float(r['probabilidadePrecipita']))
+                                           for stamp, r in hourly.items()
+                                           if float(r.get('probabilidadePrecipita', -99)) >= 0)
+        for r in rows:
+            if r.get('idPeriodo') == 24 and _utc(r['dataPrev']).date() == today:
+                layer['daily'][gid] = r
+    areas = {l['idAreaAviso'] for l in nearest.values()}
+    for w in get_json(IPMA_WARNINGS, {}):
+        if (w.get('idAreaAviso') in areas and w.get('awarenessLevelID') in WARNING_LEVELS
+                and w.get('awarenessTypeName') in WARNING_TYPES):
+            # Warning times are Portuguese local time.
+            layer['warnings'].append(dict(w, start=datetime.fromisoformat(w['startTime']).replace(tzinfo=LISBON),
+                                          end=datetime.fromisoformat(w['endTime']).replace(tzinfo=LISBON)))
+    return layer
+
+
+def ipma_at(layer, point, when):
+    """IPMA values for the bounding hours, or None where IPMA has no locality."""
+    loc = (layer or {}).get('nearest', {}).get(point)
+    if not loc:
+        return None
+    gid = loc['globalIdLocal']
+    stamp = when.timestamp()
+    floor = int(stamp // 3600) * 3600
+    rows = [r for k in (floor, floor + 3600) if (r := layer['hourly'][gid].get(k))]
+    if not rows:
+        return None
+    probs = [p for s, p in layer['probability'][gid] if floor <= s <= floor + 3 * 3600]
+    return {'probability': max(probs[:1]) if probs else None,
+            'intensity': max(int(r.get('idIntensidadePrecipita') or 0) for r in rows),
+            'types': {int(r['idTipoTempo']) for r in rows if r.get('idTipoTempo') is not None},
+            'area': loc['idAreaAviso']}
+
+
+def warnings_for(layer, areas, start, end):
+    return [w for w in (layer or {}).get('warnings', [])
+            if w['idAreaAviso'] in areas and w['start'] < end and w['end'] > start]
+
+
 def weather_risk(w):
     """Explainable screening bands, not a calibrated road-safety model."""
     codes = w['codes']
+    warning = max((WARNING_LEVELS[x['awarenessLevelID']] for x in w.get('warnings', [])), default=0)
     if (w['rain'] >= 4 or w['gust'] >= 60 or w['visibility'] < 1000
             or codes & {56, 57, 66, 67, 71, 73, 75, 77, 85, 86, 95, 96, 99}
-            or (w['temp'] <= 2 and w['rain'] > 0)):
+            or (w['temp'] <= 2 and w['rain'] > 0)
+            or w.get('intensity', 0) >= 3 or w.get('ipma_types', set()) & IPMA_SEVERE_TYPES
+            or warning >= 2):
         return 2
-    if w['rain'] >= 0.5 or w['gust'] >= 40 or w['visibility'] < 5000:
+    if (w['rain'] >= 0.5 or w['gust'] >= 40 or w['visibility'] < 5000
+            or w.get('intensity', 0) == 2 or w.get('ipma_types', set()) & IPMA_HEAVY_TYPES
+            or warning == 1):
         return 1
     return 0
 
 
-def assess(route, weather):
+def assess(route, weather, layer=None):
     observations = []
     for point, fraction in route['samples']:
         # Without routing, inspect the entire next two hours, not an invented ETA.
         offsets = [fraction * route['minutes']] if route['traffic'] else [0, 60, 120]
         for offset in offsets:
-            observations.append(weather_at(weather[point], route['departure'] + timedelta(minutes=offset)))
+            when = route['departure'] + timedelta(minutes=offset)
+            obs = weather_at(weather[point], when)
+            ipma = ipma_at(layer, point, when)
+            obs.update(intensity=0, ipma_types=set(), area=None)
+            if ipma:
+                if ipma['probability'] is not None:
+                    obs['probability'] = ipma['probability']   # official, locally corrected
+                obs.update(intensity=ipma['intensity'], ipma_types=ipma['types'], area=ipma['area'])
+            observations.append(obs)
+    end = route['departure'] + timedelta(minutes=route['minutes'] if route['traffic'] else 120)
+    areas = {r['area'] for r in observations if r['area']}
     w = {'rain': max(r['rain'] for r in observations),
          'probability': max(r['probability'] for r in observations),
          'gust': max(r['gust'] for r in observations),
          'visibility': min(r['visibility'] for r in observations),
          'temp': min(r['temp'] for r in observations),
-         'codes': set().union(*(r['codes'] for r in observations))}
+         'codes': set().union(*(r['codes'] for r in observations)),
+         'intensity': max(r['intensity'] for r in observations),
+         'ipma_types': set().union(*(r['ipma_types'] for r in observations)),
+         'warnings': warnings_for(layer, areas, route['departure'], end)}
     return dict(route, weather=w, risk=weather_risk(w))
 
 
@@ -242,6 +341,34 @@ def resolve_home(config, key, diagnostics):
     return point, True
 
 
+def search_place(query, near, key):
+    data = get_json('https://api.tomtom.com/search/2/search/'
+                    + urllib.parse.quote(query, safe='') + '.json',
+                    {'key': key, 'countrySet': 'PT', 'limit': 1,
+                     'lat': near[0], 'lon': near[1]})
+    position = data['results'][0]['position']
+    return float(position['lat']), float(position['lon'])
+
+
+def resolve_destination(name, spec, key, diagnostics):
+    """Fixed point, or a TomTom search kept only if within max_km of its fallback."""
+    if 'point' in spec:
+        return tuple(spec['point']), True
+    fallback = tuple(spec['fallback'])
+    if not key:
+        diagnostics.setdefault('places', {})[name] = 'needs TOMTOM_API_KEY'
+        return fallback, False
+    try:
+        point = search_place(spec['search'], fallback, key)
+    except Exception as error:
+        diagnostics.setdefault('places', {})[name] = 'lookup failed (' + error_category(error) + ')'
+        return fallback, False
+    if distance(point, fallback) * 111 > spec.get('max_km', 5):
+        diagnostics.setdefault('places', {})[name] = 'lookup matched somewhere too far away'
+        return fallback, False
+    return point, True
+
+
 RAIN_PENALTY = 15  # rain worth about 15 extra minutes of driving; see docs
 
 
@@ -254,7 +381,12 @@ def score(row, traffic):
 
 def describe(row, traffic):
     w = row['weather']
-    if w['rain'] == 0 and w['probability'] < 20:
+    if w.get('intensity', 0) >= 1:
+        # IPMA's locally corrected intensity leads; ECMWF adds the amount.
+        rain = f"{IPMA_INTENSITY.get(w['intensity'], 'heavy')} rain, {w['probability']:.0f}% chance"
+        if w['rain'] >= 0.1:
+            rain += f", up to {w['rain']:.1f} mm/h"
+    elif w['rain'] == 0 and w['probability'] < 20:
         rain = 'dry'
     elif w['rain'] < 0.5:
         rain = f"little or no rain, {w['probability']:.0f}% chance"
@@ -263,6 +395,10 @@ def describe(row, traffic):
     else:
         rain = f"heavy rain up to {w['rain']:.1f} mm/h"
     extras = []
+    for warning in w.get('warnings', []):
+        extras.append(f"⚠ IPMA {warning['awarenessLevelID']} {WARNING_TYPES[warning['awarenessTypeName']]} warning")
+    if w.get('ipma_types', set()) & {19, 20, 23}:
+        extras.append('thunderstorms possible')
     if w['gust'] >= 40:
         extras.append(f"gusts {w['gust']:.0f} km/h")
     if w['visibility'] < 5000:
@@ -314,7 +450,11 @@ def build_report(config, now=None, key=None, diagnostics=None):
     now = (now or datetime.now(timezone.utc)).astimezone(LISBON)
     key = os.environ.get('TOMTOM_API_KEY', '') if key is None else key
     home, exact = resolve_home(config, key, diagnostics)
-    places = {HOME: home, **{n: tuple(p) for n, p in config['destinations'].items()}}
+    places, approximate = {HOME: home}, set()
+    for name, spec in config['destinations'].items():
+        places[name], found = resolve_destination(name, spec, key, diagnostics)
+        if not found:
+            approximate.add(name)
     windows = {'leave': list(range(config['leave_hours'][0], config['leave_hours'][1] + 1)),
                'return': list(range(config['return_hours'][0], config['return_hours'][1] + 1))}
 
@@ -331,21 +471,41 @@ def build_report(config, now=None, key=None, diagnostics=None):
     points = [point_key(p) for p in places.values()]
     points += [p for route in routes for p, _ in route['samples']]
     weather = forecasts(points)
+    try:
+        layer = ipma_layer(sorted(set(points)), now.date())
+        diagnostics['ipma'] = 'ok'
+    except Exception as error:
+        # ECMWF alone still gives a usable report; say so instead of failing.
+        layer = None
+        diagnostics['ipma'] = 'unavailable (' + error_category(error) + ')'
 
     label = config['home']['label']
     where = f'from home ({label})' if exact else f'from {label} centre (home address not set up)'
     lines = ['# Leaving and returning home today', '',
              f'{now:%A, %d %B %Y} · {where} · generated {now:%H:%M %Z}.', '']
+    day_end = now.replace(hour=23, minute=59)
+    shown_warnings = set()
+    for w in warnings_for(layer, {'PTO', 'BRG'} | {l['idAreaAviso'] for l in (layer or {}).get('nearest', {}).values()},
+                          now, day_end):
+        tag = (w['idAreaAviso'], w['awarenessTypeName'], w['startTime'])
+        if tag in shown_warnings:
+            continue
+        shown_warnings.add(tag)
+        district = {'PTO': 'Porto', 'BRG': 'Braga'}.get(w['idAreaAviso'], w['idAreaAviso'])
+        lines.append(f"⚠ **IPMA {w['awarenessLevelID']} warning — {WARNING_TYPES[w['awarenessTypeName']]}, "
+                     f"{district} district, {w['start']:%H:%M}–{w['end']:%d/%m %H:%M}.** {w.get('text', '')}".rstrip())
+    if shown_warnings:
+        lines.append('')
     unavailable = 0
     for name in config['destinations']:
-        lines += [f'## {name}', '']
+        lines += [f'## {name}' + (' _(approximate location)_' if name in approximate else ''), '']
         for leg, origin, destination, title in (('leave', HOME, name, 'Leave home'),
                                                 ('return', name, HOME, 'Return home')):
             rows = []
             for route in routes:
                 if (route['origin'], route['destination']) == (origin, destination):
                     try:
-                        rows.append(assess(route, weather))
+                        rows.append(assess(route, weather, layer))
                     except (KeyError, ValueError, TypeError):
                         unavailable += 1
             lines += leg_lines(title, rows, windows[leg]) + ['']
@@ -378,20 +538,33 @@ def build_report(config, now=None, key=None, diagnostics=None):
             else:
                 periods.append([hour, hour + 1])
         when = ', '.join(f'{a:02d}:00–{b % 24:02d}:00' for a, b in periods)
+        official = ''
+        loc = (layer or {}).get('nearest', {}).get(point_key(point))
+        daily = loc and layer['daily'].get(loc['globalIdLocal'])
+        if daily:
+            kind = IPMA_TYPE_NAMES.get(int(daily.get('idTipoTempo', -99)))
+            prob = float(daily.get('probabilidadePrecipita', -99))
+            bits = [kind] if kind else []
+            if prob >= 0:
+                bits.append(f'{prob:.0f}% rain chance')
+            official = f" IPMA ({loc['local']}): {', '.join(bits)}." if bits else ''
         lines.append(f"- **{shown}:** {min(r['temperature_2m'] for r in today):.0f}–{max(r['temperature_2m'] for r in today):.0f} °C, "
                      f"{sum(r['precipitation'] for r in today):.1f} mm rain"
-                     + (f" (rain {when})" if when else ', no rain expected') + '.')
+                     + (f" (rain {when})" if when else ', no rain expected') + '.' + official)
     lines.append('')
+    if layer is None:
+        lines += ['_IPMA was unavailable for this run; recommendations use the ECMWF forecast only._', '']
     if unavailable:
         lines += [f'Weather data missing for {unavailable} departure times; those were left out.', '']
     lines += [f"Leave times checked hourly {windows['leave'][0]:02d}:00–{windows['leave'][-1]:02d}:00, "
               f"return times {windows['return'][0]:02d}:00–{windows['return'][-1]:02d}:00. "
               'Best balances rain against predicted journey time: rain counts like roughly 15–25 extra minutes of traffic. '
-              'Heavy rain, storms, strong gusts, ice or very poor visibility rule a time out. '
+              'Heavy rain, storms, strong gusts, ice, very poor visibility or an IPMA orange/red warning rule a time out. '
               'Rain is checked along the route at the time you would pass each point.', '',
-              'Sources: [Open-Meteo](https://open-meteo.com/) forecast; '
-              '[TomTom](https://developer.tomtom.com/) predicted traffic. '
-              'Check navigation and [IPMA warnings](https://www.ipma.pt/en/otempo/prev-sam/) before leaving.', '']
+              'Sources: [IPMA](https://www.ipma.pt/en/otempo/prev.localidade.hora/) hourly forecasts and warnings '
+              '(rain chance, intensity, storms); ECMWF IFS via [Open-Meteo](https://open-meteo.com/) '
+              '(rain amount, gusts, visibility); [TomTom](https://developer.tomtom.com/) predicted traffic. '
+              'Check navigation before leaving.', '']
     return '\n'.join(lines)
 
 
@@ -401,6 +574,10 @@ def traffic_status(report, key=None, diagnostics=None):
     diagnostics = diagnostics or {}
     home = diagnostics.get('home')
     home_text = '' if home in (None, 'ok') else f' Home location: {home}; using the configured parish centre.'
+    for name, problem in sorted(diagnostics.get('places', {}).items()):
+        home_text += f' {name}: {problem}; using its approximate location.'
+    if diagnostics.get('ipma') not in (None, 'ok'):
+        home_text += f" IPMA {diagnostics['ipma']}; ECMWF only."
     if not key:
         return 'TOMTOM_API_KEY not configured; recommendations use rain only.' + home_text
     legs = diagnostics.get('legs', 0)
