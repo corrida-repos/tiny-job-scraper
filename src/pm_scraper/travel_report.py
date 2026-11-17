@@ -9,6 +9,9 @@ import json
 import math
 import os
 from pathlib import Path
+import threading
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from zoneinfo import ZoneInfo
@@ -20,12 +23,67 @@ ROUTES = [('Areias', 'Braga'), ('Braga', 'Areias'),
           ('Areias', 'Porto'), ('Porto', 'Areias')]
 
 
+# TomTom free keys allow only a few routing queries per second; one burst used to
+# fail every direction. Space requests and retry transient refusals.
+TOMTOM_MIN_INTERVAL = 0.3
+RETRIES = 3
+_throttle_lock = threading.Lock()
+_last_tomtom = [0.0]
+
+
+def _throttle(url):
+    if 'api.tomtom.com' not in url:
+        return
+    with _throttle_lock:
+        wait = _last_tomtom[0] + TOMTOM_MIN_INTERVAL - time.monotonic()
+        if wait > 0:
+            time.sleep(wait)
+        _last_tomtom[0] = time.monotonic()
+
+
+def _transient(error):
+    if isinstance(error, urllib.error.HTTPError):
+        if error.code == 429 or error.code >= 500:
+            return True
+        if error.code == 403:
+            # TomTom reports QPS overruns as 403 "Developer Over Qps".
+            try:
+                return b'qps' in error.read(2048).lower()
+            except Exception:
+                return False
+        return False
+    return isinstance(error, (urllib.error.URLError, TimeoutError, ConnectionError))
+
+
 def get_json(url, params):
     # Never log URLs/exceptions: the TomTom query contains the API key.
     request = urllib.request.Request(url + '?' + urllib.parse.urlencode(params),
                                      headers={'User-Agent': 'TinyDailyReport/1.0'})
-    with urllib.request.urlopen(request, timeout=12) as response:
-        return json.load(response)
+    for attempt in range(RETRIES):
+        _throttle(url)
+        try:
+            with urllib.request.urlopen(request, timeout=12) as response:
+                return json.load(response)
+        except Exception as error:
+            if attempt == RETRIES - 1 or not _transient(error):
+                raise
+            delay = 2 ** attempt
+            headers = getattr(error, 'headers', None)
+            retry_after = headers.get('Retry-After') if headers else None
+            if retry_after and str(retry_after).isdigit():
+                delay = min(int(retry_after), 10)
+            time.sleep(delay)
+
+
+def error_category(error):
+    """Credential-free failure label for workflow logs."""
+    if isinstance(error, urllib.error.HTTPError):
+        return f'HTTP {error.code}'
+    if isinstance(error, (urllib.error.URLError, TimeoutError, ConnectionError)):
+        return 'network error'
+    if isinstance(error, (KeyError, IndexError, TypeError, ValueError)):
+        return 'unexpected response'
+    return 'other error'
 
 
 def point_key(point):
@@ -81,8 +139,8 @@ def routing(task, places, key):
             points = [(p['latitude'], p['longitude']) for leg in route['legs'] for p in leg['points']]
             result.update(traffic=True, minutes=seconds / 60,
                           delay=max(0, seconds - baseline) / 60, samples=sample_path(points))
-        except Exception:
-            result['traffic_error'] = True
+        except Exception as error:
+            result['traffic_error'] = error_category(error)
     if not result['traffic']:
         result['samples'] = sample_path([a, b])
     return result
@@ -179,7 +237,7 @@ def best_windows(rows, traffic):
     return selected
 
 
-def build_report(config, now=None, key=None):
+def build_report(config, now=None, key=None, diagnostics=None):
     now = (now or datetime.now(timezone.utc)).astimezone(LISBON)
     key = os.environ.get('TOMTOM_API_KEY', '') if key is None else key
     places = config['places']
@@ -187,7 +245,7 @@ def build_report(config, now=None, key=None):
     departures = [now.replace(hour=h, minute=0, second=0, microsecond=0) for h in hours]
     departures = [d for d in departures if d > now]
     tasks = [(a, b, d) for a, b in ROUTES for d in departures]
-    with ThreadPoolExecutor(max_workers=4) as pool:
+    with ThreadPoolExecutor(max_workers=2) as pool:
         routes = list(pool.map(lambda task: routing(task, places, key), tasks))
     points = [point_key(p) for p in places.values()]
     points += [p for route in routes for p, _ in route['samples']]
@@ -216,10 +274,15 @@ def build_report(config, now=None, key=None):
                 rows.append(assess(route, weather))
             except (KeyError, ValueError, TypeError):
                 unavailable += 1
-        traffic = bool(rows) and all(r['traffic'] for r in rows)
+        # One failed departure no longer discards traffic for the whole direction;
+        # windows still require traffic at both ends.
+        traffic = any(r['traffic'] for r in rows)
         lines += [f'### {origin} → {destination}', '']
         if not traffic:
             lines += ['**Weather-only comparison: traffic unavailable or incomplete.** Approximate corridor; no journey-time claim.', '']
+        missing = [r['departure'].strftime('%H:%M') for r in rows if not r['traffic']]
+        if traffic and missing:
+            lines += ['Traffic forecast unavailable at ' + ', '.join(missing) + '; those departures are not recommended.', '']
         windows = best_windows(rows, traffic)
         for a, b in windows:
             w = [a['weather'], b['weather']]
@@ -236,6 +299,14 @@ def build_report(config, now=None, key=None):
         if severe:
             lines.append('Higher weather concern at sampled departures: ' + ', '.join(severe) + '.')
         lines.append('')
+    if diagnostics is not None:
+        diagnostics['routes'] = len(routes)
+        diagnostics['traffic_ok'] = sum(r['traffic'] for r in routes)
+        errors = {}
+        for r in routes:
+            if r.get('traffic_error'):
+                errors[r['traffic_error']] = errors.get(r['traffic_error'], 0) + 1
+        diagnostics['errors'] = errors
     if unavailable:
         lines += [f'Weather coverage missing for {unavailable} departure samples; those samples were excluded.', '']
     lines += [f"Departures sampled hourly from {config['first_departure_hour']:02d}:00 to {config['last_departure_hour']:02d}:00; "
@@ -251,16 +322,28 @@ def build_report(config, now=None, key=None):
     return '\n'.join(lines)
 
 
-def traffic_status(report, key=None):
+def traffic_status(report, key=None, diagnostics=None):
     """Workflow-log summary that confirms setup without revealing the key or report."""
     key = os.environ.get('TOMTOM_API_KEY', '') if key is None else key
     weather_only = report.count('**Weather-only comparison')
     if not key:
         return 'TOMTOM_API_KEY not configured; all directions are weather-only.'
+    detail = ''
+    if diagnostics and diagnostics.get('routes'):
+        detail = f" {diagnostics['traffic_ok']}/{diagnostics['routes']} departure forecasts succeeded"
+        if diagnostics.get('errors'):
+            detail += ' (failures: ' + ', '.join(f'{k} ×{v}' for k, v in sorted(diagnostics['errors'].items())) + ')'
+        detail += '.'
     if not weather_only:
-        return f'TomTom traffic used for all {len(ROUTES)} directions.'
+        return f'TomTom traffic used for all {len(ROUTES)} directions.' + detail
+    hint = ''
+    errors = (diagnostics or {}).get('errors', {})
+    if 'HTTP 401' in errors or 'HTTP 403' in errors:
+        hint = ' HTTP 401/403 means the key is invalid or lacks Routing API access.'
+    elif 'HTTP 429' in errors:
+        hint = ' HTTP 429 means the daily quota or rate limit was exceeded.'
     return (f'TOMTOM_API_KEY is set but {weather_only} of {len(ROUTES)} directions fell back to weather-only '
-            '(routing failed or incomplete: check the key, Routing API access and quota).')
+            '(routing failed or incomplete: check the key, Routing API access and quota).' + detail + hint)
 
 
 def attach_report(draft, source):
@@ -271,8 +354,9 @@ def attach_report(draft, source):
     from .daily import SUBJECT
     draft['subject'] = SUBJECT
     try:
-        report = build_report(json.loads(path.read_text()))
-        print('::notice title=Traffic forecasts::' + traffic_status(report))
+        diagnostics = {}
+        report = build_report(json.loads(path.read_text()), diagnostics=diagnostics)
+        print('::notice title=Traffic forecasts::' + traffic_status(report, diagnostics=diagnostics))
     except Exception:
         # Provider errors do not suppress jobs or leak credential-bearing URLs.
         report = '# Weather and driving today\n\nWeather/travel data unavailable for this run; no driving windows can be recommended.\n'

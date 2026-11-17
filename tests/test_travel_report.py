@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
+import io
 import tempfile
 import unittest
+import urllib.error
 from unittest.mock import patch
 
 from pm_scraper import travel_report as travel
@@ -60,6 +62,59 @@ class TravelReportTests(unittest.TestCase):
         status = travel.traffic_status(failing, key='private-key')
         self.assertIn('4 of 4 directions fell back', status)
         self.assertNotIn('private-key', status)
+
+    def test_one_failed_departure_keeps_traffic_for_the_direction(self):
+        def flaky(url, params):
+            if params['departAt'].startswith('2026-11-11T12:'):
+                raise urllib.error.HTTPError(url, 429, 'Too Many Requests', {}, None)
+            return self.route_data(url, params)
+        diagnostics = {}
+        with patch.object(travel, 'get_json', side_effect=flaky), patch.object(travel, 'forecasts', side_effect=self.forecasts):
+            report = travel.build_report(self.config, self.now, key='private-key', diagnostics=diagnostics)
+        self.assertNotIn('Weather-only comparison', report)
+        self.assertIn('Traffic forecast unavailable at 12:00', report)
+        self.assertNotIn('**11:00–12:00**', report)
+        self.assertNotIn('**12:00–13:00**', report)
+        self.assertEqual(diagnostics['errors'], {'HTTP 429': 4})
+        status = travel.traffic_status(report, key='private-key', diagnostics=diagnostics)
+        self.assertIn('used for all 4 directions', status)
+        self.assertIn('52/56 departure forecasts succeeded', status)
+
+    def test_status_names_http_failure_without_leaking_key(self):
+        error = urllib.error.HTTPError('https://api.tomtom.com/x?key=private-key', 403, 'Forbidden', {}, None)
+        diagnostics = {}
+        with patch.object(travel, 'get_json', side_effect=error), patch.object(travel, 'forecasts', side_effect=self.forecasts):
+            report = travel.build_report(self.config, self.now, key='private-key', diagnostics=diagnostics)
+        status = travel.traffic_status(report, key='private-key', diagnostics=diagnostics)
+        self.assertIn('4 of 4 directions fell back', status)
+        self.assertIn('HTTP 403 ×56', status)
+        self.assertIn('invalid or lacks Routing API access', status)
+        self.assertNotIn('private-key', status + report)
+
+    def test_rate_limited_requests_are_retried_but_bad_keys_are_not(self):
+        url = 'https://api.tomtom.com/routing'
+        class Response(io.BytesIO):
+            def __enter__(self): return self
+            def __exit__(self, *a): return False
+        calls = []
+        def throttled(request, timeout):
+            calls.append(1)
+            if len(calls) == 1:
+                raise urllib.error.HTTPError(url, 403, 'Forbidden', {}, io.BytesIO(b'Developer Over Qps'))
+            if len(calls) == 2:
+                raise urllib.error.HTTPError(url, 429, 'Too Many Requests', {}, None)
+            return Response(b'{"ok": true}')
+        with patch('urllib.request.urlopen', side_effect=throttled), patch.object(travel.time, 'sleep'):
+            self.assertEqual(travel.get_json(url, {'key': 'k'}), {'ok': True})
+        self.assertEqual(len(calls), 3)
+        calls.clear()
+        def forbidden(request, timeout):
+            calls.append(1)
+            raise urllib.error.HTTPError(url, 403, 'Forbidden', {}, io.BytesIO(b'Developer Inactive'))
+        with patch('urllib.request.urlopen', side_effect=forbidden), patch.object(travel.time, 'sleep'):
+            with self.assertRaises(urllib.error.HTTPError):
+                travel.get_json(url, {'key': 'k'})
+        self.assertEqual(len(calls), 1)
 
     def test_missing_weather_excludes_samples_instead_of_assuming_clear(self):
         self.row['visibility'] = None
