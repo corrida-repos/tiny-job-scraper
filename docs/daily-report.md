@@ -57,8 +57,11 @@ below).
    - *TomTom traffic used for all 4 directions.* Setup is complete.
    - *TOMTOM_API_KEY not configured…* The secret is missing or misnamed.
    - *TOMTOM_API_KEY is set but N of 4 directions fell back to weather-only…*
-     The key is rejected, lacks Routing API access, or is over quota; check the
-     key on the TomTom dashboard. The key and request URLs are never logged.
+     The notice adds how many routing requests failed and their HTTP status
+     (for example `HTTP 403 ×56`). 401/403 means the key is invalid or lacks
+     Routing API access; 429 means the daily allowance or rate limit was hit.
+     Check the key on the TomTom dashboard. The key and request URLs are never
+     logged.
 3. In the next email, each direction's windows show journey minutes and a
    *traffic uplift*, and the **Weather-only comparison** banner is gone.
 
@@ -69,7 +72,13 @@ To stop using traffic, delete the secret; reports return to weather-only.
 Without that secret, or with failed/incomplete routing, the email explicitly
 shows **weather-only** windows using an approximate corridor. It does not claim
 to account for traffic or invent journey times. A routing outage for any sample
-in a direction makes that direction's comparison weather-only for consistency.
+at a single departure only removes that departure from the direction's
+traffic-aware windows; the email says how many were excluded. A direction is
+weather-only only when no departure could be routed.
+
+Routing requests are spaced to stay below TomTom's default limit of five
+queries per second. Rate-limited (HTTP 429), server-error and network failures
+are retried with backoff; rejected keys (401/403) are not retried.
 
 ## Locations and recommendations
 

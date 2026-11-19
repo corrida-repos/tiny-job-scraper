@@ -2,7 +2,9 @@ from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
 import tempfile
+import io
 import unittest
+import urllib.error
 from unittest.mock import patch
 
 from pm_scraper import travel_report as travel
@@ -13,6 +15,10 @@ class TravelReportTests(unittest.TestCase):
         self.now = datetime(2026, 11, 11, 7, tzinfo=travel.LISBON)
         self.config = json.loads((Path(__file__).parents[1] / 'config/daily-report.json').read_text())
         self.row = dict(zip(travel.FIELDS, [14, 0, 10, 15, 10000, 1]))
+        for name in ('TOMTOM_INTERVAL', 'TOMTOM_BACKOFF'):
+            patcher = patch.object(travel, name, 0)
+            patcher.start()
+            self.addCleanup(patcher.stop)
 
     def forecasts(self, points):
         start = self.now.replace(hour=0).timestamp()
@@ -60,6 +66,62 @@ class TravelReportTests(unittest.TestCase):
         status = travel.traffic_status(failing, key='private-key')
         self.assertIn('4 of 4 directions fell back', status)
         self.assertNotIn('private-key', status)
+
+    @staticmethod
+    def http_error(code):
+        return urllib.error.HTTPError('https://api.tomtom.com/?key=private-key', code, 'error',
+                                      {}, io.BytesIO(b''))
+
+    def test_rate_limited_requests_are_retried_instead_of_dropping_traffic(self):
+        calls = []
+
+        def flaky(url, params):
+            calls.append(url)
+            if len(calls) % 3 == 1:
+                raise self.http_error(429)
+            return self.route_data(url, params)
+        diagnostics = {}
+        with patch.object(travel, 'get_json', side_effect=flaky), patch.object(travel, 'forecasts', side_effect=self.forecasts):
+            report = travel.build_report(self.config, self.now, key='private-key', diagnostics=diagnostics)
+        self.assertNotIn('Weather-only comparison', report)
+        self.assertNotIn('Traffic unavailable for', report)
+        self.assertEqual(diagnostics['failed'], 0)
+        self.assertGreater(len(calls), 56)
+
+    def test_one_failed_departure_keeps_traffic_for_the_rest_of_the_direction(self):
+        def one_failure(url, params):
+            if '/41.36205,' in url and params['departAt'].startswith('2026-11-11T21'):
+                raise self.http_error(400)
+            return self.route_data(url, params)
+        diagnostics = {}
+        with patch.object(travel, 'get_json', side_effect=one_failure), patch.object(travel, 'forecasts', side_effect=self.forecasts):
+            report = travel.build_report(self.config, self.now, key='private-key', diagnostics=diagnostics)
+        self.assertNotIn('Weather-only comparison', report)
+        self.assertEqual(report.count('Traffic unavailable for 1 of 14 departures'), 2)
+        self.assertNotIn('**20:00–21:00**: lower weather concern; 40', report)
+        status = travel.traffic_status(report, key='private-key', diagnostics=diagnostics)
+        self.assertIn('used for all 4 directions', status)
+        self.assertIn('2 of 56 routing requests failed (HTTP 400 ×2)', status)
+
+    def test_rejected_key_is_reported_with_status_code_but_without_secrets(self):
+        diagnostics = {}
+        with patch.object(travel, 'get_json', side_effect=self.http_error(403)) as network, \
+                patch.object(travel, 'forecasts', side_effect=self.forecasts):
+            report = travel.build_report(self.config, self.now, key='private-key', diagnostics=diagnostics)
+        self.assertEqual(network.call_count, 56)  # 403 is not retried
+        status = travel.traffic_status(report, key='private-key', diagnostics=diagnostics)
+        self.assertIn('4 of 4 directions fell back', status)
+        self.assertIn('HTTP 403 ×56', status)
+        self.assertIn('lacks Routing API access', status)
+        self.assertNotIn('private-key', status + report)
+
+    def test_throttle_spaces_requests_across_threads(self):
+        throttle = travel.Throttle(0.05)
+        starts = []
+        with travel.ThreadPoolExecutor(max_workers=4) as pool:
+            list(pool.map(lambda _: (throttle.wait(), starts.append(travel.time.monotonic())), range(5)))
+        starts.sort()
+        self.assertGreaterEqual(starts[-1] - starts[0], 0.19)
 
     def test_missing_weather_excludes_samples_instead_of_assuming_clear(self):
         self.row['visibility'] = None
