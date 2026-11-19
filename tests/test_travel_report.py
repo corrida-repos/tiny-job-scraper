@@ -115,6 +115,15 @@ class TravelReportTests(unittest.TestCase):
         self.assertIn('lacks Routing API access', status)
         self.assertNotIn('private-key', status + report)
 
+    def test_late_run_status_says_traffic_was_not_queried(self):
+        diagnostics = {}
+        with patch.object(travel, 'get_json') as network, patch.object(travel, 'forecasts', side_effect=self.forecasts):
+            report = travel.build_report(self.config, self.now.replace(hour=22), key='private-key', diagnostics=diagnostics)
+        network.assert_not_called()
+        status = travel.traffic_status(report, key='private-key', diagnostics=diagnostics)
+        self.assertIn('TomTom was not queried', status)
+        self.assertNotIn('routing failed', status)
+
     def test_throttle_spaces_requests_across_threads(self):
         throttle = travel.Throttle(0.05)
         starts = []

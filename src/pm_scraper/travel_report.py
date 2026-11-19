@@ -326,6 +326,8 @@ def traffic_status(report, key=None, diagnostics=None):
         detail = f" {failed} of {diagnostics.get('requests', failed)} routing requests failed ({kinds})."
     if not key:
         return 'TOMTOM_API_KEY not configured; all directions are weather-only.'
+    if diagnostics and not diagnostics.get('requests'):
+        return 'No future departures left today; TomTom was not queried, so traffic could not be checked.'
     if not weather_only:
         return f'TomTom traffic used for all {len(ROUTES)} directions.' + detail
     hint = ''
