@@ -233,7 +233,7 @@ def best_windows(rows, traffic):
     return selected
 
 
-def build_report(config, now=None, key=None, diagnostics=None):
+def build_report(config, now=None, key=None, diagnostics=None, visuals=None):
     now = (now or datetime.now(timezone.utc)).astimezone(LISBON)
     key = os.environ.get('TOMTOM_API_KEY', '') if key is None else key
     places = config['places']
@@ -251,6 +251,10 @@ def build_report(config, now=None, key=None, diagnostics=None):
     points = [point_key(p) for p in places.values()]
     points += [p for route in routes for p, _ in route['samples']]
     weather = forecasts(points)
+    visual = {'date': f'{now:%A, %d %B %Y}', 'generated': f'{now:%H:%M %Z}',
+              'first_departure_hour': config['first_departure_hour'],
+              'last_departure_hour': config['last_departure_hour'],
+              'places': {}, 'routes': []}
     lines = ['# Weather and driving today', '',
              f'{now:%A, %d %B %Y} · Europe/Lisbon · generated {now:%H:%M %Z}.', '',
              'Areias, Santo Tirso → Braga / Porto and return. Locations are parish/city centres; toll roads are allowed.', '',
@@ -260,7 +264,21 @@ def build_report(config, now=None, key=None, diagnostics=None):
                  if datetime.fromtimestamp(stamp, LISBON).date() == now.date()]
         if not today or any(r.get(f) is None for r in today for f in FIELDS):
             lines.append(f'- **{name}:** weather unavailable.')
+            visual['places'][name] = None
             continue
+        visual['places'][name] = {
+            'min_temp': min(r['temperature_2m'] for r in today),
+            'max_temp': max(r['temperature_2m'] for r in today),
+            'rain': sum(r['precipitation'] for r in today),
+            'probability': max(r['precipitation_probability'] for r in today),
+            'gust': max(r['wind_gusts_10m'] for r in today),
+            'codes': sorted({int(r['weather_code']) for r in today}),
+            'hourly': [{'hour': datetime.fromtimestamp(stamp, LISBON).hour,
+                        'temp': r['temperature_2m'], 'rain': r['precipitation'],
+                        'probability': r['precipitation_probability'],
+                        'gust': r['wind_gusts_10m'], 'code': int(r['weather_code'])}
+                       for stamp, r in sorted(weather[point_key(point)].items())
+                       if datetime.fromtimestamp(stamp, LISBON).date() == now.date()]}
         lines.append(f"- **{name}:** {min(r['temperature_2m'] for r in today):.0f}–{max(r['temperature_2m'] for r in today):.0f} °C; "
                      f"{sum(r['precipitation'] for r in today):.1f} mm rain; "
                      f"rain probability up to {max(r['precipitation_probability'] for r in today):.0f}%; "
@@ -284,6 +302,23 @@ def build_report(config, now=None, key=None, diagnostics=None):
         if traffic and missing:
             lines += [f'Traffic unavailable for {missing} of {len(rows)} departures; those departures are excluded from these windows.', '']
         windows = best_windows(rows, traffic)
+        visual['routes'].append({
+            'origin': origin, 'destination': destination, 'traffic': traffic, 'missing': missing,
+            'departures': [{'hour': r['departure'].hour, 'traffic': r['traffic'],
+                            'minutes': r['minutes'] if r['traffic'] else None,
+                            'delay': r.get('delay') if r['traffic'] else None, 'risk': r['risk']}
+                           for r in rows],
+            'windows': [{'start': f"{a['departure']:%H:%M}", 'end': f"{b['departure']:%H:%M}",
+                         'start_hour': a['departure'].hour, 'end_hour': b['departure'].hour,
+                         'risk': max(a['risk'], b['risk']),
+                         'min_minutes': min(a['minutes'], b['minutes']) if traffic else None,
+                         'max_minutes': max(a['minutes'], b['minutes']) if traffic else None,
+                         'delay': max(a['delay'], b['delay']) if traffic else None,
+                         'rain': max(a['weather']['rain'], b['weather']['rain']),
+                         'gust': max(a['weather']['gust'], b['weather']['gust']),
+                         'visibility': min(a['weather']['visibility'], b['weather']['visibility'])}
+                        for a, b in windows],
+            'severe': [r['departure'].strftime('%H:%M') for r in rows if r['risk'] == 2]})
         for a, b in windows:
             w = [a['weather'], b['weather']]
             label = 'lower weather concern' if max(a['risk'], b['risk']) == 0 else 'weather caution'
@@ -299,6 +334,9 @@ def build_report(config, now=None, key=None, diagnostics=None):
         if severe:
             lines.append('Higher weather concern at sampled departures: ' + ', '.join(severe) + '.')
         lines.append('')
+    visual['unavailable'] = unavailable
+    if visuals is not None:
+        visuals.update(visual)
     if unavailable:
         lines += [f'Weather coverage missing for {unavailable} departure samples; those samples were excluded.', '']
     lines += [f"Departures sampled hourly from {config['first_departure_hour']:02d}:00 to {config['last_departure_hour']:02d}:00; "
@@ -347,8 +385,10 @@ def attach_report(draft, source):
     from .daily import SUBJECT
     draft['subject'] = SUBJECT
     try:
-        diagnostics = {}
-        report = build_report(json.loads(path.read_text()), diagnostics=diagnostics)
+        diagnostics, visuals = {}, {}
+        report = build_report(json.loads(path.read_text()), diagnostics=diagnostics, visuals=visuals)
+        # Checkpointed with the draft so a delivery retry renders identical charts.
+        draft['travel_visuals'] = visuals
         print('::notice title=Traffic forecasts::' + traffic_status(report, diagnostics=diagnostics))
     except Exception:
         # Provider errors do not suppress jobs or leak credential-bearing URLs.

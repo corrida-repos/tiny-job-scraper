@@ -114,14 +114,14 @@ class Gmail:
             return rows[0].decode().split() if rows and rows[0] else []
 
     def send(self, recipient, draft, message_id):
-        from .branding import render_email_html
+        from .email_design import render_draft_html
         message = EmailMessage()
         message['From'] = self.address
         message['To'] = recipient
         message['Subject'] = draft['subject']
         message['Message-ID'] = message_id
         message.set_content(draft['body_markdown'])
-        rendered, logos = render_email_html(draft['body_markdown'])
+        rendered, logos = render_draft_html(draft)
         message.add_alternative(rendered, subtype='html')
         html_part = message.get_payload()[-1]
         for cid, data in logos:
