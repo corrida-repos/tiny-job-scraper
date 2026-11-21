@@ -7,6 +7,23 @@ The subject is **Tiny’s Daily Report**. A weather failure leaves a visible
 unavailable section and the job report still goes out. A prepared delivery retry
 uses its original checkpointed draft rather than fetching a different forecast.
 
+## Email layout
+
+The HTML email opens with a header, a weather tile per place and two charts,
+followed by styled job cards:
+
+- **Hourly weather:** temperature lines for Areias, Braga and Porto above a
+  chance-of-rain heatmap (numbers are mm/h on wet hours).
+- **Departure planner:** drive time per direction and departure hour, shaded by
+  traffic delay, above a weather-concern strip (✓ OK, ! caution, !! high).
+  Recommended windows are outlined. Without TomTom traffic only the weather strip
+  is drawn.
+
+Charts are PNGs embedded inline (Gmail strips SVG and runs no scripts), drawn
+with matplotlib from data checkpointed in `email.json` as `travel_visuals`, so a
+delivery retry sends the same charts. If matplotlib is unavailable or a chart
+fails, the email is sent without it. The plain-text part is still the Markdown.
+
 ## Schedule
 
 `.github/workflows/daily-jobs.yml` starts at **06:53 Europe/Lisbon**, every day,
