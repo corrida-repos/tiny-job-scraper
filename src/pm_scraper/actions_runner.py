@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import smtplib
 import sqlite3
 import ssl
@@ -20,6 +21,11 @@ import zipfile
 
 AAD = b'tiny-job-scraper-state-v1'
 FILES = {'state.sqlite3', 'meta.json', 'audit.md', 'results.json', 'email.json'}
+MAX_REPORT_ENTRY_BYTES = 100_000_000
+
+
+class StateArchiveError(ValueError):
+    """A checkpoint error with a message safe to show in Actions logs."""
 
 
 def key_bytes(value):
@@ -33,30 +39,55 @@ def seal(folder, key):
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM
     archive = io.BytesIO()
     with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as z:
+        sizes = {}
         for name in sorted(FILES):
             path = Path(folder)/name
             if path.exists():
-                z.writestr(name, path.read_bytes())
+                sizes[name] = path.stat().st_size
+        validate_archive_entries(sizes.items())
+        for name in sizes:
+            z.write(Path(folder)/name, arcname=name)
     nonce = os.urandom(12)
     return AAD + nonce + AESGCM(key).encrypt(nonce, archive.getvalue(), AAD)
 
 
+def validate_archive_entries(entries):
+    names = set()
+    for name, size in entries:
+        if name not in FILES or name in names:
+            raise StateArchiveError('Encrypted checkpoint contains an unknown or duplicate entry.')
+        # The SQLite database accumulates run history. Its uncompressed size
+        # can grow beyond the limit for individual reports and metadata.
+        if name != 'state.sqlite3' and size > MAX_REPORT_ENTRY_BYTES:
+            raise StateArchiveError(f'Encrypted checkpoint entry {name} exceeds the size limit.')
+        names.add(name)
+    if not {'state.sqlite3', 'meta.json'} <= names:
+        raise StateArchiveError('Encrypted checkpoint is missing its database or metadata.')
+
+
 def unseal(data, folder, key):
+    from cryptography.exceptions import InvalidTag
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM
     if not data.startswith(AAD):
-        raise ValueError('Unsupported encrypted state format')
+        raise StateArchiveError('Unsupported encrypted checkpoint format.')
     nonce = data[len(AAD):len(AAD)+12]
-    plain = AESGCM(key).decrypt(nonce, data[len(AAD)+12:], AAD)
+    if len(data) < len(AAD) + 12 + 16:
+        raise StateArchiveError('Encrypted checkpoint is truncated.')
+    try:
+        plain = AESGCM(key).decrypt(nonce, data[len(AAD)+12:], AAD)
+    except InvalidTag:
+        raise StateArchiveError('Encrypted checkpoint could not be authenticated with STATE_ENCRYPTION_KEY.') from None
     with zipfile.ZipFile(io.BytesIO(plain)) as z:
-        if not {'state.sqlite3','meta.json'} <= set(z.namelist()) or len(z.namelist()) != len(set(z.namelist())):
-            raise ValueError('Incomplete or duplicate state entries')
-        if any(i.filename not in FILES or i.file_size > 100_000_000 for i in z.infolist()):
-            raise ValueError('Unexpected archive entry')
-        Path(folder).mkdir(parents=True, exist_ok=True)
-        for name in z.namelist():
-            p = Path(folder)/name
-            p.write_bytes(z.read(name));p.chmod(0o600)
-    validate_state(Path(folder)/'state.sqlite3')
+        entries = z.infolist()
+        validate_archive_entries((entry.filename, entry.file_size) for entry in entries)
+        folder = Path(folder)
+        folder.mkdir(parents=True, exist_ok=True)
+        for entry in entries:
+            path = folder / entry.filename
+            with z.open(entry) as compressed, path.open('wb') as restored:
+                path.chmod(0o600)
+                shutil.copyfileobj(compressed, restored)
+    validate_state(folder/'state.sqlite3')
 
 
 def validate_state(path):
@@ -184,6 +215,7 @@ def execute(checkout, source, output, send=False, freshness_days=None):
     with tempfile.TemporaryDirectory(prefix='tiny-actions-') as temp:
         folder = Path(temp)
         unseal((Path(checkout)/'state.enc').read_bytes(), folder, key)
+        print(f"Restored encrypted checkpoint (SQLite: {(folder/'state.sqlite3').stat().st_size:,} bytes).")
         meta = json.loads((folder/'meta.json').read_text())
         attempt = meta.setdefault('attempts', {}).get(run_id, {})
         if send:
@@ -285,6 +317,8 @@ def execute(checkout, source, output, send=False, freshness_days=None):
 
 
 def safe_error(error):
+    if isinstance(error, StateArchiveError):
+        return str(error)
     text = str(error).lower()
     if isinstance(error, imaplib.IMAP4.error):
         if any(word in text for word in ('authenticationfailed', 'invalid credentials', 'authenticate failed', 'login failed')):

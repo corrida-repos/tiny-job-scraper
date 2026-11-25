@@ -28,6 +28,18 @@ class ActionsRunnerTests(unittest.TestCase):
   out=self.root/'restored';unseal(encrypted,out,self.key)
   self.assertEqual((out/'state.sqlite3').read_bytes(),(self.data/'state.sqlite3').read_bytes())
   with self.assertRaises(Exception):unseal(encrypted[:-1]+bytes([encrypted[-1]^1]),self.root/'tampered',self.key)
+ def test_growing_database_can_exceed_report_entry_limit(self):
+  with sqlite3.connect(self.data/'state.sqlite3') as db:
+   db.execute('CREATE TABLE audit_fixture (payload BLOB)')
+   db.execute('INSERT INTO audit_fixture VALUES (zeroblob(131072))')
+  out=self.root/'restored'
+  with patch('pm_scraper.actions_runner.MAX_REPORT_ENTRY_BYTES', 65_536):
+   unseal(seal(self.data,self.key),out,self.key)
+   (self.data/'results.json').write_bytes(b'x' * 65_537)
+   with self.assertRaisesRegex(ValueError, 'results.json exceeds the size limit'):
+    seal(self.data,self.key)
+  with sqlite3.connect(out/'state.sqlite3') as db:
+   self.assertEqual(db.execute('SELECT length(payload) FROM audit_fixture').fetchone(), (131_072,))
  def test_invalid_key_rejected(self):
   with self.assertRaises(ValueError):key_bytes(base64.b64encode(b'bad').decode())
  def git(self,path,*args):
