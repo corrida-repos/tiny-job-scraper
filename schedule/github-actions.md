@@ -15,7 +15,7 @@ traffic secret and recommendation details.
 ## Prepared state
 
 `runtime-state` contains only `state.enc`: an AES-256-GCM encrypted ZIP holding
-SQLite state, the report, recipient and delivery metadata. It does not contain
+SQLite job state, the latest email draft, recipient and delivery metadata. It does not contain
 plaintext recipient addresses, databases or task settings. Encryption happens
 before any Git staging. Git history retains previous encrypted checkpoints;
 repository storage grows over time. Keep the encryption key securely backed up:
@@ -78,7 +78,7 @@ failure notifications as the independent operational channel.
 
 The workflow concurrency group permits only one runner at a time. Every state
 checkpoint uses a normal, non-forced Git push; another writer causes a conflict
-rather than overwriting newer state. It saves retrieved state/audit, then send
+rather than overwriting newer state. It saves job state and the draft, then send
 intent, then SMTP receipt. A stable Message-ID based on `GITHUB_RUN_ID` is searched
 in Gmail's Sent folder before every production attempt. Rerunning a successful
 run does not send again. If a saved intent has no matching Sent message, the
@@ -86,12 +86,17 @@ runner refuses automatic resend until the uncertain outcome is reconciled.
 New deliveries are blocked while an older delivery is unresolved.
 
 SMTP acceptance is a positive submission acknowledgement, not proof of inbox
-arrival. The audit stores its Message-ID; Sent-folder reconciliation also records
+arrival. Delivery metadata stores its Message-ID; Sent-folder reconciliation also records
 IMAP UIDs. Network failures between SMTP submission and checkpointing cannot
 provide an absolute exactly-once guarantee. Do not start a new run to bypass an
 uncertain send; inspect Sent and the encrypted ledger first. If state saving
 fails, the runner attempts one failure email with that same Message-ID and fails
 the workflow; inspect the mailbox and state branch before retrying.
+
+The runner removes the old full-results audit table and audit files when it
+saves state. To clean the active checkpoint before the next delivery, run the
+workflow with `purge_daily_audit` enabled and `send_email` disabled. Older
+encrypted checkpoints remain in Git history.
 
 ## Refreshing the bootstrap
 

@@ -107,6 +107,7 @@ def git(folder, *args):
 
 
 def persist(folder, checkout, key, label):
+    remove_daily_audit(folder)
     validate_state(Path(folder)/'state.sqlite3')
     if git(checkout, 'branch', '--show-current') != 'runtime-state':
         raise ValueError('State persistence requires the runtime-state branch')
@@ -179,13 +180,24 @@ def failure_draft(started, kind, freshness_days=2):
     return prepare_email([], payload)
 
 
-def record_audit(folder, marker, draft, receipt=None):
-    with sqlite3.connect(Path(folder)/'state.sqlite3') as db:
-        db.execute('CREATE TABLE IF NOT EXISTS comprehensive_run_audits(run_marker TEXT PRIMARY KEY, started_at TEXT NOT NULL, results_json TEXT NOT NULL, email_message_id TEXT, sent_at TEXT)')
-        results = Path(folder)/'results.json'
-        db.execute('INSERT OR REPLACE INTO comprehensive_run_audits VALUES(?,?,?,?,?)',
-                   (marker, datetime.now(timezone.utc).isoformat(), results.read_text() if results.exists() else '{}',
-                    receipt, datetime.now(timezone.utc).isoformat() if receipt else None))
+def remove_daily_audit(folder):
+    database = folder/'state.sqlite3'
+    before = database.stat().st_size
+    with sqlite3.connect(database, isolation_level=None) as db:
+        has_audit = db.execute(
+            "SELECT 1 FROM sqlite_schema WHERE type='table' AND name='comprehensive_run_audits'"
+        ).fetchone()
+        if has_audit:
+            db.execute('DROP TABLE comprehensive_run_audits')
+            db.execute('VACUUM')
+            print(f'Removed daily audit table, reclaiming {before - database.stat().st_size:,} SQLite bytes.')
+    removed = bool(has_audit)
+    for name in ('audit.md', 'results.json'):
+        path = folder/name
+        if path.exists():
+            path.unlink()
+            removed = True
+    return removed
 
 
 def announce_coverage(folder):
@@ -202,7 +214,7 @@ def announce_coverage(folder):
     if gaps:print('::notice title=Coverage gaps::'+escaped('; '.join(gaps)))
 
 
-def execute(checkout, source, output, send=False, freshness_days=None):
+def execute(checkout, source, output, send=False, freshness_days=None, *, purge_daily_audit=False):
     from .criteria import freshness_days as configured_freshness
     freshness_days = configured_freshness(source, freshness_days)
     key = key_bytes(os.environ['STATE_ENCRYPTION_KEY'])
@@ -216,6 +228,15 @@ def execute(checkout, source, output, send=False, freshness_days=None):
         folder = Path(temp)
         unseal((Path(checkout)/'state.enc').read_bytes(), folder, key)
         print(f"Restored encrypted checkpoint (SQLite: {(folder/'state.sqlite3').stat().st_size:,} bytes).")
+        if purge_daily_audit:
+            if remove_daily_audit(folder):
+                persist(folder, checkout, key, 'Remove daily audits '+marker)
+                print(f"Saved cleaned encrypted checkpoint (SQLite: {(folder/'state.sqlite3').stat().st_size:,} bytes).")
+            else:
+                print('Active checkpoint is already free of daily audits.')
+            return 0
+        if not send:
+            remove_daily_audit(folder)
         meta = json.loads((folder/'meta.json').read_text())
         attempt = meta.setdefault('attempts', {}).get(run_id, {})
         if send:
@@ -258,26 +279,23 @@ def execute(checkout, source, output, send=False, freshness_days=None):
                 code = 1
             if (reports/'email.json').exists():
                 draft = json.loads((reports/'email.json').read_text())
-                for src,dst in [('results.json','results.json'),('report.md','audit.md')]:
-                    if (reports/src).exists():
-                        (folder/dst).write_bytes((reports/src).read_bytes())
-                # Failure paths must not retain old results/audit under a new marker.
-                if not (reports/'report.md').exists():
-                    (folder/'audit.md').write_text(draft['body_markdown'])
             else:
                 draft = failure_draft(started, 'Runtime failure or timeout',freshness_days)
-                (folder/'results.json').write_text(json.dumps({'started_at':started,'failure':True})+'\n')
-                (folder/'audit.md').write_text(draft['body_markdown'])
+                reports.mkdir(exist_ok=True)
+                (reports/'results.json').write_text(json.dumps({'started_at':started,'failure':True})+'\n')
             old_marker = draft['run_marker']
             draft['run_marker'] = marker
             draft['body_markdown'] = draft['body_markdown'].replace(old_marker, marker)
             from .travel_report import attach_report
             draft = attach_report(draft, source)
-        announce_coverage(folder)
+            announce_coverage(reports)
         attempt = {'status':'prepared','scraper_exit_code':code,'message_id':message_id,
                    'freshness_days':freshness_days, 'source_commit':git(source,'rev-parse','HEAD')}
         meta['attempts'][run_id] = attempt
         if not send:
+            results = reports/'results.json'
+            if results.is_file():
+                shutil.copyfile(results, folder/'results.json')
             set_saving(draft, 'Validation only; production state unchanged; no email sent.')
             (folder/'email.json').write_text(json.dumps(draft,indent=2)+'\n')
             write_meta(folder,meta)
@@ -286,9 +304,9 @@ def execute(checkout, source, output, send=False, freshness_days=None):
                 'delivery':'not_sent','source_commit':attempt['source_commit']},indent=2)+'\n')
             print('Validation bundle encrypted; production state and Gmail unchanged. Scraper exit code:',code)
             return 0 if code in (0,2) else 1
-        set_saving(draft, 'State and audit checkpoint saved to encrypted runtime-state; delivery pending.')
+        set_saving(draft, 'State checkpoint saved to encrypted runtime-state; delivery pending.')
         (folder/'email.json').write_text(json.dumps(draft,indent=2)+'\n')
-        write_meta(folder,meta);record_audit(folder,marker,draft)
+        write_meta(folder,meta)
         try:
             persist(folder,checkout,key,'Prepare '+marker)
             attempt['status']='sending';write_meta(folder,meta)
@@ -305,9 +323,9 @@ def execute(checkout, source, output, send=False, freshness_days=None):
         gmail.send(meta['recipient'],draft,message_id)
         attempt.update(status='sent',message_id=message_id)
         draft['delivery_status']='smtp_accepted'
-        set_saving(draft,'State and audit saved; Gmail accepted this message; receipt checkpoint follows.')
+        set_saving(draft,'State saved; Gmail accepted this message; receipt checkpoint follows.')
         (folder/'email.json').write_text(json.dumps(draft,indent=2)+'\n')
-        write_meta(folder,meta);record_audit(folder,marker,draft,message_id)
+        write_meta(folder,meta)
         persist(folder,checkout,key,'Receipt '+marker)
         (output/'summary.json').write_text(json.dumps({'mode':'delivery','scraper_exit_code':code,'delivery':'smtp_accepted','source_commit':attempt['source_commit']},indent=2)+'\n')
         print('Gmail accepted the report and encrypted receipt was persisted. Scraper exit code:',code)
@@ -338,11 +356,14 @@ def safe_error(error):
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--state-checkout',required=True);p.add_argument('--source',default='.');p.add_argument('--output',default='output/actions');p.add_argument('--send',action='store_true')
+    p=argparse.ArgumentParser();p.add_argument('--state-checkout',required=True);p.add_argument('--source',default='.');p.add_argument('--output',default='output/actions')
+    mode = p.add_mutually_exclusive_group()
+    mode.add_argument('--send', action='store_true')
+    mode.add_argument('--purge-daily-audit', action='store_true', help='Clean the encrypted checkpoint without scraping or sending email')
     p.add_argument('--freshness-days',type=int,choices=range(1,31),default=None,help='One-run override; otherwise use saved criteria')
     args=p.parse_args()
     try:
-        return execute(Path(args.state_checkout).resolve(),Path(args.source).resolve(),Path(args.output).resolve(),args.send,args.freshness_days)
+        return execute(Path(args.state_checkout).resolve(),Path(args.source).resolve(),Path(args.output).resolve(),args.send,args.freshness_days,purge_daily_audit=args.purge_daily_audit)
     except Exception as error:
         # SMTP/IMAP exceptions can contain account details; never dump them.
         print('::error::'+safe_error(error),file=sys.stderr)

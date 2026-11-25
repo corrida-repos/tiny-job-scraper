@@ -55,7 +55,6 @@ def main():
         else:
             old_meta={}
         shutil.copyfile(args.bundle_dir/'PM_Career_Scraper_State.sqlite3',folder/'state.sqlite3')
-        shutil.copyfile(args.bundle_dir/'PM_Career_Scraper_Report.md',folder/'audit.md')
         meta={'recipient':next(iter(recipients)), 'attempts':old_meta.get('attempts',{}),
               'imported_database_sha256':hashlib.sha256((folder/'state.sqlite3').read_bytes()).hexdigest()}
         (folder/'meta.json').write_text(json.dumps(meta,indent=2)+'\n')

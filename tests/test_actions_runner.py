@@ -53,6 +53,38 @@ class ActionsRunnerTests(unittest.TestCase):
   self.git(second,'config','user.name','test');self.git(second,'config','user.email','test@example.org')
   persist(self.data,first,self.key,'newer')
   with self.assertRaises(subprocess.CalledProcessError):persist(self.data,second,self.key,'stale')
+ def test_purge_removes_audit_from_active_checkpoint_without_sending(self):
+  checkout,source,_=self.run_fixture(attempt={'status':'prepared','message_id':'receipt-fixture'})
+  meta=(self.data/'meta.json').read_bytes()
+  (self.data/'email.json').write_text('{"run_marker":"tiny-actions-123"}')
+  (self.data/'audit.md').write_text('Old audit')
+  (self.data/'results.json').write_text('{}')
+  with sqlite3.connect(self.data/'state.sqlite3') as db:
+   db.execute('CREATE TABLE comprehensive_run_audits (results_json TEXT)')
+   db.execute('INSERT INTO comprehensive_run_audits VALUES (hex(zeroblob(131072)))')
+   db.execute("INSERT INTO deliveries(id,created_at,keys_json) VALUES ('delivery-fixture','date','[]')")
+  original_size=(self.data/'state.sqlite3').stat().st_size
+  remote=self.root/'remote.git'
+  self.git(self.root,'init','--bare',str(remote))
+  self.git(checkout,'init','-b','runtime-state')
+  self.git(checkout,'config','user.name','test');self.git(checkout,'config','user.email','test@example.org')
+  self.git(checkout,'remote','add','origin',str(remote))
+  (checkout/'state.enc').write_bytes(seal(self.data,self.key))
+  self.git(checkout,'add','state.enc');self.git(checkout,'commit','-m','Legacy checkpoint')
+  self.git(checkout,'push','origin','runtime-state')
+  environment={'STATE_ENCRYPTION_KEY':base64.b64encode(self.key).decode(),'GITHUB_RUN_ID':'234'}
+  with patch.dict(os.environ,environment),patch.object(Gmail,'find') as find,patch.object(Gmail,'send') as send:
+   self.assertEqual(execute(checkout,source,self.root/'output',purge_daily_audit=True),0)
+  find.assert_not_called();send.assert_not_called()
+  self.assertEqual(self.git(remote,'rev-parse','runtime-state'),self.git(checkout,'rev-parse','HEAD'))
+  restored=self.root/'cleaned';unseal((checkout/'state.enc').read_bytes(),restored,self.key)
+  self.assertEqual({path.name for path in restored.iterdir()}, {'state.sqlite3','meta.json','email.json'})
+  self.assertEqual((restored/'meta.json').read_bytes(),meta)
+  self.assertEqual((restored/'email.json').read_bytes(),(self.data/'email.json').read_bytes())
+  self.assertLess((restored/'state.sqlite3').stat().st_size,original_size)
+  with sqlite3.connect(restored/'state.sqlite3') as db:
+   self.assertIsNone(db.execute("SELECT 1 FROM sqlite_schema WHERE name='comprehensive_run_audits'").fetchone())
+   self.assertEqual(db.execute('SELECT id FROM deliveries').fetchall(), [('delivery-fixture',)])
  def run_fixture(self,send=False,attempt=None):
   if attempt:
    (self.data/'meta.json').write_text(json.dumps({'recipient':'test@example.org','attempts':{'123':attempt}}))
