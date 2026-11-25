@@ -6,6 +6,10 @@ on:
         description: 'Send a real email and persist state (leave false for validation)'
         type: boolean
         default: false
+      purge_daily_audit:
+        description: 'Remove saved daily audits from active state without sending email'
+        type: boolean
+        default: false
       freshness_days:
         description: 'Use saved criteria or a freshness override for this manual run'
         type: choice
@@ -75,6 +79,7 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           TOMTOM_API_KEY: ${{ secrets.TOMTOM_API_KEY }}
           SEND_EMAIL: ${{ github.event_name == 'schedule' || inputs.send_email }}
+          PURGE_DAILY_AUDIT: ${{ inputs.purge_daily_audit }}
           FRESHNESS_DAYS: ${{ github.event_name == 'workflow_dispatch' && inputs.freshness_days || 'configured' }}
           PYTHONPATH: src
         run: |
@@ -82,6 +87,7 @@ jobs:
           git -C ../encrypted-state config user.email 41898282+github-actions[bot]@users.noreply.github.com
           args=()
           if [ "$SEND_EMAIL" = true ]; then args+=(--send); fi
+          if [ "$PURGE_DAILY_AUDIT" = true ]; then args+=(--purge-daily-audit); fi
           if [ "$FRESHNESS_DAYS" != configured ]; then args+=(--freshness-days "$FRESHNESS_DAYS"); fi
           python -m pm_scraper.actions_runner --state-checkout ../encrypted-state "${args[@]}"
       - uses: actions/upload-artifact@v4
